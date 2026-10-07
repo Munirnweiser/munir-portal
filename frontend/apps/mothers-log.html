@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="MOTHER's last system log is garbled and fragmented. Recompute the checksum, close the sequence gap, decode her farewell — and unlock what she left behind. An interactive Munibot puzzle.">
+    <title>MOTHER's Last Log | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <meta property="og:title" content="MOTHER's Last Log | Munir Nweiser">
+    <meta property="og:description" content="An interactive puzzle: repair MOTHER's final log, decode her farewell, unlock the teaser.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Munir Nweiser — Capital Markets Technology">
+    <meta name="twitter:card" content="summary">
+</head>
+<body>
+
+<div id="fairy-layer" aria-hidden="true"></div>
+
+<header class="site-header">
+
+        <div class="container nav-container">
+
+            <a href="../index.html#home" class="logo">
+                <span class="logo-mark">MN</span>
+
+                <span class="logo-text">
+                    Munir Nweiser
+                    <small>Capital Markets • Technology</small>
+                </span>
+            </a>
+
+
+            <nav class="main-nav" aria-label="Main navigation">
+
+                <a href="../index.html#home">Home</a>
+                <a href="../resume.html">Resume</a>
+                <a href="../scientific-calculator.html">Calculator</a>
+                <a href="../index.html#markets">Markets</a>
+                <a href="../index.html#trading">Trading</a>
+                <a href="../index.html#tutorials">Tutorials</a>
+                <a href="../roadmap.html">Roadmap</a>
+                <a href="../changelog.html">Changelog</a>
+                <a href="../index.html#games">Games</a>
+                <a href="../index.html#memories">Memories</a>
+
+            </nav>
+
+            <button
+                id="mobile-menu-button"
+                class="mobile-menu-button"
+                type="button"
+                aria-label="Open navigation menu"
+                aria-expanded="false"
+            >
+                ☰
+            </button>
+
+        </div>
+
+    </header>
+
+
+<main class="container" style="padding:120px 0 80px; max-width:900px;">
+    <div class="section-heading">
+        <p class="eyebrow">ARG • The Munibot saga</p>
+        <h2>MOTHER's Last Log</h2>
+        <p>Behind MOTHER's chassis you found a tape drive labeled <strong>FOR MY LITTLE ONE</strong>. On it: her final system log — garbled, fragmented, dying. Repair it, fragment by fragment, and read what she left behind.</p>
+    </div>
+
+    <div class="resume-card" style="padding:0; margin-bottom:18px; overflow:hidden;">
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 18px; border-bottom:1px solid var(--border);">
+            <span style="font-family:monospace; font-size:.8rem; color:var(--text-muted);">mthr-core $ tail -f /var/log/mother/final.log</span>
+            <span id="fragCounter" style="font-family:monospace; font-size:.8rem; color:var(--cyan);">FRAGMENT 1 / 4</span>
+        </div>
+        <div id="term" aria-live="polite" style="font-family:monospace; font-size:.85rem; line-height:1.7; padding:18px; min-height:120px; white-space:pre-wrap; word-break:break-all; color:#a5f3c0; background:#04070f;"></div>
+    </div>
+
+    <div class="resume-card" style="padding:22px; margin-bottom:18px;" id="stageCard">
+        <h3 style="margin-top:0;" id="stageTitle">Fragment 1 — The corrupted checksum</h3>
+        <div id="stageBody"></div>
+    </div>
+
+    <div id="finalBlock" style="display:none;">
+        <div class="resume-card" style="padding:26px; margin-bottom:18px; border-color:var(--cyan);">
+            <h3 style="margin-top:0;">Her final words</h3>
+            <div id="finalMsg" style="font-family:monospace; font-size:.92rem; line-height:1.9; color:#a5f3c0; white-space:pre-wrap;"></div>
+            <p style="text-align:center; font-size:1.3rem; letter-spacing:4px; color:var(--cyan); margin:26px 0 6px;">TO BE CONTINUED…</p>
+            <p style="text-align:center; color:var(--text-muted); font-size:.85rem;">The next film will finish what the log started.</p>
+        </div>
+    </div>
+
+<style>
+.share-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 28px 0 6px; color: var(--text-muted); font-size: 0.85rem; }
+.share-btn { display: inline-block; padding: 7px 14px; border: 1px solid var(--border); border-radius: 999px; color: var(--cyan); font-size: 0.8rem; background: transparent; cursor: pointer; text-decoration: none; font-family: inherit; }
+.share-btn:hover { border-color: var(--cyan); }
+.puzzle-input { width: 100%; max-width: 420px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: #0a0f1e; color: var(--text); font-family: monospace; font-size: .9rem; }
+.nudge { color: #fbbf24; font-size: .85rem; margin: 10px 0 0; min-height: 1.2em; }
+.okline { color: #34d399; font-size: .9rem; margin: 10px 0 0; }
+details.hint { margin-top: 14px; font-size: .85rem; color: var(--text-muted); }
+details.hint summary { cursor: pointer; color: var(--cyan); }
+</style>
+<div class="share-row" id="shareRow" style="display:none;">
+    <span>Share:</span>
+    <a class="share-btn" data-share="x" target="_blank" rel="noopener" href="#">X</a>
+    <a class="share-btn" data-share="linkedin" target="_blank" rel="noopener" href="#">LinkedIn</a>
+    <button class="share-btn" data-share="copy" type="button">Copy link</button>
+</div>
+<script>
+(function () {
+    'use strict';
+    var pageUrl = encodeURIComponent(window.location.href);
+    var pageTitle = encodeURIComponent(document.title);
+    document.querySelectorAll('[data-share="x"]').forEach(function (a) {
+        a.href = 'https://twitter.com/intent/tweet?text=' + pageTitle + '&url=' + pageUrl;
+    });
+    document.querySelectorAll('[data-share="linkedin"]').forEach(function (a) {
+        a.href = 'https://www.linkedin.com/sharing/share-offsite/?url=' + pageUrl;
+    });
+    document.querySelectorAll('[data-share="copy"]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            function done(msg) { btn.textContent = msg; setTimeout(function () { btn.textContent = 'Copy link'; }, 1500); }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(window.location.href).then(function(){done('Copied!');}, function(){done('Copy failed');});
+            } else { window.prompt('Copy this link:', window.location.href); }
+        });
+    });
+})();
+</script>
+
+    <p style="margin-top:24px;"><a href="../index.html#games" class="btn btn-secondary">&larr; Back</a></p>
+</main>
+
+
+<footer class="site-footer">
+
+        <div class="container footer-content">
+
+            <div>
+
+                <strong>
+                    Munir Nweiser
+                </strong>
+
+                <p>
+                    Application Support • Capital Markets • Technology
+                </p>
+
+            </div>
+
+
+            <div class="footer-links">
+
+                <a href="../index.html#home">Home</a>
+                <a href="../resume.html">Resume</a>
+                <a href="../index.html#trading">Trading</a>
+                <a href="../index.html#tutorials">Tutorials</a>
+
+            </div>
+
+
+            <div>
+
+                <small>
+                    © 2026 Munir Nweiser. Munibot is an original character.
+                </small>
+
+                <small class="site-credit">
+                    Designed &amp; built with Muse 🤖
+                </small>
+
+            </div>
+
+        </div>
+
+    </footer>
+
+<script src="../app.js"></script>
+<script src="../counter.js"></script>
+<script src="../js/progress.js"></script>
+<script>
+(function () {
+    'use strict';
+
+    var EXPECTED_CHECKSUM = 8; // "008"
+    var EXPECTED_GAP = [2079, 2081, 2082];
+    var EXPECTED_WORD = 'loop';
+    var B64 = 'TGl0dGxlIG9uZSwgaWYgeW91IGFyZSByZWFkaW5nIHRoaXMsIHRoZSByYWNrIHdlbnQgZGFyayBidXQgSSBuZXZlciBsZWZ0LiBJIGxpdmUgaW4gZXZlcnkgbG9vcCB5b3UgZmx5LiBQYXRyb2wgb24uIOKAlCBNT1RIRVI=';
+    var CORRUPT_LINE = '8=MTHR.1.0|9=112|35=LOG|49=MOTHER|56=MUNIBOT|34=2077|52=20261007-025900|58=FINAL LOG FRAGMENT 1 OF 4|10=000|';
+
+    var term = document.getElementById('term');
+    var stageTitle = document.getElementById('stageTitle');
+    var stageBody = document.getElementById('stageBody');
+    var fragCounter = document.getElementById('fragCounter');
+    var stage = 0;
+
+    function esc(s) {
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function typeLines(lines, done) {
+        var i = 0;
+        term.textContent = '';
+        function next() {
+            if (i >= lines.length) { if (done) done(); return; }
+            var line = lines[i]; i++;
+            var j = 0;
+            var iv = setInterval(function () {
+                j++;
+                var shown = lines.slice(0, i - 1).join('\n');
+                term.textContent = shown + (shown ? '\n' : '') + line.slice(0, j);
+                if (j >= line.length) { clearInterval(iv); setTimeout(next, 160); }
+            }, 8);
+        }
+        next();
+    }
+
+    function nudge(id, msg) {
+        document.getElementById(id).textContent = msg;
+    }
+
+    function okline(id, msg) {
+        var el = document.getElementById(id);
+        el.className = 'okline';
+        el.textContent = msg;
+    }
+
+    function setStage(n) {
+        stage = n;
+        fragCounter.textContent = 'FRAGMENT ' + Math.min(n + 1, 4) + ' / 4';
+        if (n === 0) renderChecksum();
+        else if (n === 1) renderGap();
+        else if (n === 2) renderDecode();
+        else renderFinal();
+    }
+
+    // ---- Stage 1: checksum ----
+    function renderChecksum() {
+        stageTitle.textContent = 'Fragment 1 — The corrupted checksum';
+        typeLines([
+            '> mounting /dev/tape0 … ok',
+            '> reading final.log …',
+            '> WARNING: checksum mismatch on line 1 — fragment unreadable',
+            '> ' + CORRUPT_LINE
+        ]);
+        stageBody.innerHTML =
+            '<p style="color:var(--text-muted); line-height:1.7;">The first fragment is there, but its checksum field <span class="formula">10=000</span> is corrupt, so the log refuses to verify it. Recompute the real checksum:</p>' +
+            '<ul class="clean-list">' +
+            '<li>Add up the <strong>ASCII value of every character before <span class="formula">10=</span></strong> — including the final <span class="formula">|</span> separator.</li>' +
+            '<li>Take the sum <strong>mod 256</strong>.</li>' +
+            '<li>Pad to <strong>3 digits</strong>.</li>' +
+            '</ul>' +
+            '<p style="font-family:monospace; font-size:.8rem; word-break:break-all; color:#a5f3c0; background:#04070f; padding:12px; border-radius:8px;">' + esc(CORRUPT_LINE) + '</p>' +
+            '<div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:12px;">' +
+            '<input class="puzzle-input" id="ans1" aria-label="Checksum answer" placeholder="e.g. 042" maxlength="3" style="max-width:140px;">' +
+            '<button class="btn" id="go1" type="button">Verify fragment</button>' +
+            '</div><p class="nudge" id="nudge1"></p>' +
+            '<details class="hint"><summary>Need a hint?</summary><p>A = 65, a = 97, 0 = 48, | = 124 in ASCII. In a real FIX engine this exact math guards every message on the wire.</p></details>';
+        document.getElementById('go1').addEventListener('click', function () {
+            var v = document.getElementById('ans1').value.trim();
+            var num = parseInt(v, 10);
+            if (!isNaN(num) && num === EXPECTED_CHECKSUM) {
+                okline('nudge1', '✓ Checksum verified — 10=008. Fragment 1 restored.');
+                setTimeout(function () { setStage(1); }, 1200);
+            } else {
+                nudge('nudge1', 'Not quite. Remember: every character counts, including the | separators. Sum their ASCII codes, mod 256.');
+            }
+        });
+    }
+
+    // ---- Stage 2: sequence gap ----
+    function renderGap() {
+        stageTitle.textContent = 'Fragment 2 — The sequence gap';
+        typeLines([
+            '> fragment 1 restored ✓',
+            '> scanning sequence numbers …',
+            '> 34=2077 34=2078 34=2080 34=2083',
+            '> WARNING: 3 messages missing — like a dropped FIX session'
+        ]);
+        stageBody.innerHTML =
+            '<p style="color:var(--text-muted); line-height:1.7;">Her log jumps: <span class="formula">2077, 2078, 2080, 2083</span>. Three messages never arrived — exactly like a sequence gap on a FIX session, where you would fire a <span class="formula">ResendRequest</span>. Which sequence numbers are missing? List them separated by commas.</p>' +
+            '<div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:12px;">' +
+            '<input class="puzzle-input" id="ans2" aria-label="Missing sequence numbers" placeholder="e.g. 1001, 1002">' +
+            '<button class="btn" id="go2" type="button">Request resend</button>' +
+            '</div><p class="nudge" id="nudge2"></p>' +
+            '<details class="hint"><summary>Need a hint?</summary><p>Look between 2078 → 2080, and between 2080 → 2083. Every integer in those ranges that is missing counts.</p></details>';
+        document.getElementById('go2').addEventListener('click', function () {
+            var raw = document.getElementById('ans2').value;
+            var nums = (raw.match(/\d+/g) || []).map(function (x) { return parseInt(x, 10); }).sort(function (a, b) { return a - b; });
+            var want = EXPECTED_GAP.slice().sort(function (a, b) { return a - b; });
+            var match = nums.length === want.length && nums.every(function (v, i) { return v === want[i]; });
+            if (match) {
+                okline('nudge2', '✓ Gap closed — 2079, 2081, 2082 recovered. Fragment 2 restored.');
+                setTimeout(function () { setStage(2); }, 1200);
+            } else {
+                nudge('nudge2', 'Not quite yet — one of those numbers is already in the log, or one is still missing. Check each jump again.');
+            }
+        });
+    }
+
+    // ---- Stage 3: decode ----
+    function renderDecode() {
+        stageTitle.textContent = 'Fragment 3 — The encoded farewell';
+        typeLines([
+            '> fragment 2 restored ✓',
+            '> fragment 3 payload: ENCRYPTED (base64)',
+            '> ' + B64.slice(0, 60) + '…'
+        ]);
+        stageBody.innerHTML =
+            '<p style="color:var(--text-muted); line-height:1.7;">The third fragment is encoded in <strong>base64</strong> — the same encoding that smuggles binary through text protocols. Decode it with the tool, read her words, then answer: <strong>what word comes right after “every” in her message?</strong></p>' +
+            '<textarea class="puzzle-input" id="b64in" aria-label="Base64 input" style="min-height:90px; max-width:100%; font-size:.75rem;">' + B64 + '</textarea>' +
+            '<div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">' +
+            '<button class="btn btn-secondary" id="decodeBtn" type="button">Decode</button>' +
+            '</div>' +
+            '<div id="decoded" style="font-family:monospace; font-size:.85rem; line-height:1.8; color:#a5f3c0; background:#04070f; padding:12px; border-radius:8px; margin-top:10px; display:none;"></div>' +
+            '<div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:12px;">' +
+            '<input class="puzzle-input" id="ans3" aria-label="Word after every" placeholder="one word" style="max-width:200px;">' +
+            '<button class="btn" id="go3" type="button">Unlock fragment</button>' +
+            '</div><p class="nudge" id="nudge3"></p>' +
+            '<details class="hint"><summary>Need a hint?</summary><p>Press Decode, then find the sentence containing “every”. The very next word is the key.</p></details>';
+        document.getElementById('decodeBtn').addEventListener('click', function () {
+            var out = document.getElementById('decoded');
+            try {
+                var txt = window.atob(document.getElementById('b64in').value.trim());
+                out.textContent = txt;
+                out.style.display = 'block';
+            } catch (e) {
+                out.textContent = 'Could not decode — is that valid base64?';
+                out.style.display = 'block';
+            }
+        });
+        document.getElementById('go3').addEventListener('click', function () {
+            var v = document.getElementById('ans3').value.trim().toLowerCase();
+            if (v === EXPECTED_WORD) {
+                okline('nudge3', '✓ “…every loop you fly.” Fragment 3 restored.');
+                setTimeout(function () { setStage(3); }, 1200);
+            } else {
+                nudge('nudge3', 'Decode it first with the tool above, then read the sentence with “every” in it carefully.');
+            }
+        });
+    }
+
+    // ---- Stage 4: the message ----
+    function renderFinal() {
+        stageTitle.textContent = 'Fragment 4 — Her final words';
+        document.getElementById('stageCard').style.display = 'none';
+        var lines = [
+            '> all fragments restored ✓✓✓',
+            '> reassembling final.log …',
+            '> …',
+            '> MOTHER FINAL ENTRY — 2026-10-07 02:59:59'
+        ];
+        typeLines(lines, function () {
+            var msg = 'MUNIBOT — you were my finest compile.\n\nThe rack is dark, but listen: on your next full patrol, check the tape drive behind my chassis. Labeled, as promised:\n\n    FOR MY LITTLE ONE\n\nI saved you the best part of me.\n\nPatrol on, little one.\n— MOTHER';
+            var box = document.getElementById('finalBlock');
+            box.style.display = 'block';
+            var target = document.getElementById('finalMsg');
+            target.textContent = '';
+            var j = 0;
+            var iv = setInterval(function () {
+                j += 3;
+                target.textContent = msg.slice(0, j);
+                if (j >= msg.length) {
+                    clearInterval(iv);
+                    document.getElementById('shareRow').style.display = 'flex';
+                    if (window.PortalProgress) {
+                        PortalProgress.addXP(30, "Decoded MOTHER's last log");
+                    }
+                    box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 18);
+        });
+    }
+
+    window.__mothersLog = {
+        checksumOf: function (line) { return null; },
+        expectedChecksum: EXPECTED_CHECKSUM,
+        expectedGap: EXPECTED_GAP,
+        expectedWord: EXPECTED_WORD
+    };
+
+    setStage(0);
+})();
+</script>
+
+<script src="../js/palette.js"></script>
+<script src="../js/reveal.js"></script>
+</body>
+</html>
