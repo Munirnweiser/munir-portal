@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Live open/closed status and countdowns for 12 global stock exchanges, with a world-clock strip.">
+    <title>Market Hours Board | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <meta property="og:title" content="Market Hours Board | Munir Nweiser">
+    <meta property="og:description" content="Are the markets open? Live status + countdowns for NYSE, LSE, TSE and 9 more.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Munir Nweiser — Capital Markets Technology">
+    <meta name="twitter:card" content="summary">
+</head>
+<body>
+
+<div id="fairy-layer" aria-hidden="true"></div>
+
+<header class="site-header">
+
+        <div class="container nav-container">
+
+            <a href="../index.html#home" class="logo">
+                <span class="logo-mark">MN</span>
+
+                <span class="logo-text">
+                    Munir Nweiser
+                    <small>Capital Markets • Technology</small>
+                </span>
+            </a>
+
+
+            <nav class="main-nav" aria-label="Main navigation">
+
+                <a href="../index.html#home">Home</a>
+                <a href="../resume.html">Resume</a>
+                <a href="../scientific-calculator.html">Calculator</a>
+                <a href="../index.html#markets">Markets</a>
+                <a href="../index.html#trading">Trading</a>
+                <a href="../index.html#tutorials">Tutorials</a>
+                <a href="../roadmap.html">Roadmap</a>
+                <a href="../changelog.html">Changelog</a>
+                <a href="../index.html#games">Games</a>
+                <a href="../index.html#memories">Memories</a>
+
+            </nav>
+
+            <button
+                id="mobile-menu-button"
+                class="mobile-menu-button"
+                type="button"
+                aria-label="Open navigation menu"
+                aria-expanded="false"
+            >
+                ☰
+            </button>
+
+        </div>
+
+    </header>
+
+
+<main class="container" style="padding:120px 0 80px; max-width:1100px;">
+    <div class="section-heading">
+        <p class="eyebrow">Markets</p>
+        <h2>Market Hours Board</h2>
+        <p>Live open / closed status and countdowns for 12 global exchanges — computed in your browser from real time-zone data. <span id="openCount" style="color:var(--cyan);"></span></p>
+    </div>
+
+    <div class="resume-card" style="padding:18px 22px; margin-bottom:18px;">
+        <h3 style="margin-top:0;">World clock</h3>
+        <div id="clockStrip" style="display:flex; gap:10px; flex-wrap:wrap;"></div>
+    </div>
+
+    <div id="board" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:14px;"></div>
+
+    <div class="resume-card" style="padding:18px 22px; margin-top:18px;">
+        <p style="color:var(--text-muted); font-size:.85rem; margin:0;">Standard session hours shown. Exchange <strong>holidays are not modeled</strong> — on a holiday the board may show “open” while the venue is actually closed. Lunch breaks shown for Tokyo, Hong Kong and Singapore. All times use your device clock with IANA time-zone data (DST handled automatically).</p>
+    </div>
+
+    <p style="margin-top:24px;"><a href="../index.html#markets" class="btn btn-secondary">&larr; Back</a></p>
+</main>
+
+
+<footer class="site-footer">
+
+        <div class="container footer-content">
+
+            <div>
+
+                <strong>
+                    Munir Nweiser
+                </strong>
+
+                <p>
+                    Application Support • Capital Markets • Technology
+                </p>
+
+            </div>
+
+
+            <div class="footer-links">
+
+                <a href="../index.html#home">Home</a>
+                <a href="../resume.html">Resume</a>
+                <a href="../index.html#trading">Trading</a>
+                <a href="../index.html#tutorials">Tutorials</a>
+
+            </div>
+
+
+            <div>
+
+                <small>
+                    © <span id="current-year"></span>
+                    Munir Nweiser
+                </small>
+
+                <br>
+
+                <small class="visitor-count">
+                    <span id="visitor-count"></span>
+                </small>
+
+                <small class="site-credit">
+                    Designed &amp; built with Muse 🤖
+                </small>
+
+            </div>
+
+        </div>
+
+    </footer>
+<style>
+.share-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 28px 0 6px; color: var(--text-muted); font-size: 0.85rem; }
+.share-btn { display: inline-block; padding: 7px 14px; border: 1px solid var(--border); border-radius: 999px; color: var(--cyan); font-size: 0.8rem; background: transparent; cursor: pointer; text-decoration: none; font-family: inherit; }
+.share-btn:hover { border-color: var(--cyan); }
+</style>
+<div class="share-row">
+    <span>Share:</span>
+    <a class="share-btn" data-share="x" target="_blank" rel="noopener" href="#">X</a>
+    <a class="share-btn" data-share="linkedin" target="_blank" rel="noopener" href="#">LinkedIn</a>
+    <button class="share-btn" data-share="copy" type="button">Copy link</button>
+</div>
+<script>
+(function () {
+    'use strict';
+    var pageUrl = encodeURIComponent(window.location.href);
+    var pageTitle = encodeURIComponent(document.title);
+    document.querySelectorAll('[data-share="x"]').forEach(function (a) {
+        a.href = 'https://twitter.com/intent/tweet?text=' + pageTitle + '&url=' + pageUrl;
+    });
+    document.querySelectorAll('[data-share="linkedin"]').forEach(function (a) {
+        a.href = 'https://www.linkedin.com/sharing/share-offsite/?url=' + pageUrl;
+    });
+    document.querySelectorAll('[data-share="copy"]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            function done(msg) { btn.textContent = msg; setTimeout(function () { btn.textContent = 'Copy link'; }, 1500); }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(window.location.href).then(function(){done('Copied!');}, function(){done('Copy failed');});
+            } else { window.prompt('Copy this link:', window.location.href); }
+        });
+    });
+})();
+</script>
+
+
+<script src="../app.js"></script>
+<script src="../counter.js"></script>
+<script src="../js/progress.js"></script>
+
+<script>
+(function () {
+    'use strict';
+    var EXCHANGES = [
+        {name:'New York Stock Exchange', city:'New York', tz:'America/New_York', open:'09:30', close:'16:00', lunch:null},
+        {name:'Toronto Stock Exchange', city:'Toronto', tz:'America/Toronto', open:'09:30', close:'16:00', lunch:null},
+        {name:'B3', city:'S\u00e3o Paulo', tz:'America/Sao_Paulo', open:'10:00', close:'18:00', lunch:null},
+        {name:'London Stock Exchange', city:'London', tz:'Europe/London', open:'08:00', close:'16:30', lunch:null},
+        {name:'Euronext Paris', city:'Paris', tz:'Europe/Paris', open:'09:00', close:'17:30', lunch:null},
+        {name:'Xetra', city:'Frankfurt', tz:'Europe/Berlin', open:'09:00', close:'17:30', lunch:null},
+        {name:'SIX Swiss Exchange', city:'Zurich', tz:'Europe/Zurich', open:'09:00', close:'17:30', lunch:null},
+        {name:'Tokyo Stock Exchange', city:'Tokyo', tz:'Asia/Tokyo', open:'09:00', close:'15:00', lunch:['11:30','12:30']},
+        {name:'Hong Kong Exchange', city:'Hong Kong', tz:'Asia/Hong_Kong', open:'09:30', close:'16:00', lunch:['12:00','13:00']},
+        {name:'Singapore Exchange', city:'Singapore', tz:'Asia/Singapore', open:'09:00', close:'17:00', lunch:['12:00','13:00']},
+        {name:'NSE India', city:'Mumbai', tz:'Asia/Kolkata', open:'09:15', close:'15:30', lunch:null},
+        {name:'ASX', city:'Sydney', tz:'Australia/Sydney', open:'10:00', close:'16:00', lunch:null}
+    ];
+
+    function hmMin(s){ var a=s.split(':'); return (+a[0])*60+(+a[1]); }
+    function pad(n){ return (n<10?'0':'')+n; }
+
+    function tzLocal(tz, d){
+        var f = new Intl.DateTimeFormat('en-US',{timeZone:tz, year:'numeric', month:'2-digit', day:'2-digit',
+            weekday:'short', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false});
+        var p = {};
+        f.formatToParts(d).forEach(function(x){ p[x.type]=x.value; });
+        var h = +p.hour; if (h===24) h=0;
+        return {y:+p.year, mo:+p.month, day:+p.day, wd:p.weekday, h:h, mi:+p.minute, s:+p.second};
+    }
+    function tzOffsetMs(tz, d){
+        var f = new Intl.DateTimeFormat('en-US',{timeZone:tz, year:'numeric', month:'2-digit', day:'2-digit',
+            hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false});
+        var p = {};
+        f.formatToParts(d).forEach(function(x){ p[x.type]=x.value; });
+        var h = +p.hour; if (h===24) h=0;
+        return Date.UTC(+p.year, +p.month-1, +p.day, h, +p.minute, +p.second) - d.getTime();
+    }
+    function fmtDur(ms){
+        if (ms<0) ms=0;
+        var s = Math.floor(ms/1000), d=Math.floor(s/86400), h=Math.floor(s%86400/3600), m=Math.floor(s%3600/60), ss=s%60;
+        if (d>0) return d+'d '+h+'h';
+        if (h>0) return h+'h '+m+'m';
+        return m+'m '+pad(ss)+'s';
+    }
+    function nextOpenMs(ex, L, off, nowMs){
+        var base = Date.UTC(L.y, L.mo-1, L.day);
+        var WD = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        for (var i=1;i<=8;i++){
+            var nd = new Date(base + i*86400000);
+            var wd = WD[nd.getUTCDay()];
+            if (wd!=='Sat' && wd!=='Sun'){
+                var om = hmMin(ex.open);
+                return Date.UTC(nd.getUTCFullYear(), nd.getUTCMonth(), nd.getUTCDate(), Math.floor(om/60), om%60) - off;
+            }
+        }
+        return nowMs;
+    }
+
+    function stateOf(ex, now){
+        var L = tzLocal(ex.tz, now);
+        var nowMs = now.getTime();
+        var off = tzOffsetMs(ex.tz, now);
+        var mins = L.h*60 + L.mi;
+        var o = hmMin(ex.open), c = hmMin(ex.close);
+        var wknd = (L.wd==='Sat' || L.wd==='Sun');
+        var openMs = Date.UTC(L.y, L.mo-1, L.day, Math.floor(o/60), o%60) - off;
+        var closeMs = Date.UTC(L.y, L.mo-1, L.day, Math.floor(c/60), c%60) - off;
+        var st;
+        if (wknd){
+            st = {status:'closed', label:'Closed \u2014 weekend', target: nextOpenMs(ex, L, off, nowMs), kind:'weekend'};
+        } else if (mins < o){
+            st = {status:'closed', label:'Opens in ' + fmtDur(openMs - nowMs), target: openMs, kind:'pre'};
+        } else if (mins >= c){
+            var nx = nextOpenMs(ex, L, off, nowMs);
+            st = {status:'closed', label:'Closed \u2014 opens in ' + fmtDur(nx - nowMs), target: nx, kind:'post'};
+        } else if (ex.lunch && mins >= hmMin(ex.lunch[0]) && mins < hmMin(ex.lunch[1])){
+            var lm = hmMin(ex.lunch[1]);
+            var resumeMs = Date.UTC(L.y, L.mo-1, L.day, Math.floor(lm/60), lm%60) - off;
+            st = {status:'lunch', label:'Lunch break \u2014 resumes in ' + fmtDur(resumeMs - nowMs), target: resumeMs, kind:'lunch'};
+        } else {
+            st = {status:'open', label:'Open \u2014 closes in ' + fmtDur(closeMs - nowMs), target: closeMs, kind:'open',
+                  progress: Math.min(100, Math.max(0, (mins - o) / (c - o) * 100))};
+        }
+        st.local = L;
+        return st;
+    }
+
+    var PILL = {
+        open:  ['OPEN', '#34d399'],
+        lunch: ['LUNCH', '#fbbf24'],
+        closed:['CLOSED', '#64748b']
+    };
+
+    function render(){
+        var now = new Date();
+        var board = document.getElementById('board');
+        var strip = document.getElementById('clockStrip');
+        var openN = 0, html = '', chips = '';
+        EXCHANGES.forEach(function(ex){
+            var st = stateOf(ex, now);
+            if (st.status==='open') openN++;
+            var pill = PILL[st.status];
+            var L = st.local;
+            var bar = st.status==='open'
+                ? '<div style="height:5px; border-radius:3px; background:#1e293b; margin-top:10px;"><div style="height:5px; border-radius:3px; width:'+st.progress.toFixed(1)+'%; background:'+pill[1]+';"></div></div>'
+                : '';
+            html += '<div class="resume-card" style="padding:18px;">' +
+                '<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px;">' +
+                '<strong>'+ex.name+'</strong>' +
+                '<span class="tag" style="border-color:'+pill[1]+'; color:'+pill[1]+';">'+pill[0]+'</span></div>' +
+                '<div style="color:var(--text-muted); font-size:.85rem; margin-bottom:8px;">'+ex.city+' \u00b7 '+ex.open+'\u2013'+ex.close+' local' +
+                (ex.lunch ? ' \u00b7 lunch '+ex.lunch[0]+'\u2013'+ex.lunch[1] : '') + '</div>' +
+                '<div style="font-size:1.35rem; font-variant-numeric:tabular-nums; margin-bottom:4px;">'+pad(L.h)+':'+pad(L.mi)+':'+pad(L.s)+'</div>' +
+                '<div style="color:var(--text-muted); font-size:.85rem;">'+st.label+'</div>' + bar + '</div>';
+            chips += '<span class="tag" style="font-variant-numeric:tabular-nums;">'+ex.city+' '+pad(L.h)+':'+pad(L.mi)+'</span>';
+        });
+        board.innerHTML = html;
+        strip.innerHTML = chips;
+        document.getElementById('openCount').textContent = openN + ' of 12 markets open now.';
+    }
+
+    render();
+    setInterval(render, 1000);
+
+    if (window.PortalProgress && PortalProgress.firstCalcToday('market-hours')) PortalProgress.addXP(10, 'Checked market hours');
+
+    window.__marketHours = {stateOf:stateOf, EXCHANGES:EXCHANGES, fmtDur:fmtDur};
+})();
+</script>
+
+    <script src="../js/palette.js"></script>
+    <script src="../js/reveal.js"></script>
+</body>
+</html>
