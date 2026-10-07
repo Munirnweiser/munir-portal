@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Meet munir-bot — the robot bear mascot of the Munir Portal. Origin story, spec sheet, movie, and the official songbook.">
+    <meta property="og:title" content="munir-bot — the robot bear | Munir Nweiser">
+    <meta property="og:description" content="Origin story, spec sheet, movie, and songs of munir-bot, the robot bear who patrols the portal every three minutes.">
+    <meta property="og:type" content="website">
+    <title>munir-bot 🐻 | Munir Nweiser</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .bot-portrait {
+            width: 120px;
+            height: 150px;
+            margin: 0 auto 26px;
+            position: relative;
+            transform: scale(1.9);
+            transform-origin: top center;
+        }
+        .bot-portrait .robo-bear {
+            opacity: 1;
+            position: relative;
+            animation: bot-bob 3s ease-in-out infinite;
+        }
+        @keyframes bot-bob {
+            0%, 100% { transform: translateY(0); }
+            50%      { transform: translateY(-8px); }
+        }
+        .bot-hero-wrap {
+            min-height: 210px;
+        }
+        .spec-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .spec-table td {
+            padding: 10px 6px;
+            border-bottom: 1px solid rgba(148,163,184,0.12);
+            vertical-align: top;
+            line-height: 1.6;
+        }
+        .spec-table td:first-child {
+            color: #7dd3fc;
+            font-weight: 700;
+            white-space: nowrap;
+            padding-right: 18px;
+        }
+        .lyrics {
+            white-space: pre-line;
+            line-height: 1.9;
+            color: #cbd5e1;
+            font-size: 1.02rem;
+        }
+        .lyrics .chorus-label {
+            color: #c4b5fd;
+            font-weight: 700;
+        }
+        .song-media {
+            margin: 18px 0 22px;
+        }
+        .song-media audio,
+        .movie-player video {
+            width: 100%;
+            border-radius: 12px;
+        }
+        .movie-player {
+            margin: 6px 0 10px;
+        }
+        .premiere-note {
+            display: none;
+            text-align: center;
+            padding: 34px 20px;
+            border: 1px dashed rgba(167,139,250,0.35);
+            border-radius: 14px;
+            color: #94a3b8;
+            line-height: 1.7;
+        }
+        .story-drop::first-letter {
+            font-size: 2.6em;
+            color: #7dd3fc;
+            font-weight: 800;
+            float: left;
+            line-height: 0.9;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="fairy-layer" aria-hidden="true"></div>
+
+    <header class="site-header">
+
+        <div class="container nav-container">
+
+            <a href="index.html" class="logo">
+                <span class="logo-mark">MN</span>
+
+                <span class="logo-text">
+                    Munir Nweiser
+                    <small>Capital Markets • Technology</small>
+                </span>
+            </a>
+
+
+            <nav class="main-nav" aria-label="Main navigation">
+
+                <a href="index.html">Home</a>
+                <a href="resume.html">Resume</a>
+                <a href="scientific-calculator.html">Calculator</a>
+                <a href="index.html#markets">Markets</a>
+                <a href="index.html#trading">Trading</a>
+                <a href="index.html#tutorials">Tutorials</a>
+                <a href="roadmap.html">Roadmap</a>
+                <a href="changelog.html">Changelog</a>
+                <a href="index.html#games">Games</a>
+                <a href="index.html#memories">Memories</a>
+
+            </nav>
+
+            <button
+                id="mobile-menu-button"
+                class="mobile-menu-button"
+                type="button"
+                aria-label="Open navigation menu"
+                aria-expanded="false"
+            >
+                ☰
+            </button>
+
+        </div>
+
+    </header>
+
+
+<main class="container" style="padding:120px 0 80px; max-width: 900px;">
+
+    <div class="section-heading">
+        <p class="eyebrow">Site mascot</p>
+        <h2>munir-bot 🐻</h2>
+        <p>The robot bear who keeps this portal running.</p>
+    </div>
+
+    <div class="bot-hero-wrap">
+        <div class="bot-portrait" aria-hidden="true">
+            <div class="robo-bear">
+                <div class="bear-rotor"></div>
+                <div class="bear-mast"></div>
+                <div class="bear-ear bear-ear-left"></div>
+                <div class="bear-ear bear-ear-right"></div>
+                <div class="bear-head"></div>
+                <div class="bear-eye bear-eye-left"></div>
+                <div class="bear-eye bear-eye-right"></div>
+                <div class="bear-snout"></div>
+                <div class="bear-antenna"></div>
+                <div class="bear-arm bear-arm-left"></div>
+                <div class="bear-arm bear-arm-right"></div>
+                <div class="bear-body"></div>
+                <div class="bear-chest"></div>
+                <div class="bear-leg bear-leg-left"></div>
+                <div class="bear-leg bear-leg-right"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ORIGIN STORY -->
+    <div class="resume-card" style="margin-bottom:26px;">
+        <h3 style="margin-bottom:16px;">Origin story</h3>
+        <p class="story-drop" style="color:#cbd5e1; line-height:1.85; margin-bottom:14px;">
+            munir-bot was born at 3 AM in a server room, in the middle of a
+            production incident. The pagers were screaming, the fans were
+            howling, and somewhere in the dark a runaway process was eating
+            memory like it had never been fed. Sixteen gigabytes. Gone.
+            The dashboards bled red. The on-call engineer stared at
+            <span class="formula">top</span> in disbelief.
+        </p>
+        <p style="color:#cbd5e1; line-height:1.85; margin-bottom:14px;">
+            Then the rack doors rattled. A small metal bear clambered out of
+            a decommissioned chassis, eyes glowing cyan, antenna blinking
+            pink, a salvaged cooling fan strapped to his head like a
+            helicopter rotor. He looked at the runaway process. He looked
+            at the engineer. He raised one stubby arm and typed a single
+            command:
+        </p>
+        <p class="formula" style="text-align:center; font-size:1.25rem; margin:20px 0;">
+            kill -9
+        </p>
+        <p style="color:#cbd5e1; line-height:1.85; margin-bottom:14px;">
+            Silence. The memory graph fell off a cliff — in the good way.
+            The dashboards turned green one by one. The engineer, half
+            asleep, whispered: "Who… are you?"
+        </p>
+        <p style="color:#cbd5e1; line-height:1.85; margin-bottom:0;">
+            The bear spun his rotor, rose into the air, did a perfect
+            loop-the-loop between the racks, and said in a voice like a
+            dial-up modem clearing its throat: <strong>"Nobody pages me.
+            I page myself."</strong> He has patrolled ever since — every
+            page of this portal, every three minutes, forever on watch.
+        </p>
+    </div>
+
+    <!-- SPEC SHEET -->
+    <div class="resume-card" style="margin-bottom:26px;">
+        <h3 style="margin-bottom:14px;">Spec sheet</h3>
+        <table class="spec-table">
+            <tr><td>Name</td><td>munir-bot</td></tr>
+            <tr><td>Species</td><td>Robot bear (<em>Ursus metallicus</em>)</td></tr>
+            <tr><td>Born</td><td>3 AM, server room, during a sev-1</td></tr>
+            <tr><td>First kill</td><td>Runaway process, 16 GB RAM — one <span class="formula">kill -9</span></td></tr>
+            <tr><td>Rotor speed</td><td>4,200 RPM (allegedly)</td></tr>
+            <tr><td>Eyes</td><td>Cyan, glow in the dark (#22d3ee)</td></tr>
+            <tr><td>Antenna</td><td>Pink, blinks every 1.2 seconds</td></tr>
+            <tr><td>Patrol interval</td><td>Every ~3 minutes, all pages</td></tr>
+            <tr><td>Signature move</td><td>The loop-the-loop</td></tr>
+            <tr><td>Bugs squashed</td><td>All of them. Eventually.</td></tr>
+            <tr><td>Coffee consumed</td><td>0 — runs on electricity and spite</td></tr>
+            <tr><td>Motto</td><td><strong>"Nobody pages me. I page myself."</strong></td></tr>
+        </table>
+    </div>
+
+    <!-- MOVIE -->
+    <div class="resume-card" style="margin-bottom:26px;">
+        <p class="eyebrow">Coming soon</p>
+        <h3 style="margin-bottom:14px;">munir-bot: The Movie</h3>
+        <div class="movie-player">
+            <video id="bot-movie" controls preload="metadata" playsinline>
+                <source src="videos/munir-bot.mp4" type="video/mp4">
+                Your browser can't play the movie yet — but munir-bot's
+                premiere is coming soon.
+            </video>
+        </div>
+        <div class="premiere-note" id="premiere-note">
+            🎬 <strong>Premiering soon.</strong><br>
+            munir-bot's three-minute epic is still rendering.<br>
+            Check back — the bear always delivers.
+        </div>
+        <p style="color:#94a3b8; font-size:0.85rem; margin-top:10px; line-height:1.6;">
+            A three-minute epic: the 3 AM incident, the kill -9 heard round
+            the data center, and the loop-the-loop that started it all.
+            Destined for Instagram and YouTube.
+        </p>
+    </div>
+
+    <!-- SONGBOOK -->
+    <div class="section-heading" style="margin-top:40px;">
+        <p class="eyebrow">Official soundtrack</p>
+        <h2>The munir-bot Songbook</h2>
+        <p>Three original songs. Sing responsibly.</p>
+    </div>
+
+    <div class="resume-card" style="margin-bottom:26px;">
+        <h3 style="margin-bottom:6px;">1. "Loop-the-Loop" <span class="tag">anthem</span></h3>
+        <div class="song-media">
+            <audio controls preload="none">
+                <source src="videos/munir-bot-theme.mp3" type="audio/mpeg">
+                The anthem recording isn't mixed yet — hum it yourself.
+            </audio>
+        </div>
+        <div class="lyrics">Born at 3 AM in a server room,
+Where the pagers cried and the fans went boom,
+A memory leak was eating the night,
+So I spun my rotor and flew to the fight.
+
+<span class="chorus-label">[Chorus]</span>
+Loop-the-loop! Loop-the-loop!
+Spin that rotor, never stop!
+If the system's down, don't you pout —
+munir-bot will sort it out!
+Loop-the-loop! Loop-the-loop!
+Check the logs and watch the top!
+When the dashboard's flashing red,
+Send the bear — enough said!
+
+My eyes glow cyan in the darkest rack,
+My antenna's pink and my circuits stacked,
+I don't need coffee, I don't need sleep,
+I just watch the queues while the on-call weeps.
+
+<span class="chorus-label">[Chorus]</span>
+Loop-the-loop! Loop-the-loop!
+Spin that rotor, never stop!
+Nobody pages me, you see —
+I page myself. I'm free!</div>
+    </div>
+
+    <div class="resume-card" style="margin-bottom:26px;">
+        <h3 style="margin-bottom:6px;">2. "kill -9 Lullaby" <span class="tag">ballad</span></h3>
+        <p style="color:#94a3b8; font-size:0.85rem; margin-bottom:14px;">
+            🎼 Instrumental TBD — currently performed a cappella by the bear.
+        </p>
+        <div class="lyrics">Hush now, little process, don't you cry,
+munir-bot is here with his kill -9.
+You ate sixteen gigs and you won't let go,
+So it's SIGKILL, baby — off you go.
+
+Sleep now, zombie children of the night,
+Your parent's gone but the server's alright.
+Dream of core dumps in the great beyond —
+munir-bot keeps watch till the dawn.
+
+No more thrashing, no more swap,
+Watch the load average gently drop.
+Close your file descriptors, one by one…
+Goodnight, process. Your run is done.</div>
+    </div>
+
+    <div class="resume-card" style="margin-bottom:26px;">
+        <h3 style="margin-bottom:6px;">3. "Three-Minute Patrol" <span class="tag">marching tune</span></h3>
+        <p style="color:#94a3b8; font-size:0.85rem; margin-bottom:14px;">
+            🎼 Instrumental TBD — best sung while marching between racks.
+        </p>
+        <div class="lyrics">Every three minutes, hear the hum,
+Rotor spinning — here I come!
+Check the frontend, check the queue,
+Make sure the trades are flowing through.
+
+Bob and weave across the screen,
+Keep the portal running clean.
+Loop-the-loop above the fold,
+Never young and never old.
+
+If you blink then you will miss me —
+Back in three! Just wait and see!
+Patrol the pages, guard the site,
+munir-bot is on tonight!</div>
+    </div>
+
+    <!-- SPOT HIM -->
+    <div class="resume-card">
+        <h3 style="margin-bottom:12px;">🔭 Spot him in the wild</h3>
+        <p style="color:#cbd5e1; line-height:1.75; margin-bottom:0;">
+            munir-bot flies across <strong>every page</strong> of this site
+            every <strong>~3 minutes</strong>: he cruises in, does his
+            signature loop-the-loop, hovers to check on you, then dashes
+            off. If you see him — you're witnessing a patrol in progress.
+            Wave back. He can tell.
+        </p>
+    </div>
+
+</main>
+
+    <footer class="site-footer">
+
+        <div class="container footer-content">
+
+            <div>
+
+                <strong>
+                    Munir Nweiser
+                </strong>
+
+                <p>
+                    Application Support • Capital Markets • Technology
+                </p>
+
+            </div>
+
+
+            <div class="footer-links">
+
+                <a href="index.html">Home</a>
+                <a href="resume.html">Resume</a>
+                <a href="index.html#trading">Trading</a>
+                <a href="index.html#tutorials">Tutorials</a>
+
+            </div>
+
+
+            <div>
+
+                <small>
+                    © <span id="current-year"></span>
+                    Munir Nweiser
+                </small>
+
+                <br>
+
+                <small class="visitor-count">
+                    <span id="visitor-count"></span>
+                </small>
+
+                <small class="site-credit">
+                    Designed &amp; built with Muse 🤖
+                </small>
+
+            </div>
+
+        </div>
+
+    </footer>
+
+<script src="app.js"></script>
+<script src="counter.js"></script>
+<script>
+(function () {
+    'use strict';
+    var v = document.getElementById('bot-movie');
+    var note = document.getElementById('premiere-note');
+    if (!v || !note) return;
+    function showNote() {
+        v.style.display = 'none';
+        note.style.display = 'block';
+    }
+    v.addEventListener('error', showNote, true);
+    var src = v.querySelector('source');
+    if (src) src.addEventListener('error', showNote);
+    /* If the file 404s, the player stays empty — check after load */
+    window.addEventListener('load', function () {
+        setTimeout(function () {
+            if (v.readyState === 0 && v.networkState === 3) showNote();
+        }, 2500);
+    });
+})();
+</script>
+</body>
+</html>
