@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NPV and IRR calculator — Munir Nweiser, Capital Markets portal">
+    <title>NPV &amp; IRR | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .comment-form select {
+            width: 100%; padding: 12px 13px;
+            border: 1px solid rgba(148,163,184,0.18); border-radius: 10px;
+            outline: none; background: rgba(0,0,0,0.18); color: white;
+        }
+        .comment-form select option { background: #0d192c; }
+        .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+        .result-body strong { color: var(--cyan); }
+        .result-body .big { font-size: 1.5rem; color: #fff; font-weight: 800; }
+        .formula-note { color: var(--text-muted); font-size: 0.82rem; margin-top: 12px; }
+        #resultCard { margin-top: 16px; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container" style="padding:120px 0 80px">
+    <p class="eyebrow">CFA Learning Lab</p>
+    <div class="section-heading">
+        <h2>NPV &amp; IRR</h2>
+        <p>Net present value of a cash-flow series at your discount rate, and the internal rate of return — the discount rate that makes NPV equal zero, found by bisection.</p>
+    </div>
+
+    <div class="resume-card">
+        <form class="comment-form" id="npvForm">
+            <label for="rate">Discount rate (%)</label>
+            <input type="number" id="rate" value="10" step="any">
+
+            <label for="cfs">Cash flows — one per line, period 0 first (negative = outflow)</label>
+            <textarea id="cfs" rows="7">-1000
+300
+400
+500</textarea>
+
+            <div class="btn-row">
+                <button class="btn btn-primary" type="submit">Compute</button>
+                <button class="btn btn-secondary" type="reset">Reset</button>
+            </div>
+            <p class="form-status" id="err" style="display:none"></p>
+        </form>
+    </div>
+
+    <div class="resume-card" id="resultCard" hidden>
+        <h3>Result</h3>
+        <div class="result-body"></div>
+    </div>
+
+    <div class="resume-card" style="margin-top:16px">
+        <h3>Formulas</h3>
+        <p>NPV = &Sigma; CF<sub>t</sub> / (1+r)<sup>t</sup> &nbsp;&nbsp;for t = 0 &hellip; n</p>
+        <p>IRR is the rate r* such that NPV(r*) = 0. It is found here by bisection on the interval (&minus;99.99%, +1000%+), expanding upward if no sign change is detected.</p>
+        <p class="formula-note">A project can have multiple IRRs (or none) when cash flows change sign more than once. NPV remains the decision rule: accept when NPV &gt; 0.</p>
+    </div>
+
+    <p style="margin-top:18px"><a class="btn btn-secondary" href="../calculators.html">&larr; All calculators</a></p>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+<script>
+(function () {
+    'use strict';
+
+    function $(id) { return document.getElementById(id); }
+    function fmt(x, d) {
+        d = (d === undefined) ? 4 : d;
+        if (!Number.isFinite(x)) return '—';
+        var r = Number(x.toPrecision(10));
+        if (Object.is(r, -0)) r = 0;
+        return r.toLocaleString('en-US', { maximumFractionDigits: d });
+    }
+    function err(msg) {
+        var e = $('err');
+        if (msg) { e.textContent = msg; e.style.display = 'block'; e.style.color = 'var(--red)'; }
+        else { e.textContent = ''; e.style.display = 'none'; }
+    }
+    function showResult(html) {
+        var c = $('resultCard');
+        c.hidden = false;
+        c.querySelector('.result-body').innerHTML = html;
+        c.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function npv(cfs, r) {
+        var total = 0;
+        for (var t = 0; t < cfs.length; t++) total += cfs[t] / Math.pow(1 + r, t);
+        return total;
+    }
+
+    function irr(cfs) {
+        var f = function (r) { return npv(cfs, r); };
+        var lo = -0.9999, hi = 10, flo = f(lo), fhi = f(hi), guard = 0;
+        while (Number.isFinite(flo) && Number.isFinite(fhi) && (flo < 0) === (fhi < 0) && guard < 30) {
+            hi *= 2; fhi = f(hi); guard++;
+        }
+        if (!Number.isFinite(flo) || !Number.isFinite(fhi) || (flo < 0) === (fhi < 0)) return NaN;
+        for (var k = 0; k < 200; k++) {
+            var mid = (lo + hi) / 2, fm = f(mid);
+            if (!Number.isFinite(fm)) return NaN;
+            if (Math.abs(fm) < 1e-10 || (hi - lo) < 1e-12) return mid;
+            if ((flo < 0) === (fm < 0)) { lo = mid; flo = fm; } else { hi = mid; }
+        }
+        return (lo + hi) / 2;
+    }
+
+    $('npvForm').addEventListener('reset', function () {
+        setTimeout(function () { $('resultCard').hidden = true; err(null); }, 0);
+    });
+
+    $('npvForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        err(null);
+        var r = parseFloat($('rate').value) / 100;
+        if (!Number.isFinite(r) || r <= -1) { err('Discount rate must be a number greater than -100%.'); return; }
+
+        var lines = $('cfs').value.split('\n');
+        var cfs = [];
+        for (var i = 0; i < lines.length; i++) {
+            var t = lines[i].trim();
+            if (t === '') continue;
+            var v = parseFloat(t);
+            if (!Number.isFinite(v)) { err('Line ' + (i + 1) + ' is not a valid number: "' + t + '"'); return; }
+            cfs.push(v);
+        }
+        if (cfs.length < 2) { err('Enter at least two cash flows (e.g. an initial outflow and one inflow).'); return; }
+
+        var n = npv(cfs, r);
+        var ir = irr(cfs);
+
+        var html = '<ul class="clean-list">' +
+            '<li>NPV at ' + fmt(r * 100, 2) + '% = <strong>' + fmt(n, 2) + '</strong></li>' +
+            '<li>IRR = <strong>' + (Number.isFinite(ir) ? fmt(ir * 100, 4) + '%' : 'not found in (&minus;100%, +large)') + '</strong></li>' +
+            '<li>Periods evaluated: <strong>' + cfs.length + '</strong> (t = 0&hellip;' + (cfs.length - 1) + ')</li>' +
+            '</ul>' +
+            '<p class="formula-note">Decision: ' +
+            (n > 0 ? 'NPV &gt; 0 — the project adds value at this discount rate.' :
+             n < 0 ? 'NPV &lt; 0 — the project destroys value at this discount rate.' :
+                     'NPV = 0 — the project breaks even at this discount rate.') + '</p>';
+        showResult(html);
+    });
+})();
+</script>
+</body>
+</html>

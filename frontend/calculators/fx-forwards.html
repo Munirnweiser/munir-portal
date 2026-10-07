@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="FX forward rate calculator — Munir Nweiser, Capital Markets portal">
+    <title>FX Forwards | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+        .result-body strong { color: var(--cyan); }
+        .result-body .big { font-size: 1.5rem; color: #fff; font-weight: 800; }
+        .formula-note { color: var(--text-muted); font-size: 0.82rem; margin-top: 12px; }
+        #resultCard { margin-top: 16px; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container" style="padding:120px 0 80px">
+    <p class="eyebrow">CFA Learning Lab</p>
+    <div class="section-heading">
+        <h2>FX Forward Rate</h2>
+        <p>The outright forward rate from covered interest rate parity: borrow in one currency, convert spot, invest in the other, and lock the reverse conversion.</p>
+    </div>
+
+    <div class="resume-card">
+        <form class="comment-form" id="fxForm">
+            <label for="spot">Spot rate S (quote currency per 1 unit of base, e.g. USD per EUR)</label>
+            <input type="number" id="spot" value="1.10" step="any" min="0">
+
+            <label for="rdom">Quote currency interest rate, annual (%, e.g. USD)</label>
+            <input type="number" id="rdom" value="3" step="any">
+
+            <label for="rfor">Base currency interest rate, annual (%, e.g. EUR)</label>
+            <input type="number" id="rfor" value="1" step="any">
+
+            <label for="days">Tenor (days)</label>
+            <input type="number" id="days" value="365" step="any" min="0">
+
+            <div class="btn-row">
+                <button class="btn btn-primary" type="submit">Compute</button>
+                <button class="btn btn-secondary" type="reset">Reset</button>
+            </div>
+            <p class="form-status" id="err" style="display:none"></p>
+        </form>
+    </div>
+
+    <div class="resume-card" id="resultCard" hidden>
+        <h3>Result</h3>
+        <div class="result-body"></div>
+    </div>
+
+    <div class="resume-card" style="margin-top:16px">
+        <h3>Formula</h3>
+        <p>F = S &middot; (1 + r<sub>quote</sub>&middot;T) / (1 + r<sub>base</sub>&middot;T)</p>
+        <p class="formula-note">Discrete compounding with a 360-day money-market year (T = days / 360). The continuous-time equivalent is F = S&middot;e<sup>(r<sub>quote</sub>&minus;r<sub>base</sub>)T</sup>. When the quote-currency rate exceeds the base-currency rate, the forward trades at a premium to spot; otherwise at a discount. Forward points are quoted as (F &minus; S) &times; 10,000.</p>
+    </div>
+
+    <p style="margin-top:18px"><a class="btn btn-secondary" href="../calculators.html">&larr; All calculators</a></p>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+<script>
+(function () {
+    'use strict';
+
+    function $(id) { return document.getElementById(id); }
+    function fmt(x, d) {
+        d = (d === undefined) ? 4 : d;
+        if (!Number.isFinite(x)) return '—';
+        var r = Number(x.toPrecision(10));
+        if (Object.is(r, -0)) r = 0;
+        return r.toLocaleString('en-US', { maximumFractionDigits: d });
+    }
+    function err(msg) {
+        var e = $('err');
+        if (msg) { e.textContent = msg; e.style.display = 'block'; e.style.color = 'var(--red)'; }
+        else { e.textContent = ''; e.style.display = 'none'; }
+    }
+    function showResult(html) {
+        var c = $('resultCard');
+        c.hidden = false;
+        c.querySelector('.result-body').innerHTML = html;
+        c.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    $('fxForm').addEventListener('reset', function () {
+        setTimeout(function () { $('resultCard').hidden = true; err(null); }, 0);
+    });
+
+    $('fxForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        err(null);
+        var S = parseFloat($('spot').value),
+            rd = parseFloat($('rdom').value) / 100,
+            rf = parseFloat($('rfor').value) / 100,
+            days = parseFloat($('days').value);
+
+        if (![S, rd, rf, days].every(Number.isFinite)) {
+            err('Please enter valid numbers for all fields.'); return;
+        }
+        if (S <= 0) { err('Spot rate must be positive.'); return; }
+        if (days < 0) { err('Tenor cannot be negative.'); return; }
+        if (rd <= -1 || rf <= -1) { err('Rates must be greater than -100%.'); return; }
+
+        var T = days / 360;
+        var F = S * (1 + rd * T) / (1 + rf * T);
+        var points = (F - S) * 10000;
+        var state = points > 0.005 ? 'premium' : points < -0.005 ? 'discount' : 'flat to spot';
+
+        showResult(
+            '<p class="big">' + fmt(F, 4) + '</p>' +
+            '<ul class="clean-list">' +
+            '<li>Forward outright F = <strong>' + fmt(F, 4) + '</strong></li>' +
+            '<li>Forward points = <strong>' + fmt(points, 1) + ' pips</strong> (' + state + ')</li>' +
+            '<li>Tenor T = <strong>' + fmt(T, 4) + ' years</strong> (' + fmt(days, 0) + ' days / 360)</li>' +
+            '<li>Rate differential (quote &minus; base) = <strong>' + fmt((rd - rf) * 100, 3) + '%</strong></li>' +
+            '</ul>'
+        );
+    });
+})();
+</script>
+</body>
+</html>

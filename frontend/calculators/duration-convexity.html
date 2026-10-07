@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Bond duration and convexity calculator — Munir Nweiser, Capital Markets portal">
+    <title>Duration &amp; Convexity | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .comment-form select {
+            width: 100%; padding: 12px 13px;
+            border: 1px solid rgba(148,163,184,0.18); border-radius: 10px;
+            outline: none; background: rgba(0,0,0,0.18); color: white;
+        }
+        .comment-form select option { background: #0d192c; }
+        .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+        .result-body strong { color: var(--cyan); }
+        .result-body .big { font-size: 1.5rem; color: #fff; font-weight: 800; }
+        .formula-note { color: var(--text-muted); font-size: 0.82rem; margin-top: 12px; }
+        #resultCard { margin-top: 16px; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container" style="padding:120px 0 80px">
+    <p class="eyebrow">CFA Learning Lab</p>
+    <div class="section-heading">
+        <h2>Duration &amp; Convexity</h2>
+        <p>Interest-rate risk measures for a fixed-coupon bond: Macaulay duration (weighted average time to cash flows), modified duration (first-order price sensitivity) and convexity (second-order curvature).</p>
+    </div>
+
+    <div class="resume-card">
+        <form class="comment-form" id="durForm">
+            <label for="face">Face (par) value</label>
+            <input type="number" id="face" value="1000" step="any" min="0">
+
+            <label for="coupon">Annual coupon rate (%)</label>
+            <input type="number" id="coupon" value="5" step="any" min="0">
+
+            <label for="years">Years to maturity</label>
+            <input type="number" id="years" value="10" step="any" min="0">
+
+            <label for="freq">Coupon payments per year</label>
+            <select id="freq">
+                <option value="1">Annual (1)</option>
+                <option value="2" selected>Semi-annual (2)</option>
+                <option value="4">Quarterly (4)</option>
+                <option value="12">Monthly (12)</option>
+            </select>
+
+            <label for="ytm">Yield to maturity, annual (%)</label>
+            <input type="number" id="ytm" value="6" step="any">
+
+            <div class="btn-row">
+                <button class="btn btn-primary" type="submit">Compute</button>
+                <button class="btn btn-secondary" type="reset">Reset</button>
+            </div>
+            <p class="form-status" id="err" style="display:none"></p>
+        </form>
+    </div>
+
+    <div class="resume-card" id="resultCard" hidden>
+        <h3>Result</h3>
+        <div class="result-body"></div>
+    </div>
+
+    <div class="resume-card" style="margin-top:16px">
+        <h3>Formulas</h3>
+        <p>Macaulay duration = &Sigma; t&middot;w<sub>t</sub> &nbsp;&nbsp;·&nbsp;&nbsp; Modified duration = Macaulay / (1+y) &nbsp;&nbsp;·&nbsp;&nbsp; Convexity = &Sigma; t(t+1)&middot;w<sub>t</sub> / (1+y)<sup>2</sup></p>
+        <p>where w<sub>t</sub> = PV(CF<sub>t</sub>) / price is the present-value weight of each cash flow and y is the periodic yield. Durations are annualised by dividing by the payment frequency; convexity by the square of the frequency.</p>
+        <p class="formula-note">Interpretation: a modified duration of D means the bond price moves roughly &minus;D &times; &Delta;y for a small yield change &Delta;y. DV01 is the cash change for a 1&nbsp;bp move. Convexity refines the estimate for larger moves: &Delta;P/P &asymp; &minus;D<sub>mod</sub>&Delta;y + &frac12;&middot;Convexity&middot;(&Delta;y)<sup>2</sup>.</p>
+    </div>
+
+    <p style="margin-top:18px"><a class="btn btn-secondary" href="../calculators.html">&larr; All calculators</a></p>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+<script>
+(function () {
+    'use strict';
+
+    function $(id) { return document.getElementById(id); }
+    function fmt(x, d) {
+        d = (d === undefined) ? 4 : d;
+        if (!Number.isFinite(x)) return '—';
+        var r = Number(x.toPrecision(10));
+        if (Object.is(r, -0)) r = 0;
+        return r.toLocaleString('en-US', { maximumFractionDigits: d });
+    }
+    function err(msg) {
+        var e = $('err');
+        if (msg) { e.textContent = msg; e.style.display = 'block'; e.style.color = 'var(--red)'; }
+        else { e.textContent = ''; e.style.display = 'none'; }
+    }
+    function showResult(html) {
+        var c = $('resultCard');
+        c.hidden = false;
+        c.querySelector('.result-body').innerHTML = html;
+        c.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    $('durForm').addEventListener('reset', function () {
+        setTimeout(function () { $('resultCard').hidden = true; err(null); }, 0);
+    });
+
+    $('durForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        err(null);
+        var face = parseFloat($('face').value),
+            couponPct = parseFloat($('coupon').value),
+            years = parseFloat($('years').value),
+            ytmPct = parseFloat($('ytm').value),
+            m = parseInt($('freq').value, 10);
+
+        if (![face, couponPct, years, ytmPct].every(Number.isFinite) ||
+            face <= 0 || couponPct < 0 || years <= 0 || !(m >= 1)) {
+            err('Please enter valid positive numbers for all fields.'); return;
+        }
+        if (ytmPct <= -100) { err('Yield must be greater than -100%.'); return; }
+
+        var cpn = face * couponPct / 100 / m;
+        var n = Math.round(years * m);
+        if (n < 1) { err('Maturity must span at least one coupon period.'); return; }
+        var y = ytmPct / 100 / m;
+
+        var price = 0, macNum = 0, convNum = 0;
+        for (var t = 1; t <= n; t++) {
+            var cf = (t === n) ? cpn + face : cpn;
+            var pv = cf / Math.pow(1 + y, t);
+            price += pv;
+            macNum += t * pv;
+            convNum += t * (t + 1) * pv;
+        }
+        if (!(price > 0)) { err('Could not price this bond with the given yield.'); return; }
+
+        var macPer = macNum / price;              // Macaulay, in periods
+        var modPer = macPer / (1 + y);            // modified, in periods
+        var convPer = convNum / price / Math.pow(1 + y, 2); // convexity, in periods^2
+
+        var macY = macPer / m, modY = modPer / m, convY = convPer / (m * m);
+        var dv01 = modY * price / 10000;
+
+        showResult(
+            '<ul class="clean-list">' +
+            '<li>Bond price = <strong>' + fmt(price, 2) + '</strong></li>' +
+            '<li>Macaulay duration = <strong>' + fmt(macY, 4) + ' years</strong></li>' +
+            '<li>Modified duration = <strong>' + fmt(modY, 4) + ' years</strong></li>' +
+            '<li>Convexity = <strong>' + fmt(convY, 4) + '</strong></li>' +
+            '<li>DV01 = <strong>' + fmt(dv01, 4) + '</strong> per 1 bp move</li>' +
+            '</ul>' +
+            '<p class="formula-note">Example: a +100 bp yield shock moves the price by roughly ' +
+            '&minus;' + fmt(modY * 0.01 * 100, 3) + '% (duration) plus ' +
+            '+' + fmt(0.5 * convY * 0.01 * 0.01 * 100, 3) + '% (convexity).</p>'
+        );
+    });
+})();
+</script>
+</body>
+</html>

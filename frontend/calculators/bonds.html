@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Bond price and yield-to-maturity calculator — Munir Nweiser, Capital Markets portal">
+    <title>Bond Price &amp; YTM | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .comment-form select {
+            width: 100%; padding: 12px 13px;
+            border: 1px solid rgba(148,163,184,0.18); border-radius: 10px;
+            outline: none; background: rgba(0,0,0,0.18); color: white;
+        }
+        .comment-form select option { background: #0d192c; }
+        .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+        .result-body strong { color: var(--cyan); }
+        .result-body .big { font-size: 1.5rem; color: #fff; font-weight: 800; }
+        .formula-note { color: var(--text-muted); font-size: 0.82rem; margin-top: 12px; }
+        #resultCard { margin-top: 16px; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container" style="padding:120px 0 80px">
+    <p class="eyebrow">CFA Learning Lab</p>
+    <div class="section-heading">
+        <h2>Bond Price &amp; Yield to Maturity</h2>
+        <p>Price a fixed-coupon bond by discounting every cash flow at the yield, or back out the yield-to-maturity implied by a market price (bisection).</p>
+    </div>
+
+    <div class="resume-card">
+        <form class="comment-form" id="bondForm">
+            <label for="mode">Mode</label>
+            <select id="mode">
+                <option value="price" selected>Price the bond from a yield</option>
+                <option value="ytm">Solve for YTM from a market price</option>
+            </select>
+
+            <label for="face">Face (par) value</label>
+            <input type="number" id="face" value="1000" step="any" min="0">
+
+            <label for="coupon">Annual coupon rate (%)</label>
+            <input type="number" id="coupon" value="5" step="any" min="0">
+
+            <label for="years">Years to maturity</label>
+            <input type="number" id="years" value="10" step="any" min="0">
+
+            <label for="freq">Coupon payments per year</label>
+            <select id="freq">
+                <option value="1">Annual (1)</option>
+                <option value="2" selected>Semi-annual (2)</option>
+                <option value="4">Quarterly (4)</option>
+                <option value="12">Monthly (12)</option>
+            </select>
+
+            <div id="yieldWrap">
+                <label for="ytmIn">Yield to maturity, annual (%)</label>
+                <input type="number" id="ytmIn" value="6" step="any">
+            </div>
+            <div id="priceWrap" style="display:none">
+                <label for="priceIn">Market price (clean)</label>
+                <input type="number" id="priceIn" value="925.61" step="any" min="0">
+            </div>
+
+            <div class="btn-row">
+                <button class="btn btn-primary" type="submit">Compute</button>
+                <button class="btn btn-secondary" type="reset">Reset</button>
+            </div>
+            <p class="form-status" id="err" style="display:none"></p>
+        </form>
+    </div>
+
+    <div class="resume-card" id="resultCard" hidden>
+        <h3>Result</h3>
+        <div class="result-body"></div>
+    </div>
+
+    <div class="resume-card" style="margin-top:16px">
+        <h3>Formula</h3>
+        <p>P = &Sigma; C/(1+y)<sup>t</sup> + F/(1+y)<sup>n</sup> &nbsp;&nbsp;for t = 1 &hellip; n</p>
+        <p>where C is the periodic coupon, F the face value, y the periodic yield and n the number of periods. YTM is the value of y that makes this price equal the observed market price.</p>
+        <p class="formula-note">Clean price is shown (accrued interest excluded). A bond priced below par trades at a discount; above par, at a premium.</p>
+    </div>
+
+    <p style="margin-top:18px"><a class="btn btn-secondary" href="../calculators.html">&larr; All calculators</a></p>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+<script>
+(function () {
+    'use strict';
+
+    function $(id) { return document.getElementById(id); }
+    function num(id) { return parseFloat($(id).value); }
+    function fmt(x, d) {
+        d = (d === undefined) ? 4 : d;
+        if (!Number.isFinite(x)) return '—';
+        var r = Number(x.toPrecision(10));
+        if (Object.is(r, -0)) r = 0;
+        return r.toLocaleString('en-US', { maximumFractionDigits: d });
+    }
+    function err(msg) {
+        var e = $('err');
+        if (msg) { e.textContent = msg; e.style.display = 'block'; e.style.color = 'var(--red)'; }
+        else { e.textContent = ''; e.style.display = 'none'; }
+    }
+    function showResult(html) {
+        var c = $('resultCard');
+        c.hidden = false;
+        c.querySelector('.result-body').innerHTML = html;
+        c.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // Price given periodic yield y (as a decimal).
+    function bondPrice(face, cpn, y, n) {
+        if (y === 0) return cpn * n + face;
+        var df = 1 / (1 + y);
+        var annuity = (1 - Math.pow(df, n)) / y;
+        return cpn * annuity + face * Math.pow(df, n);
+    }
+
+    function refreshMode() {
+        var priceMode = $('mode').value === 'price';
+        $('yieldWrap').style.display = priceMode ? 'block' : 'none';
+        $('priceWrap').style.display = priceMode ? 'none' : 'block';
+    }
+    $('mode').addEventListener('change', refreshMode);
+
+    $('bondForm').addEventListener('reset', function () {
+        setTimeout(function () { refreshMode(); $('resultCard').hidden = true; err(null); }, 0);
+    });
+
+    $('bondForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        err(null);
+        var priceMode = $('mode').value === 'price';
+        var face = num('face'), couponPct = num('coupon'), years = num('years');
+        var m = parseInt($('freq').value, 10);
+        var ytmPct = num('ytmIn'), target = num('priceIn');
+
+        var need = [face, couponPct, years];
+        if (priceMode) need.push(ytmPct); else need.push(target);
+        if (!need.every(Number.isFinite) || face <= 0 || couponPct < 0 || years <= 0 || !(m >= 1)) {
+            err('Please enter valid positive numbers for all fields.'); return;
+        }
+
+        var cpn = face * couponPct / 100 / m;
+        var n = Math.round(years * m);
+        if (n < 1) { err('Maturity must span at least one coupon period.'); return; }
+
+        if (priceMode) {
+            if (ytmPct <= -100) { err('Yield must be greater than -100%.'); return; }
+            var y = ytmPct / 100 / m;
+            var p = bondPrice(face, cpn, y, n);
+            var status = Math.abs(p - face) < 0.005 ? 'at par' : (p < face ? 'at a discount' : 'at a premium');
+            showResult(
+                '<p class="big">' + fmt(p, 2) + '</p>' +
+                '<ul class="clean-list">' +
+                '<li>Periodic coupon = <strong>' + fmt(cpn, 4) + '</strong></li>' +
+                '<li>Periods n = <strong>' + n + '</strong>, periodic yield = <strong>' + fmt(y * 100, 4) + '%</strong></li>' +
+                '<li>The bond trades <strong>' + status + '</strong> (par = ' + fmt(face, 2) + ')</li>' +
+                '</ul>'
+            );
+        } else {
+            if (target <= 0) { err('Market price must be positive.'); return; }
+            var f = function (yy) { return bondPrice(face, cpn, yy, n) - target; };
+            var lo = -0.99, hi = 5, flo = f(lo), fhi = f(hi), guard = 0;
+            while (Number.isFinite(flo) && Number.isFinite(fhi) && (flo < 0) === (fhi < 0) && guard < 30) {
+                hi *= 2; fhi = f(hi); guard++;
+            }
+            if (!Number.isFinite(flo) || !Number.isFinite(fhi) || (flo < 0) === (fhi < 0)) {
+                err('No yield solves this price in a reasonable range.'); return;
+            }
+            var yy = NaN;
+            for (var k = 0; k < 200; k++) {
+                var mid = (lo + hi) / 2, fm = f(mid);
+                if (!Number.isFinite(fm)) break;
+                if (Math.abs(fm) < 1e-8 || (hi - lo) < 1e-12) { yy = mid; break; }
+                if ((flo < 0) === (fm < 0)) { lo = mid; flo = fm; } else { hi = mid; }
+            }
+            if (!Number.isFinite(yy)) { err('The solver did not converge.'); return; }
+            var annual = yy * m * 100;
+            showResult(
+                '<p class="big">' + fmt(annual, 4) + '%</p>' +
+                '<ul class="clean-list">' +
+                '<li>Yield to maturity (annual, ' + m + '&times; compounding) = <strong>' + fmt(annual, 4) + '%</strong></li>' +
+                '<li>Periodic yield = <strong>' + fmt(yy * 100, 4) + '%</strong></li>' +
+                '<li>Check: price at this yield = <strong>' + fmt(bondPrice(face, cpn, yy, n), 2) + '</strong></li>' +
+                '</ul>'
+            );
+        }
+    });
+
+    refreshMode();
+})();
+</script>
+</body>
+</html>

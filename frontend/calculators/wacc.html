@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="WACC calculator — Munir Nweiser, Capital Markets portal">
+    <title>WACC | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+        .result-body strong { color: var(--cyan); }
+        .result-body .big { font-size: 1.5rem; color: #fff; font-weight: 800; }
+        .formula-note { color: var(--text-muted); font-size: 0.82rem; margin-top: 12px; }
+        #resultCard { margin-top: 16px; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container" style="padding:120px 0 80px">
+    <p class="eyebrow">CFA Learning Lab</p>
+    <div class="section-heading">
+        <h2>WACC — Weighted Average Cost of Capital</h2>
+        <p>The blended cost of a firm's financing: equity and debt weighted by market value, with debt adjusted for the tax shield on interest.</p>
+    </div>
+
+    <div class="resume-card">
+        <form class="comment-form" id="waccForm">
+            <label for="eq">Market value of equity (E)</label>
+            <input type="number" id="eq" value="600" step="any" min="0">
+
+            <label for="debt">Market value of debt (D)</label>
+            <input type="number" id="debt" value="400" step="any" min="0">
+
+            <label for="re">Cost of equity R<sub>e</sub> (%)</label>
+            <input type="number" id="re" value="10" step="any">
+
+            <label for="rd">Pre-tax cost of debt R<sub>d</sub> (%)</label>
+            <input type="number" id="rd" value="5" step="any">
+
+            <label for="tax">Corporate tax rate T<sub>c</sub> (%)</label>
+            <input type="number" id="tax" value="30" step="any" min="0" max="100">
+
+            <div class="btn-row">
+                <button class="btn btn-primary" type="submit">Compute</button>
+                <button class="btn btn-secondary" type="reset">Reset</button>
+            </div>
+            <p class="form-status" id="err" style="display:none"></p>
+        </form>
+    </div>
+
+    <div class="resume-card" id="resultCard" hidden>
+        <h3>Result</h3>
+        <div class="result-body"></div>
+    </div>
+
+    <div class="resume-card" style="margin-top:16px">
+        <h3>Formula</h3>
+        <p>WACC = (E/V)&middot;R<sub>e</sub> + (D/V)&middot;R<sub>d</sub>&middot;(1 &minus; T<sub>c</sub>), &nbsp;where V = E + D</p>
+        <p class="formula-note">Weights use market values, not book values. Debt is cheaper than equity and its after-tax cost R<sub>d</sub>(1&minus;T<sub>c</sub>) reflects the tax deductibility of interest — the reason leverage lowers WACC up to the point where distress costs dominate.</p>
+    </div>
+
+    <p style="margin-top:18px"><a class="btn btn-secondary" href="../calculators.html">&larr; All calculators</a></p>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+<script>
+(function () {
+    'use strict';
+
+    function $(id) { return document.getElementById(id); }
+    function fmt(x, d) {
+        d = (d === undefined) ? 4 : d;
+        if (!Number.isFinite(x)) return '—';
+        var r = Number(x.toPrecision(10));
+        if (Object.is(r, -0)) r = 0;
+        return r.toLocaleString('en-US', { maximumFractionDigits: d });
+    }
+    function err(msg) {
+        var e = $('err');
+        if (msg) { e.textContent = msg; e.style.display = 'block'; e.style.color = 'var(--red)'; }
+        else { e.textContent = ''; e.style.display = 'none'; }
+    }
+    function showResult(html) {
+        var c = $('resultCard');
+        c.hidden = false;
+        c.querySelector('.result-body').innerHTML = html;
+        c.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    $('waccForm').addEventListener('reset', function () {
+        setTimeout(function () { $('resultCard').hidden = true; err(null); }, 0);
+    });
+
+    $('waccForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        err(null);
+        var E = parseFloat($('eq').value),
+            D = parseFloat($('debt').value),
+            Re = parseFloat($('re').value),
+            Rd = parseFloat($('rd').value),
+            Tc = parseFloat($('tax').value);
+        if (![E, D, Re, Rd, Tc].every(Number.isFinite)) {
+            err('Please enter valid numbers for all fields.'); return;
+        }
+        if (E < 0 || D < 0) { err('Market values cannot be negative.'); return; }
+        var V = E + D;
+        if (V <= 0) { err('Total firm value (E + D) must be positive.'); return; }
+        if (Tc < 0 || Tc > 100) { err('Tax rate must be between 0 and 100%.'); return; }
+
+        var wE = E / V, wD = D / V;
+        var afterTaxRd = Rd * (1 - Tc / 100);
+        var wacc = wE * Re + wD * afterTaxRd;
+
+        showResult(
+            '<p class="big">' + fmt(wacc, 4) + '%</p>' +
+            '<ul class="clean-list">' +
+            '<li>WACC = <strong>' + fmt(wacc, 4) + '%</strong></li>' +
+            '<li>Equity weight E/V = <strong>' + fmt(wE * 100, 2) + '%</strong> &times; R<sub>e</sub> ' + fmt(Re, 2) + '% = ' + fmt(wE * Re, 4) + '%</li>' +
+            '<li>Debt weight D/V = <strong>' + fmt(wD * 100, 2) + '%</strong> &times; after-tax R<sub>d</sub> ' + fmt(afterTaxRd, 4) + '% = ' + fmt(wD * afterTaxRd, 4) + '%</li>' +
+            '</ul>'
+        );
+    });
+})();
+</script>
+</body>
+</html>

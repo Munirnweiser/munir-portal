@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CFA financial calculators — Munir Nweiser, Capital Markets portal">
+    <title>CFA Calculators | Munir Nweiser</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .calc-hub-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .calc-hub-grid .feature-card { display: flex; flex-direction: column; }
+        .calc-hub-grid .feature-card p { flex: 1; margin-bottom: 18px; }
+        .calc-hub-grid .btn { align-self: flex-start; }
+        @media (max-width: 700px) { .calc-hub-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="index.html">Home</a><a href="resume.html">Resume</a><a href="scientific-calculator.html">Calculator</a><a href="index.html#markets">Markets</a><a href="index.html#trading">Trading</a><a href="index.html#tutorials">Tutorials</a><a href="index.html#games">Games</a><a href="index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container" style="padding:120px 0 80px">
+    <p class="eyebrow">CFA Learning Lab</p>
+    <div class="section-heading">
+        <h2>Financial Calculators</h2>
+        <p>Interactive implementations of the core CFA quantitative methods — time value of money, fixed income, portfolio theory and derivatives. Each page shows the formula it applies.</p>
+    </div>
+
+    <div class="calc-hub-grid">
+        <div class="feature-card">
+            <span class="feature-icon">&#931;</span>
+            <h3>Scientific Calculator</h3>
+            <p>Full expression entry with trigonometry, logarithms, powers and parentheses.</p>
+            <a class="btn btn-secondary" href="scientific-calculator.html">Open</a>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">FV</span>
+            <h3>Time Value of Money</h3>
+            <p>Solve for future value, present value, payment, number of periods or interest rate.</p>
+            <a class="btn btn-secondary" href="calculators/tvm.html">Open</a>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">NPV</span>
+            <h3>NPV &amp; IRR</h3>
+            <p>Net present value of a cash-flow series and the internal rate of return via bisection.</p>
+            <a class="btn btn-secondary" href="calculators/npv-irr.html">Open</a>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">P</span>
+            <h3>Bond Price &amp; YTM</h3>
+            <p>Price a coupon bond from yield, or back out yield-to-maturity from a market price.</p>
+            <a class="btn btn-secondary" href="calculators/bonds.html">Open</a>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">D</span>
+            <h3>Duration &amp; Convexity</h3>
+            <p>Macaulay duration, modified duration and convexity for interest-rate risk.</p>
+            <a class="btn btn-secondary" href="calculators/duration-convexity.html">Open</a>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">&beta;</span>
+            <h3>CAPM</h3>
+            <p>Expected return from the Capital Asset Pricing Model given beta and the market premium.</p>
+            <a class="btn btn-secondary" href="calculators/capm.html">Open</a>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">W</span>
+            <h3>WACC</h3>
+            <p>Weighted average cost of capital from equity, debt and the tax shield.</p>
+            <a class="btn btn-secondary" href="calculators/wacc.html">Open</a>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">&sigma;</span>
+            <h3>Portfolio Risk &amp; Return</h3>
+            <p>Two-asset portfolio expected return and volatility with correlation.</p>
+            <a class="btn btn-secondary" href="calculators/portfolio.html">Open</a>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">S</span>
+            <h3>Sharpe Ratio</h3>
+            <p>Risk-adjusted return: excess return per unit of volatility.</p>
+            <a class="btn btn-secondary" href="calculators/sharpe.html">Open</a>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">FX</span>
+            <h3>FX Forwards</h3>
+            <p>Forward exchange rate from covered interest rate parity.</p>
+            <a class="btn btn-secondary" href="calculators/fx-forwards.html">Open</a>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">&Delta;</span>
+            <h3>Option Payoffs</h3>
+            <p>Expiry payoff diagrams for long/short calls and puts, with breakeven points.</p>
+            <a class="btn btn-secondary" href="calculators/options.html">Open</a>
+        </div>
+    </div>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="index.html">Home</a><a href="resume.html">Resume</a><a href="index.html#trading">Trading</a><a href="index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="app.js"></script>
+</body>
+</html>

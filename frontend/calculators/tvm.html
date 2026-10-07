@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Time value of money calculator — Munir Nweiser, Capital Markets portal">
+    <title>Time Value of Money | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .comment-form select {
+            width: 100%; padding: 12px 13px;
+            border: 1px solid rgba(148,163,184,0.18); border-radius: 10px;
+            outline: none; background: rgba(0,0,0,0.18); color: white;
+        }
+        .comment-form select option { background: #0d192c; }
+        .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+        .result-body strong { color: var(--cyan); }
+        .result-body .big { font-size: 1.5rem; color: #fff; font-weight: 800; }
+        .formula-note { color: var(--text-muted); font-size: 0.82rem; margin-top: 12px; }
+        #resultCard { margin-top: 16px; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container" style="padding:120px 0 80px">
+    <p class="eyebrow">CFA Learning Lab</p>
+    <div class="section-heading">
+        <h2>Time Value of Money</h2>
+        <p>Solve for any one of the five TVM variables. Payments are assumed at the end of each period; all amounts are treated as positive magnitudes.</p>
+    </div>
+
+    <div class="resume-card">
+        <form class="comment-form" id="tvmForm">
+            <label for="solveFor">Solve for</label>
+            <select id="solveFor">
+                <option value="fv" selected>Future value (FV)</option>
+                <option value="pv">Present value (PV)</option>
+                <option value="pmt">Payment per period (PMT)</option>
+                <option value="n">Number of years (N)</option>
+                <option value="r">Annual interest rate (r)</option>
+            </select>
+
+            <label for="pv">Present value (PV)</label>
+            <input type="number" id="pv" value="1000" step="any">
+
+            <label for="fv">Future value (FV)</label>
+            <input type="number" id="fv" value="" placeholder="solved value" step="any">
+
+            <label for="pmt">Payment per period (PMT)</label>
+            <input type="number" id="pmt" value="0" step="any">
+
+            <label for="years">Number of years</label>
+            <input type="number" id="years" value="10" step="any" min="0">
+
+            <label for="rate">Annual interest rate (%)</label>
+            <input type="number" id="rate" value="5" step="any">
+
+            <label for="freq">Compounding periods per year</label>
+            <select id="freq">
+                <option value="1" selected>Annual (1)</option>
+                <option value="2">Semi-annual (2)</option>
+                <option value="4">Quarterly (4)</option>
+                <option value="12">Monthly (12)</option>
+            </select>
+
+            <div class="btn-row">
+                <button class="btn btn-primary" type="submit">Compute</button>
+                <button class="btn btn-secondary" type="reset">Reset</button>
+            </div>
+            <p class="form-status" id="err" style="display:none"></p>
+        </form>
+    </div>
+
+    <div class="resume-card" id="resultCard" hidden>
+        <h3>Result</h3>
+        <div class="result-body"></div>
+    </div>
+
+    <div class="resume-card" style="margin-top:16px">
+        <h3>Formula</h3>
+        <p id="formulaText"></p>
+        <p class="formula-note">r is the periodic rate (annual rate &divide; compounding frequency) and n is the total number of periods (years &times; frequency). The rate is found numerically by bisection when it is the unknown.</p>
+    </div>
+
+    <p style="margin-top:18px"><a class="btn btn-secondary" href="../calculators.html">&larr; All calculators</a></p>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+<script>
+(function () {
+    'use strict';
+
+    function $(id) { return document.getElementById(id); }
+    function num(id) { return parseFloat($(id).value); }
+    function finiteVals(a) { return a.every(function (v) { return Number.isFinite(v); }); }
+    function fmt(x, d) {
+        d = (d === undefined) ? 4 : d;
+        if (!Number.isFinite(x)) return '—';
+        var r = Number(x.toPrecision(10));
+        if (Object.is(r, -0)) r = 0;
+        return r.toLocaleString('en-US', { maximumFractionDigits: d });
+    }
+    function err(msg) {
+        var e = $('err');
+        if (msg) { e.textContent = msg; e.style.display = 'block'; e.style.color = 'var(--red)'; }
+        else { e.textContent = ''; e.style.display = 'none'; }
+    }
+    function showResult(html) {
+        var c = $('resultCard');
+        c.hidden = false;
+        c.querySelector('.result-body').innerHTML = html;
+        c.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    var FORMULAS = {
+        fv: 'FV = PV(1+r)<sup>n</sup> + PMT&middot;[((1+r)<sup>n</sup> &minus; 1) / r]',
+        pv: 'PV = [FV &minus; PMT&middot;a] / (1+r)<sup>n</sup>, &nbsp;where a = [((1+r)<sup>n</sup> &minus; 1) / r]',
+        pmt: 'PMT = [FV &minus; PV(1+r)<sup>n</sup>] / a, &nbsp;where a = [((1+r)<sup>n</sup> &minus; 1) / r]',
+        n: '(FV + PMT/r) = (PV + PMT/r)(1+r)<sup>n</sup> &nbsp;&rarr;&nbsp; n = ln[(FV+PMT/r)/(PV+PMT/r)] / ln(1+r)',
+        r: 'r is the root of FV &minus; {PV(1+r)<sup>n</sup> + PMT&middot;[((1+r)<sup>n</sup> &minus; 1)/r]} = 0, found by bisection.'
+    };
+
+    function annuityFactor(i, n) {
+        return i === 0 ? n : (Math.pow(1 + i, n) - 1) / i;
+    }
+    function fvOf(pv, pmt, i, n) {
+        return pv * Math.pow(1 + i, n) + pmt * annuityFactor(i, n);
+    }
+    function bisect(f, lo, hi) {
+        var flo = f(lo);
+        if (!Number.isFinite(flo)) return NaN;
+        if (Math.abs(flo) < 1e-12) return lo;
+        for (var k = 0; k < 200; k++) {
+            var mid = (lo + hi) / 2, fm = f(mid);
+            if (!Number.isFinite(fm)) return NaN;
+            if (Math.abs(fm) < 1e-10 || (hi - lo) < 1e-12) return mid;
+            if ((flo < 0) === (fm < 0)) { lo = mid; flo = fm; } else { hi = mid; }
+        }
+        return (lo + hi) / 2;
+    }
+
+    var INPUT_FOR = { fv: 'fv', pv: 'pv', pmt: 'pmt', n: 'years', r: 'rate' };
+
+    function refreshSolveFor() {
+        var s = $('solveFor').value;
+        ['pv', 'fv', 'pmt', 'years', 'rate'].forEach(function (id) { $(id).disabled = false; });
+        $(INPUT_FOR[s]).disabled = true;
+        $('formulaText').innerHTML = FORMULAS[s];
+    }
+    $('solveFor').addEventListener('change', refreshSolveFor);
+
+    $('tvmForm').addEventListener('reset', function () {
+        setTimeout(function () { refreshSolveFor(); $('resultCard').hidden = true; err(null); }, 0);
+    });
+
+    $('tvmForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        err(null);
+        var s = $('solveFor').value;
+        var pv = num('pv'), fv = num('fv'), pmt = num('pmt');
+        var years = num('years'), annualPct = num('rate'), m = parseInt($('freq').value, 10);
+
+        var needed = {};
+        if (s !== 'pv') needed.pv = pv;
+        if (s !== 'fv') needed.fv = fv;
+        if (s !== 'pmt') needed.pmt = pmt;
+        if (s !== 'n') needed.years = years;
+        if (s !== 'r') needed.rate = annualPct;
+        var vals = Object.keys(needed).map(function (k) { return needed[k]; });
+        if (!finiteVals(vals) || !(m >= 1)) { err('Please enter valid numbers for all enabled fields.'); return; }
+        if (s !== 'n' && years < 0) { err('Number of years cannot be negative.'); return; }
+        if (annualPct <= -100 && s !== 'r') { err('Annual rate must be greater than -100%.'); return; }
+
+        var i = annualPct / 100 / m;
+        var n = years * m;
+        var out = '';
+
+        if (s === 'fv') {
+            var f = fvOf(pv, pmt, i, n);
+            out = '<p class="big">' + fmt(f, 2) + '</p>' +
+                  '<ul class="clean-list"><li>Periodic rate r = <strong>' + fmt(i * 100, 4) + '%</strong></li>' +
+                  '<li>Periods n = <strong>' + fmt(n, 2) + '</strong></li></ul>';
+        } else if (s === 'pv') {
+            var a = annuityFactor(i, n);
+            var p = (fv - pmt * a) / Math.pow(1 + i, n);
+            out = '<p class="big">' + fmt(p, 2) + '</p>';
+        } else if (s === 'pmt') {
+            var a2 = annuityFactor(i, n);
+            if (a2 === 0) { err('Payment is undefined here (zero periods).'); return; }
+            var pm = (fv - pv * Math.pow(1 + i, n)) / a2;
+            out = '<p class="big">' + fmt(pm, 2) + ' per period</p>';
+        } else if (s === 'n') {
+            var nn;
+            if (i === 0) {
+                if (pmt === 0) {
+                    if (Math.abs(fv - pv) < 1e-9) nn = 0;
+                    else { err('With a 0% rate and no payments, FV can only equal PV.'); return; }
+                } else {
+                    nn = (fv - pv) / pmt;
+                }
+            } else {
+                var A = pv + pmt / i, B = fv + pmt / i;
+                if (A === 0 || B / A <= 0) { err('No positive solution for N with these inputs.'); return; }
+                nn = Math.log(B / A) / Math.log(1 + i);
+            }
+            if (!Number.isFinite(nn) || nn < 0) { err('No positive solution for N with these inputs.'); return; }
+            out = '<p class="big">' + fmt(nn, 4) + ' periods</p>' +
+                  '<ul class="clean-list"><li>That is <strong>' + fmt(nn / m, 4) + ' years</strong> at ' + m + '&times; compounding</li></ul>';
+        } else if (s === 'r') {
+            var f2 = function (ii) { return fvOf(pv, pmt, ii, n) - fv; };
+            var lo = -0.9999, hi = 10;
+            var flo = f2(lo), fhi = f2(hi), guard = 0;
+            while (Number.isFinite(flo) && Number.isFinite(fhi) && (flo < 0) === (fhi < 0) && guard < 40) {
+                hi *= 2; fhi = f2(hi); guard++;
+            }
+            if (!Number.isFinite(flo) || !Number.isFinite(fhi) || (flo < 0) === (fhi < 0)) {
+                err('No solution for the rate in a reasonable range with these inputs.'); return;
+            }
+            var ri = bisect(f2, lo, hi);
+            if (!Number.isFinite(ri)) { err('The bisection did not converge.'); return; }
+            out = '<p class="big">' + fmt(ri * m * 100, 4) + '% annual</p>' +
+                  '<ul class="clean-list"><li>Periodic rate = <strong>' + fmt(ri * 100, 4) + '%</strong></li></ul>';
+        }
+
+        showResult(out);
+    });
+
+    refreshSolveFor();
+})();
+</script>
+</body>
+</html>

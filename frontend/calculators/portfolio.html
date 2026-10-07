@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Two-asset portfolio risk and return calculator — Munir Nweiser, Capital Markets portal">
+    <title>Portfolio Risk &amp; Return | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+        .result-body strong { color: var(--cyan); }
+        .result-body .big { font-size: 1.5rem; color: #fff; font-weight: 800; }
+        .formula-note { color: var(--text-muted); font-size: 0.82rem; margin-top: 12px; }
+        #resultCard { margin-top: 16px; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container" style="padding:120px 0 80px">
+    <p class="eyebrow">CFA Learning Lab</p>
+    <div class="section-heading">
+        <h2>Portfolio Risk &amp; Return</h2>
+        <p>Expected return and volatility of a two-asset portfolio. Diversification shows up in the correlation term: the lower the correlation, the lower the portfolio volatility.</p>
+    </div>
+
+    <div class="resume-card">
+        <form class="comment-form" id="pfForm">
+            <label for="w1">Weight of asset 1, w<sub>1</sub> (%) — asset 2 gets the rest</label>
+            <input type="number" id="w1" value="60" step="any" min="0" max="100">
+
+            <label for="r1">Expected return, asset 1 (%)</label>
+            <input type="number" id="r1" value="8" step="any">
+
+            <label for="s1">Volatility (&sigma;), asset 1 (%)</label>
+            <input type="number" id="s1" value="15" step="any" min="0">
+
+            <label for="r2">Expected return, asset 2 (%)</label>
+            <input type="number" id="r2" value="12" step="any">
+
+            <label for="s2">Volatility (&sigma;), asset 2 (%)</label>
+            <input type="number" id="s2" value="20" step="any" min="0">
+
+            <label for="rho">Correlation &rho; between the assets (&minus;1 to 1)</label>
+            <input type="number" id="rho" value="0.3" step="any" min="-1" max="1">
+
+            <div class="btn-row">
+                <button class="btn btn-primary" type="submit">Compute</button>
+                <button class="btn btn-secondary" type="reset">Reset</button>
+            </div>
+            <p class="form-status" id="err" style="display:none"></p>
+        </form>
+    </div>
+
+    <div class="resume-card" id="resultCard" hidden>
+        <h3>Result</h3>
+        <div class="result-body"></div>
+    </div>
+
+    <div class="resume-card" style="margin-top:16px">
+        <h3>Formulas</h3>
+        <p>E(R<sub>p</sub>) = w<sub>1</sub>E(R<sub>1</sub>) + w<sub>2</sub>E(R<sub>2</sub>)</p>
+        <p>&sigma;<sub>p</sub><sup>2</sup> = w<sub>1</sub><sup>2</sup>&sigma;<sub>1</sub><sup>2</sup> + w<sub>2</sub><sup>2</sup>&sigma;<sub>2</sub><sup>2</sup> + 2w<sub>1</sub>w<sub>2</sub>&rho;&sigma;<sub>1</sub>&sigma;<sub>2</sub></p>
+        <p class="formula-note">Expected return is a simple weighted average, but variance is not: the cross-term 2w<sub>1</sub>w<sub>2</sub>&rho;&sigma;<sub>1</sub>&sigma;<sub>2</sub> is where diversification lives. At &rho; = 1 there is no diversification benefit; at &rho; = &minus;1 risk can be eliminated entirely at the right weights.</p>
+    </div>
+
+    <p style="margin-top:18px"><a class="btn btn-secondary" href="../calculators.html">&larr; All calculators</a></p>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+<script>
+(function () {
+    'use strict';
+
+    function $(id) { return document.getElementById(id); }
+    function fmt(x, d) {
+        d = (d === undefined) ? 4 : d;
+        if (!Number.isFinite(x)) return '—';
+        var r = Number(x.toPrecision(10));
+        if (Object.is(r, -0)) r = 0;
+        return r.toLocaleString('en-US', { maximumFractionDigits: d });
+    }
+    function err(msg) {
+        var e = $('err');
+        if (msg) { e.textContent = msg; e.style.display = 'block'; e.style.color = 'var(--red)'; }
+        else { e.textContent = ''; e.style.display = 'none'; }
+    }
+    function showResult(html) {
+        var c = $('resultCard');
+        c.hidden = false;
+        c.querySelector('.result-body').innerHTML = html;
+        c.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    $('pfForm').addEventListener('reset', function () {
+        setTimeout(function () { $('resultCard').hidden = true; err(null); }, 0);
+    });
+
+    $('pfForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        err(null);
+        var w1 = parseFloat($('w1').value) / 100,
+            r1 = parseFloat($('r1').value),
+            s1 = parseFloat($('s1').value),
+            r2 = parseFloat($('r2').value),
+            s2 = parseFloat($('s2').value),
+            rho = parseFloat($('rho').value);
+
+        if (![w1, r1, s1, r2, s2, rho].every(Number.isFinite)) {
+            err('Please enter valid numbers for all fields.'); return;
+        }
+        if (w1 < 0 || w1 > 1) { err('Weight of asset 1 must be between 0 and 100%.'); return; }
+        if (s1 < 0 || s2 < 0) { err('Volatilities cannot be negative.'); return; }
+        if (rho < -1 || rho > 1) { err('Correlation must be between -1 and 1.'); return; }
+
+        var w2 = 1 - w1;
+        var er = w1 * r1 + w2 * r2;
+        var variance = w1 * w1 * s1 * s1 + w2 * w2 * s2 * s2 +
+                       2 * w1 * w2 * rho * s1 * s2;
+        var sd = Math.sqrt(Math.max(variance, 0));
+        var wAvgSd = w1 * s1 + w2 * s2; // no-diversification benchmark
+
+        showResult(
+            '<ul class="clean-list">' +
+            '<li>Expected return E(R<sub>p</sub>) = <strong>' + fmt(er, 4) + '%</strong></li>' +
+            '<li>Portfolio volatility &sigma;<sub>p</sub> = <strong>' + fmt(sd, 4) + '%</strong></li>' +
+            '<li>Weight of asset 2 = <strong>' + fmt(w2 * 100, 2) + '%</strong></li>' +
+            '<li>Weighted-average volatility (no diversification) = <strong>' + fmt(wAvgSd, 4) + '%</strong></li>' +
+            '<li>Diversification benefit = <strong>' + fmt(wAvgSd - sd, 4) + ' pp</strong> of volatility avoided</li>' +
+            '</ul>'
+        );
+    });
+})();
+</script>
+</body>
+</html>

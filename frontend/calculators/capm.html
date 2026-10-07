@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CAPM expected return calculator — Munir Nweiser, Capital Markets portal">
+    <title>CAPM | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+        .result-body strong { color: var(--cyan); }
+        .result-body .big { font-size: 1.5rem; color: #fff; font-weight: 800; }
+        .formula-note { color: var(--text-muted); font-size: 0.82rem; margin-top: 12px; }
+        #resultCard { margin-top: 16px; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container" style="padding:120px 0 80px">
+    <p class="eyebrow">CFA Learning Lab</p>
+    <div class="section-heading">
+        <h2>CAPM — Expected Return</h2>
+        <p>The Capital Asset Pricing Model: an asset's expected return equals the risk-free rate plus its beta times the market risk premium.</p>
+    </div>
+
+    <div class="resume-card">
+        <form class="comment-form" id="capmForm">
+            <label for="rf">Risk-free rate R<sub>f</sub> (%)</label>
+            <input type="number" id="rf" value="2" step="any">
+
+            <label for="beta">Beta (&beta;) — sensitivity to the market</label>
+            <input type="number" id="beta" value="1.2" step="any">
+
+            <label for="rm">Expected market return R<sub>m</sub> (%)</label>
+            <input type="number" id="rm" value="8" step="any">
+
+            <div class="btn-row">
+                <button class="btn btn-primary" type="submit">Compute</button>
+                <button class="btn btn-secondary" type="reset">Reset</button>
+            </div>
+            <p class="form-status" id="err" style="display:none"></p>
+        </form>
+    </div>
+
+    <div class="resume-card" id="resultCard" hidden>
+        <h3>Result</h3>
+        <div class="result-body"></div>
+    </div>
+
+    <div class="resume-card" style="margin-top:16px">
+        <h3>Formula</h3>
+        <p>E(R<sub>i</sub>) = R<sub>f</sub> + &beta;<sub>i</sub> &middot; [E(R<sub>m</sub>) &minus; R<sub>f</sub>]</p>
+        <p class="formula-note">The bracketed term is the market risk premium — the extra return investors demand for holding the market instead of the risk-free asset. Beta measures how much of that premium the asset earns: &beta; = 1 moves with the market, &beta; &gt; 1 amplifies it, &beta; &lt; 1 dampens it.</p>
+    </div>
+
+    <p style="margin-top:18px"><a class="btn btn-secondary" href="../calculators.html">&larr; All calculators</a></p>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+<script>
+(function () {
+    'use strict';
+
+    function $(id) { return document.getElementById(id); }
+    function fmt(x, d) {
+        d = (d === undefined) ? 4 : d;
+        if (!Number.isFinite(x)) return '—';
+        var r = Number(x.toPrecision(10));
+        if (Object.is(r, -0)) r = 0;
+        return r.toLocaleString('en-US', { maximumFractionDigits: d });
+    }
+    function err(msg) {
+        var e = $('err');
+        if (msg) { e.textContent = msg; e.style.display = 'block'; e.style.color = 'var(--red)'; }
+        else { e.textContent = ''; e.style.display = 'none'; }
+    }
+    function showResult(html) {
+        var c = $('resultCard');
+        c.hidden = false;
+        c.querySelector('.result-body').innerHTML = html;
+        c.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    $('capmForm').addEventListener('reset', function () {
+        setTimeout(function () { $('resultCard').hidden = true; err(null); }, 0);
+    });
+
+    $('capmForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        err(null);
+        var rf = parseFloat($('rf').value),
+            beta = parseFloat($('beta').value),
+            rm = parseFloat($('rm').value);
+        if (![rf, beta, rm].every(Number.isFinite)) {
+            err('Please enter valid numbers for all fields.'); return;
+        }
+        var mrp = rm - rf;
+        var er = rf + beta * mrp;
+        showResult(
+            '<p class="big">' + fmt(er, 4) + '%</p>' +
+            '<ul class="clean-list">' +
+            '<li>Expected return E(R) = <strong>' + fmt(er, 4) + '%</strong></li>' +
+            '<li>Market risk premium (R<sub>m</sub> &minus; R<sub>f</sub>) = <strong>' + fmt(mrp, 4) + '%</strong></li>' +
+            '<li>Beta compensation &beta;&middot;MRP = <strong>' + fmt(beta * mrp, 4) + '%</strong></li>' +
+            '</ul>'
+        );
+    });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Option payoff diagram calculator — Munir Nweiser, Capital Markets portal">
+    <title>Option Payoffs | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .comment-form select {
+            width: 100%; padding: 12px 13px;
+            border: 1px solid rgba(148,163,184,0.18); border-radius: 10px;
+            outline: none; background: rgba(0,0,0,0.18); color: white;
+        }
+        .comment-form select option { background: #0d192c; }
+        .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+        .result-body strong { color: var(--cyan); }
+        .result-body .big { font-size: 1.5rem; color: #fff; font-weight: 800; }
+        .formula-note { color: var(--text-muted); font-size: 0.82rem; margin-top: 12px; }
+        #resultCard { margin-top: 16px; }
+        #payoffCanvas { width: 100%; height: auto; display: block; border-radius: 10px; }
+        .canvas-wrap { margin-top: 14px; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container" style="padding:120px 0 80px">
+    <p class="eyebrow">CFA Learning Lab</p>
+    <div class="section-heading">
+        <h2>Option Payoffs at Expiry</h2>
+        <p>Profit-and-loss diagrams for the four basic single-option positions. Pick a position, set the strike and premium, and inspect the payoff across a spot range.</p>
+    </div>
+
+    <div class="resume-card">
+        <form class="comment-form" id="optForm">
+            <label for="pos">Position</label>
+            <select id="pos">
+                <option value="longCall" selected>Long call</option>
+                <option value="longPut">Long put</option>
+                <option value="shortCall">Short call</option>
+                <option value="shortPut">Short put</option>
+            </select>
+
+            <label for="strike">Strike price (K)</label>
+            <input type="number" id="strike" value="100" step="any" min="0">
+
+            <label for="prem">Premium paid / received</label>
+            <input type="number" id="prem" value="5" step="any" min="0">
+
+            <label for="smin">Spot range — from</label>
+            <input type="number" id="smin" value="70" step="any" min="0">
+
+            <label for="smax">Spot range — to</label>
+            <input type="number" id="smax" value="130" step="any" min="0">
+
+            <div class="btn-row">
+                <button class="btn btn-primary" type="submit">Draw payoff</button>
+                <button class="btn btn-secondary" type="reset">Reset</button>
+            </div>
+            <p class="form-status" id="err" style="display:none"></p>
+        </form>
+    </div>
+
+    <div class="resume-card" id="resultCard" hidden>
+        <h3>Result</h3>
+        <div class="result-body"></div>
+        <div class="canvas-wrap">
+            <canvas id="payoffCanvas" width="900" height="420"></canvas>
+        </div>
+    </div>
+
+    <div class="resume-card" style="margin-top:16px">
+        <h3>Formulas</h3>
+        <p>Long call: max(S&minus;K, 0) &minus; premium &nbsp;&nbsp;·&nbsp;&nbsp; Long put: max(K&minus;S, 0) &minus; premium</p>
+        <p>Short call: premium &minus; max(S&minus;K, 0) &nbsp;&nbsp;·&nbsp;&nbsp; Short put: premium &minus; max(K&minus;S, 0)</p>
+        <p class="formula-note">Breakeven is K + premium for calls and K &minus; premium for puts, long or short. Long positions have limited loss (the premium) and the call has unlimited upside; short positions mirror this — limited gain, and the short call has unlimited downside. These are expiry payoffs; before expiry, time value changes the picture.</p>
+    </div>
+
+    <p style="margin-top:18px"><a class="btn btn-secondary" href="../calculators.html">&larr; All calculators</a></p>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+<script>
+(function () {
+    'use strict';
+
+    function $(id) { return document.getElementById(id); }
+    function fmt(x, d) {
+        d = (d === undefined) ? 2 : d;
+        if (!Number.isFinite(x)) return '—';
+        var r = Number(x.toPrecision(10));
+        if (Object.is(r, -0)) r = 0;
+        return r.toLocaleString('en-US', { maximumFractionDigits: d });
+    }
+    function err(msg) {
+        var e = $('err');
+        if (msg) { e.textContent = msg; e.style.display = 'block'; e.style.color = 'var(--red)'; }
+        else { e.textContent = ''; e.style.display = 'none'; }
+    }
+
+    var POSITIONS = {
+        longCall:  { label: 'Long call',  payoff: function (S, K, p) { return Math.max(S - K, 0) - p; }, be: function (K, p) { return K + p; }, maxP: 'unlimited', maxL: 'premium' },
+        longPut:   { label: 'Long put',   payoff: function (S, K, p) { return Math.max(K - S, 0) - p; }, be: function (K, p) { return K - p; }, maxP: 'K − premium', maxL: 'premium' },
+        shortCall: { label: 'Short call', payoff: function (S, K, p) { return p - Math.max(S - K, 0); }, be: function (K, p) { return K + p; }, maxP: 'premium', maxL: 'unlimited' },
+        shortPut:  { label: 'Short put',  payoff: function (S, K, p) { return p - Math.max(K - S, 0); }, be: function (K, p) { return K - p; }, maxP: 'premium', maxL: 'K − premium' }
+    };
+
+    function draw(pos, K, prem, sMin, sMax) {
+        var cv = $('payoffCanvas');
+        var ctx = cv.getContext('2d');
+        var W = cv.width, H = cv.height;
+        var mL = 64, mR = 24, mT = 24, mB = 44;
+        var pw = W - mL - mR, ph = H - mT - mB;
+
+        var N = 240, vals = [];
+        var maxAbs = prem;
+        for (var i = 0; i <= N; i++) {
+            var S = sMin + (sMax - sMin) * i / N;
+            var v = pos.payoff(S, K, prem);
+            vals.push(v);
+            if (Math.abs(v) > maxAbs) maxAbs = Math.abs(v);
+        }
+        maxAbs *= 1.15;
+        if (maxAbs === 0) maxAbs = 1;
+
+        function X(s) { return mL + (s - sMin) / (sMax - sMin) * pw; }
+        function Y(v) { return mT + (1 - (v + maxAbs) / (2 * maxAbs)) * ph; }
+
+        ctx.clearRect(0, 0, W, H);
+        ctx.font = '12px Inter, system-ui, sans-serif';
+
+        // horizontal gridlines
+        ctx.strokeStyle = 'rgba(148,163,184,0.12)';
+        ctx.fillStyle = 'rgba(127,145,170,0.9)';
+        ctx.lineWidth = 1;
+        for (var g = -2; g <= 2; g++) {
+            var gv = maxAbs * g / 2, gy = Y(gv);
+            ctx.beginPath(); ctx.moveTo(mL, gy); ctx.lineTo(W - mR, gy); ctx.stroke();
+            ctx.fillText(fmt(gv, 1), 8, gy + 4);
+        }
+        // x ticks
+        for (var t = 0; t <= 4; t++) {
+            var sv = sMin + (sMax - sMin) * t / 4;
+            ctx.fillText(fmt(sv, 0), X(sv) - 12, H - 14);
+        }
+        ctx.fillStyle = 'rgba(127,145,170,0.9)';
+        ctx.fillText('Spot at expiry →', W - mR - 110, H - 14);
+        ctx.fillText('P/L', 8, mT - 8);
+
+        // zero line
+        ctx.strokeStyle = 'rgba(148,163,184,0.45)';
+        ctx.beginPath(); ctx.moveTo(mL, Y(0)); ctx.lineTo(W - mR, Y(0)); ctx.stroke();
+
+        // strike line
+        if (K >= sMin && K <= sMax) {
+            ctx.strokeStyle = 'rgba(167,139,250,0.6)';
+            ctx.setLineDash([6, 5]);
+            ctx.beginPath(); ctx.moveTo(X(K), mT); ctx.lineTo(X(K), mT + ph); ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = '#a78bfa';
+            ctx.fillText('K ' + fmt(K, 0), X(K) + 6, mT + 16);
+        }
+
+        // breakeven line
+        var be = pos.be(K, prem);
+        if (be >= sMin && be <= sMax) {
+            ctx.strokeStyle = 'rgba(250,204,21,0.7)';
+            ctx.setLineDash([6, 5]);
+            ctx.beginPath(); ctx.moveTo(X(be), mT); ctx.lineTo(X(be), mT + ph); ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = '#facc15';
+            ctx.fillText('BE ' + fmt(be, 2), X(be) + 6, mT + 32);
+        }
+
+        // payoff line
+        ctx.strokeStyle = '#67e8f9';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        for (var j = 0; j <= N; j++) {
+            var px = X(sMin + (sMax - sMin) * j / N), py = Y(vals[j]);
+            if (j === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+        ctx.lineWidth = 1;
+
+        // legend
+        ctx.fillStyle = '#67e8f9';
+        ctx.fillRect(mL, H - 30, 26, 3);
+        ctx.fillStyle = 'rgba(232,240,255,0.85)';
+        ctx.fillText(pos.label + ' payoff', mL + 34, H - 24);
+    }
+
+    function compute() {
+        err(null);
+        var key = $('pos').value;
+        var K = parseFloat($('strike').value),
+            prem = parseFloat($('prem').value),
+            sMin = parseFloat($('smin').value),
+            sMax = parseFloat($('smax').value);
+
+        if (![K, prem, sMin, sMax].every(Number.isFinite)) {
+            err('Please enter valid numbers for all fields.'); return false;
+        }
+        if (K <= 0) { err('Strike must be positive.'); return false; }
+        if (prem < 0) { err('Premium cannot be negative.'); return false; }
+        if (sMin < 0 || sMax <= sMin) { err('Spot range must satisfy 0 ≤ from < to.'); return false; }
+
+        var pos = POSITIONS[key];
+        var be = pos.be(K, prem);
+        var maxLoss = pos.maxL === 'premium' ? fmt(prem, 2) :
+                      pos.maxL === 'K − premium' ? fmt(Math.max(K - prem, 0), 2) : pos.maxL;
+        var maxProfit = pos.maxP === 'premium' ? fmt(prem, 2) :
+                        pos.maxP === 'K − premium' ? fmt(Math.max(K - prem, 0), 2) : pos.maxP;
+
+        $('resultCard').hidden = false;
+        $('resultCard').querySelector('.result-body').innerHTML =
+            '<ul class="clean-list">' +
+            '<li>Position = <strong>' + pos.label + '</strong></li>' +
+            '<li>Breakeven spot = <strong>' + fmt(be, 2) + '</strong></li>' +
+            '<li>Maximum profit = <strong>' + maxProfit + '</strong></li>' +
+            '<li>Maximum loss = <strong>' + maxLoss + '</strong></li>' +
+            '</ul>';
+        draw(pos, K, prem, sMin, sMax);
+        return true;
+    }
+
+    $('optForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (compute()) $('resultCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+    $('optForm').addEventListener('reset', function () {
+        setTimeout(function () { $('resultCard').hidden = true; err(null); compute(); }, 0);
+    });
+
+    compute(); // draw the prefilled example on load
+})();
+</script>
+</body>
+</html>
