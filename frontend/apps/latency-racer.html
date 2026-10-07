@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Latency Racer: spot crossed markets between two exchanges and capture the arbitrage spread.">
     <title>Latency Racer | Munir Nweiser</title>
+    <link rel="manifest" href="manifest-latency-racer.json">
+    <meta name="theme-color" content="#050914">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Latency Racer">
+    <link rel="apple-touch-icon" href="icons/latency-racer-180.png">
     <link rel="stylesheet" href="../style.css">
     <style>
         .game-wrap { max-width: 700px; margin: 0 auto; }
@@ -360,5 +367,44 @@
 
     <script src="../js/palette.js"></script>
     <script src="../js/reveal.js"></script>
+
+    <!-- PWA: install hint + service worker -->
+    <div id="pwa-hint" class="resume-card" style="display:none; max-width:560px; margin:18px auto; text-align:center;" role="note">
+        <strong>📱 Install as an iPhone app</strong>
+        <p style="color:var(--text-muted); font-size:.9rem; line-height:1.7; margin:8px 0 12px;">
+            Tap <strong>Share</strong> in Safari, then <strong>Add to Home Screen</strong>.
+            Latency Racer will open fullscreen and work offline.
+        </p>
+        <button class="btn" id="pwa-hint-close" type="button">Got it</button>
+    </div>
+    <script>
+    (function () {
+        // Service worker (offline play) — guarded.
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('../sw.js').catch(function () {});
+            });
+        }
+        // iOS "Add to Home Screen" hint — only on iOS, not already installed.
+        try {
+            var ios = /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+            var standalone = window.navigator.standalone === true ||
+                window.matchMedia('(display-mode: standalone)').matches;
+            var dismissed = false;
+            try { dismissed = localStorage.getItem('pwa-hint-dismissed') === '1'; } catch (e) {}
+            if (ios && !standalone && !dismissed) {
+                var hint = document.getElementById('pwa-hint');
+                if (hint) {
+                    hint.style.display = 'block';
+                    var btn = document.getElementById('pwa-hint-close');
+                    if (btn) btn.addEventListener('click', function () {
+                        hint.style.display = 'none';
+                        try { localStorage.setItem('pwa-hint-dismissed', '1'); } catch (e) {}
+                    });
+                }
+            }
+        } catch (e) {}
+    })();
+    </script>
 </body>
 </html>

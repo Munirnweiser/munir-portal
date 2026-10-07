@@ -284,7 +284,7 @@
             return '<div class="review-item"><strong>Q' + (i + 1) + " (" + r.score + '/10)</strong><br><span style="color:var(--text-muted);">' + esc(r.q) + "</span></div>";
         }).join("");
         show("results-screen");
-        setScoreShareText("I scored " + total + "/50 on the Interview Simulator (" + grade.split(" ")[0] + " " + grade.split(" ")[1] + ") \u2014 can you beat me?");
+        window.setScoreShareText("I scored " + total + "/50 on the Interview Simulator (" + grade.split(" ")[0] + " " + grade.split(" ")[1] + ") \u2014 can you beat me?");
         if (window.PortalProgress) {
             var best = window.PortalProgress.setHighScore("interview-sim", total);
             if (best.isNew) window.PortalProgress.addXP(total >= 30 ? 50 : 25, "interview sim");

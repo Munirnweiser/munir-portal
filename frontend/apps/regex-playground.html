@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Interactive regex tester for production support: test patterns against real FIX, Java and Apache log samples with live highlighting and plain-English match explanations.">
+    <title>Regex Playground (Log Edition) | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <meta property="og:title" content="Regex Playground (Log Edition) | Munir Nweiser">
+    <meta property="og:description" content="Test regex against real production log samples — FIX messages, stack traces, access logs — with live highlighting.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Munir Nweiser — Capital Markets Technology">
+    <meta name="twitter:card" content="summary">
+</head>
+<body>
+
+<div id="fairy-layer" aria-hidden="true"></div>
+
+<header class="site-header">
+
+        <div class="container nav-container">
+
+            <a href="../index.html#home" class="logo">
+                <span class="logo-mark">MN</span>
+
+                <span class="logo-text">
+                    Munir Nweiser
+                    <small>Capital Markets • Technology</small>
+                </span>
+            </a>
+
+
+            <nav class="main-nav" aria-label="Main navigation">
+
+                <a href="../index.html#home">Home</a>
+                <a href="../resume.html">Resume</a>
+                <a href="../scientific-calculator.html">Calculator</a>
+                <a href="../index.html#markets">Markets</a>
+                <a href="../index.html#trading">Trading</a>
+                <a href="../index.html#tutorials">Tutorials</a>
+                <a href="../roadmap.html">Roadmap</a>
+                <a href="../changelog.html">Changelog</a>
+                <a href="../index.html#games">Games</a>
+                <a href="../index.html#memories">Memories</a>
+
+            </nav>
+
+            <button
+                id="mobile-menu-button"
+                class="mobile-menu-button"
+                type="button"
+                aria-label="Open navigation menu"
+                aria-expanded="false"
+            >
+                ☰
+            </button>
+
+        </div>
+
+    </header>
+<main class="container" style="padding:120px 0 80px; max-width:1000px;">
+    <div class="section-heading">
+        <p class="eyebrow">Support toolkit</p>
+        <h2>Regex Playground — Log Edition</h2>
+        <p>Test regular expressions against <strong>real production log samples</strong>. Matches highlight live, groups are listed, and every match is explained in plain English.</p>
+    </div>
+
+    <div class="resume-card" style="padding:22px; margin-bottom:18px;">
+        <h3 style="margin-top:0;">Pattern</h3>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            <input id="rxPattern" aria-label="Regex pattern" spellcheck="false"
+                style="flex:1 1 320px; padding:12px; border-radius:10px; border:1px solid var(--border); background:#0a0f1e; color:var(--text); font-family:monospace; font-size:.9rem;"
+                placeholder="e.g. \b35=([A-Z0-9])" value="\b35=([A-Z0-9])">
+            <label style="font-size:.85rem; color:var(--text-muted);"><input type="checkbox" id="flagG" checked> g</label>
+            <label style="font-size:.85rem; color:var(--text-muted);"><input type="checkbox" id="flagI"> i</label>
+            <label style="font-size:.85rem; color:var(--text-muted);"><input type="checkbox" id="flagM"> m</label>
+        </div>
+        <p id="rxError" style="color:#f87171; font-size:.85rem; min-height:1.2em; margin:8px 0 0;"></p>
+        <p style="color:var(--text-muted); font-size:.82rem; margin:6px 0 0;">Guarded: max 500 matches shown, 250ms time budget — catastrophic backtracking can't hang your tab.</p>
+    </div>
+
+    <div class="resume-card" style="padding:22px; margin-bottom:18px;">
+        <h3 style="margin-top:0;">Preset patterns</h3>
+        <div id="rxPresets" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
+    </div>
+
+    <div class="resume-card" style="padding:22px; margin-bottom:18px;">
+        <h3 style="margin-top:0;">Log sample</h3>
+        <div id="rxTabs" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;"></div>
+        <textarea id="rxSample" aria-label="Log sample text" spellcheck="false"
+            style="width:100%; min-height:230px; padding:12px; border-radius:10px; border:1px solid var(--border); background:#0a0f1e; color:var(--text); font-family:monospace; font-size:.78rem; line-height:1.6;"></textarea>
+        <p style="color:var(--text-muted); font-size:.82rem; margin:8px 0 0;">Editable — paste your own logs here. FIX samples use <span class="formula">|</span> for the SOH delimiter.</p>
+    </div>
+
+    <div class="resume-card" style="padding:22px; margin-bottom:18px;">
+        <h3 style="margin-top:0;">Matches <span id="rxCount" class="tag" style="margin-left:8px;">0</span></h3>
+        <pre id="rxHighlight" aria-label="Highlighted matches" style="white-space:pre-wrap; word-break:break-word; font-size:.78rem; line-height:1.7; max-height:340px; overflow:auto; background:#0a0f1e; border:1px solid var(--border); border-radius:10px; padding:14px;"></pre>
+        <h3 style="margin:18px 0 8px;">Captured groups</h3>
+        <div style="overflow-x:auto;"><table class="tag-table" id="rxGroups" style="width:100%; font-size:.8rem;"></table></div>
+        <h3 style="margin:18px 0 8px;">Plain-English explanations</h3>
+        <ul class="clean-list" id="rxExplain"></ul>
+    </div>
+
+    <p style="margin-top:24px;"><a href="../index.html#trading" class="btn btn-secondary">&larr; Back</a></p>
+</main>
+
+<style>
+.rx-hit { background: rgba(34,211,238,.28); color: #a5f3fc; border-radius: 3px; padding: 0 1px; }
+.rx-preset { cursor:pointer; }
+.rx-preset.active { border-color: var(--cyan); color: var(--cyan); }
+.rx-tab.active { border-color: var(--cyan); color: var(--cyan); }
+</style>
+
+<footer class="site-footer">
+
+        <div class="container footer-content">
+
+            <div>
+
+                <strong>
+                    Munir Nweiser
+                </strong>
+
+                <p>
+                    Application Support • Capital Markets • Technology
+                </p>
+
+            </div>
+
+
+            <div class="footer-links">
+
+                <a href="../index.html#home">Home</a>
+                <a href="../resume.html">Resume</a>
+                <a href="../index.html#trading">Trading</a>
+                <a href="../index.html#tutorials">Tutorials</a>
+
+            </div>
+
+
+            <div>
+
+                <small>
+                    © <span id="current-year"></span>
+                    Munir Nweiser
+                </small>
+
+                <br>
+
+                <small class="visitor-count">
+                    <span id="visitor-count"></span>
+                </small>
+
+                <small class="site-credit">
+                    Designed &amp; built with Muse 🤖
+                </small>
+
+            </div>
+
+        </div>
+
+    </footer>
+<style>
+.share-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 28px 0 6px; color: var(--text-muted); font-size: 0.85rem; }
+.share-btn { display: inline-block; padding: 7px 14px; border: 1px solid var(--border); border-radius: 999px; color: var(--cyan); font-size: 0.8rem; background: transparent; cursor: pointer; text-decoration: none; font-family: inherit; }
+.share-btn:hover { border-color: var(--cyan); }
+</style>
+<div class="share-row">
+    <span>Share:</span>
+    <a class="share-btn" data-share="x" target="_blank" rel="noopener" href="#">X</a>
+    <a class="share-btn" data-share="linkedin" target="_blank" rel="noopener" href="#">LinkedIn</a>
+    <button class="share-btn" data-share="copy" type="button">Copy link</button>
+</div>
+<script>
+(function () {
+    'use strict';
+    var pageUrl = encodeURIComponent(window.location.href);
+    var pageTitle = encodeURIComponent(document.title);
+    document.querySelectorAll('[data-share="x"]').forEach(function (a) {
+        a.href = 'https://twitter.com/intent/tweet?text=' + pageTitle + '&url=' + pageUrl;
+    });
+    document.querySelectorAll('[data-share="linkedin"]').forEach(function (a) {
+        a.href = 'https://www.linkedin.com/sharing/share-offsite/?url=' + pageUrl;
+    });
+    document.querySelectorAll('[data-share="copy"]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            function done(msg) { btn.textContent = msg; setTimeout(function () { btn.textContent = 'Copy link'; }, 1500); }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(window.location.href).then(function(){done('Copied!');}, function(){done('Copy failed');});
+            } else { window.prompt('Copy this link:', window.location.href); }
+        });
+    });
+})();
+</script>
+
+<script src="../app.js"></script>
+<script src="../counter.js"></script>
+<script src="../js/progress.js"></script>
+<script src="../js/palette.js"></script>
+<script src="../js/reveal.js"></script>
+</body>
+</html>
+<script>
+(function () {
+    'use strict';
+
+    var SAMPLES = {
+        fix: { label: 'FIX engine log', text:
+'2026-10-07 03:12:01.441 INFO  [FIX-SG-TOK-01] Session established: 8=FIX.4.4|9=112|35=A|49=SGBLD|56=MUNIR|34=1|52=20261007-03:12:01.440|98=0|108=30|10=042|\n' +
+'2026-10-07 03:12:31.883 WARN  [FIX-SG-TOK-01] Heartbeat lag 4.2s on seq 34=1042 (threshold 3.0s)\n' +
+'2026-10-07 03:14:02.017 ERROR [FIX-SG-TOK-01] Reject 35=3: tag 44 missing on NewOrderSingle 11=ORD-88412 (client CL-99120)\n' +
+'2026-10-07 03:14:02.019 INFO  [FIX-SG-TOK-01] ResendRequest 35=2 sent: 7=1040 16=1041 (gap detected, expected 34=1042 got 34=1045)\n' +
+'2026-10-07 03:15:44.206 INFO  [FIX-SG-TOK-01] Fill: 35=8 39=2 150=F 55=SX5E 32=25 31=4892.50 14=25 151=0 execId=EX-55201 latency=1.8ms\n' +
+'2026-10-07 03:16:10.552 ERROR [RISK] Order ORD-88413 blocked: notional 12,450,000 exceeds desk limit 10,000,000 (client CL-99120)' },
+        java: { label: 'Java stack trace', text:
+'2026-10-07T03:18:22.114Z ERROR c.s.gm.pricing.VolSurfaceCache - Failed to load surface for SX5E (asOf=2026-10-07)\n' +
+'com.sg.gm.pricing.SurfaceNotFoundException: No surface for underlying=SX5E, tenor=3M\n' +
+'    at com.sg.gm.pricing.VolSurfaceCache.load(VolSurfaceCache.java:142)\n' +
+'    at com.sg.gm.pricing.Pricer.price(Pricer.java:88)\n' +
+'    at com.sg.gm.risk.VaRCalculator.run(VaRCalculator.java:301)\n' +
+'Caused by: java.sql.SQLTimeoutException: Query timed out after 30000ms: SELECT * FROM vol_surfaces WHERE underlying=?\n' +
+'    at oracle.jdbc.driver.OracleStatement.executeQuery(OracleStatement.java:1123)\n' +
+'2026-10-07T03:18:23.007Z WARN  c.s.gm.risk.VaRCalculator - VaR run 4471 skipped underlying SX5E, continuing with 41 underlyings (elapsed 812ms)' },
+        apache: { label: 'Apache access log', text:
+'10.24.8.15 - munir [07/Oct/2026:03:20:11 +0200] "GET /munir-portal/apps/trading-app.html HTTP/1.1" 200 45231 "https://munirnweiser.github.io/" "Mozilla/5.0"\n' +
+'10.24.8.15 - munir [07/Oct/2026:03:20:14 +0200] "GET /munir-portal/api/visits HTTP/1.1" 503 231 "-" "Mozilla/5.0"\n' +
+'192.168.1.44 - - [07/Oct/2026:03:21:02 +0200] "POST /munir-portal/api/comments HTTP/1.1" 201 88 "-" "curl/8.0"\n' +
+'203.0.113.9 - - [07/Oct/2026:03:22:47 +0200] "GET /munir-portal/videos/munir-bot.mp4 HTTP/1.1" 206 8321122 "-" "Mozilla/5.0"' }
+    };
+
+    var PRESETS = [
+        { id: 'fix-tags', name: 'FIX tag extractor', pattern: '(?:^|[\\s|])(\\d+)=([^\\s|]*)', flags: 'g',
+          explain: function (g) { return 'FIX tag ' + g[1] + " = '" + g[2].replace(/[.,;:!?]+$/, '') + "'"; } },
+        { id: 'iso-ts', name: 'ISO timestamp', pattern: '\\d{4}-\\d{2}-\\d{2}[T ]\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?', flags: 'g',
+          explain: function (g) { return "timestamp '" + g[0] + "' — when this log line happened"; } },
+        { id: 'ipv4', name: 'IPv4 address', pattern: '\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b', flags: 'g',
+          explain: function (g) { return "IP address '" + g[0] + "' — client or host"; } },
+        { id: 'order-ids', name: 'Order / exec IDs', pattern: '\\b(?:CLORD|ORD|EXEC|EX|CL)-[A-Z0-9-]+\\b', flags: 'g',
+          explain: function (g) { return "order/execution id '" + g[0] + "' — trace this through the logs"; } },
+        { id: 'error-lines', name: 'ERROR lines', pattern: '^.*\\b(?:ERROR|FATAL|CRITICAL)\\b.*$', flags: 'gm',
+          explain: function (g) { return 'error line: ' + (g[0].length > 90 ? g[0].slice(0, 90) + '…' : g[0]); } },
+        { id: 'latency', name: 'Latency values', pattern: '(\\d+(?:\\.\\d+)?)\\s?ms\\b', flags: 'g',
+          explain: function (g) { return 'latency ' + g[1] + ' ms — ' + (parseFloat(g[1]) > 100 ? 'SLOW, investigate' : 'healthy'); } },
+        { id: 'msgtype', name: 'FIX MsgType (35=)', pattern: '\\b35=([A-Z0-9])', flags: 'g',
+          explain: function (g) { var n = {A:'Logon',2:'ResendRequest',3:'Reject',8:'ExecutionReport',5:'Logout'}[g[1]] || 'message type'; return 'FIX MsgType 35=' + g[1] + ' (' + n + ')'; } },
+        { id: 'java-exc', name: 'Java exceptions', pattern: '^(?:Caused by:\\s*)?([\\w.$]+(?:Exception|Error))(?::\\s*(.*))?$', flags: 'gm',
+          explain: function (g) { return 'Java ' + (g[1].indexOf('Exception') > -1 ? 'exception' : 'error') + " '" + g[1] + "'" + (g[2] ? ': ' + g[2].slice(0, 70) : ''); } }
+    ];
+
+    var patternEl = document.getElementById('rxPattern');
+    var sampleEl = document.getElementById('rxSample');
+    var errEl = document.getElementById('rxError');
+    var hiEl = document.getElementById('rxHighlight');
+    var countEl = document.getElementById('rxCount');
+    var groupsEl = document.getElementById('rxGroups');
+    var explainEl = document.getElementById('rxExplain');
+    var activePreset = null;
+
+    function esc(s) {
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function flags() {
+        return (document.getElementById('flagG').checked ? 'g' : '') +
+               (document.getElementById('flagI').checked ? 'i' : '') +
+               (document.getElementById('flagM').checked ? 'm' : '');
+    }
+
+    function genericExplain(mt, i) {
+        var g = mt.groups.map(function (x, k) { return 'g' + (k + 1) + "='" + x + "'"; }).join(', ');
+        return 'match #' + (i + 1) + " at position " + mt.index + ": '" +
+            (mt.text.length > 60 ? mt.text.slice(0, 60) + '…' : mt.text) + "'" + (g ? ' — groups: ' + g : '');
+    }
+
+    function run() {
+        var pat = patternEl.value;
+        var fl = flags();
+        var text = sampleEl.value;
+        errEl.textContent = '';
+        var re;
+        try { re = new RegExp(pat, fl); }
+        catch (e) { errEl.textContent = 'Invalid regex: ' + e.message; hiEl.innerHTML = esc(text); countEl.textContent = '0'; groupsEl.innerHTML = ''; explainEl.innerHTML = ''; return; }
+
+        var matches = [], m, guard = 0;
+        var t0 = (typeof performance !== 'undefined') ? performance.now() : 0;
+        try {
+            re.lastIndex = 0;
+            if (fl.indexOf('g') === -1) {
+                m = re.exec(text);
+                if (m) matches.push({ index: m.index, text: m[0], groups: Array.prototype.slice.call(m, 1) });
+            } else {
+                while ((m = re.exec(text)) !== null && guard < 500) {
+                    guard++;
+                    matches.push({ index: m.index, text: m[0], groups: Array.prototype.slice.call(m, 1) });
+                    if (m[0] === '') { re.lastIndex++; }
+                    if (typeof performance !== 'undefined' && performance.now() - t0 > 250) {
+                        errEl.textContent = 'Time budget exceeded (250ms) — possible catastrophic backtracking. Showing partial results.';
+                        break;
+                    }
+                }
+            }
+        } catch (e) { errEl.textContent = 'Execution error: ' + e.message; }
+
+        var html = '', last = 0, i;
+        for (i = 0; i < matches.length; i++) {
+            var mt = matches[i];
+            html += esc(text.slice(last, mt.index));
+            html += '<mark class="rx-hit" title="match ' + (i + 1) + '">' + esc(mt.text === '' ? '(empty)' : mt.text) + '</mark>';
+            last = mt.index + mt.text.length;
+        }
+        html += esc(text.slice(last));
+        hiEl.innerHTML = html || esc(text);
+        countEl.textContent = String(matches.length);
+
+        var gh = '<tr><th style="text-align:left;padding:6px;">#</th><th style="text-align:left;padding:6px;">Match</th><th style="text-align:left;padding:6px;">Groups</th></tr>';
+        var show = Math.min(matches.length, 25);
+        for (i = 0; i < show; i++) {
+            var x = matches[i];
+            gh += '<tr><td style="padding:6px;">' + (i + 1) + '</td><td style="padding:6px;font-family:monospace;">' +
+                esc(x.text.length > 40 ? x.text.slice(0, 40) + '…' : x.text) + '</td><td style="padding:6px;font-family:monospace;">' +
+                esc(x.groups.length ? x.groups.map(function (g2, k) { return 'g' + (k + 1) + '=' + g2; }).join(', ') : '—') + '</td></tr>';
+        }
+        groupsEl.innerHTML = matches.length ? gh : '<tr><td style="padding:6px;">No matches.</td></tr>';
+
+        var eh = '';
+        var p = activePreset ? PRESETS.filter(function (q) { return q.id === activePreset; })[0] : null;
+        for (i = 0; i < Math.min(matches.length, 25); i++) {
+            var full = [matches[i].text].concat(matches[i].groups);
+            eh += '<li>' + esc(p ? p.explain(full) : genericExplain(matches[i], i)) + '</li>';
+        }
+        if (matches.length > 25) eh += '<li>…and ' + (matches.length - 25) + ' more.</li>';
+        explainEl.innerHTML = eh || '<li>No matches to explain.</li>';
+
+        if (window.PortalProgress && matches.length > 0 && window.__rxXp !== true) {
+            window.__rxXp = true;
+            try { window.PortalProgress.addXP(10, 'regex-playground'); } catch (e2) {}
+        }
+    }
+
+    function buildPresets() {
+        var box = document.getElementById('rxPresets');
+        PRESETS.forEach(function (p) {
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'share-btn rx-preset';
+            b.textContent = p.name;
+            b.setAttribute('data-preset', p.id);
+            b.addEventListener('click', function () {
+                activePreset = p.id;
+                patternEl.value = p.pattern;
+                document.getElementById('flagG').checked = p.flags.indexOf('g') > -1;
+                document.getElementById('flagI').checked = p.flags.indexOf('i') > -1;
+                document.getElementById('flagM').checked = p.flags.indexOf('m') > -1;
+                box.querySelectorAll('.rx-preset').forEach(function (x) { x.classList.remove('active'); });
+                b.classList.add('active');
+                run();
+            });
+            box.appendChild(b);
+        });
+    }
+
+    function buildTabs() {
+        var box = document.getElementById('rxTabs');
+        Object.keys(SAMPLES).forEach(function (k, i) {
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'share-btn rx-tab' + (i === 0 ? ' active' : '');
+            b.textContent = SAMPLES[k].label;
+            b.addEventListener('click', function () {
+                sampleEl.value = SAMPLES[k].text;
+                box.querySelectorAll('.rx-tab').forEach(function (x) { x.classList.remove('active'); });
+                b.classList.add('active');
+                run();
+            });
+            box.appendChild(b);
+        });
+        sampleEl.value = SAMPLES.fix.text;
+    }
+
+    ['rxPattern', 'rxSample'].forEach(function (id) {
+        document.getElementById(id).addEventListener('input', function () { activePreset = null;
+            document.getElementById('rxPresets').querySelectorAll('.rx-preset').forEach(function (x) { x.classList.remove('active'); });
+            run(); });
+    });
+    ['flagG', 'flagI', 'flagM'].forEach(function (id) {
+        document.getElementById(id).addEventListener('change', run);
+    });
+
+    buildPresets();
+    buildTabs();
+    run();
+})();
+</script>

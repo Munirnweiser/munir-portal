@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Interactive on-call readiness checklist for production support: 15 pre-shift checks across access, monitoring, runbooks, comms and environment health, with a printable handover card.">
+    <title>On-Call Readiness Checklist | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <meta property="og:title" content="On-Call Readiness Checklist | Munir Nweiser">
+    <meta property="og:description" content="15 pre-shift checks every production support analyst should run — with a printable handover card.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Munir Nweiser — Capital Markets Technology">
+    <meta name="twitter:card" content="summary">
+    <style>
+        @media print {
+            header.site-header, footer.site-footer, #fairy-layer, .no-print { display: none !important; }
+            main.container > *:not(#handover-wrap) { display: none !important; }
+            main.container { padding: 0 !important; }
+            #handover-wrap { display: block !important; }
+            body { background: #fff !important; }
+            #handover-card { color: #000 !important; border: 2px solid #000 !important; }
+            #handover-card h2, #handover-card h3, #handover-card li, #handover-card p { color: #000 !important; }
+        }
+        #handover-wrap { display: none; }
+        .check-item { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; cursor: pointer; }
+        .check-item:hover { border-color: var(--cyan); }
+        .check-item.done { opacity: .55; }
+        .check-item.done .check-label { text-decoration: line-through; }
+        .check-item input { margin-top: 4px; transform: scale(1.25); accent-color: var(--cyan); }
+        .progress-track { height: 12px; border-radius: 999px; background: #0a0f1e; border: 1px solid var(--border); overflow: hidden; }
+        .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--cyan), #34d399); transition: width .3s; }
+    </style>
+</head>
+<body>
+
+<div id="fairy-layer" aria-hidden="true"></div>
+
+<header class="site-header">
+
+        <div class="container nav-container">
+
+            <a href="../index.html#home" class="logo">
+                <span class="logo-mark">MN</span>
+
+                <span class="logo-text">
+                    Munir Nweiser
+                    <small>Capital Markets • Technology</small>
+                </span>
+            </a>
+
+
+            <nav class="main-nav" aria-label="Main navigation">
+
+                <a href="../index.html#home">Home</a>
+                <a href="../resume.html">Resume</a>
+                <a href="../scientific-calculator.html">Calculator</a>
+                <a href="../index.html#markets">Markets</a>
+                <a href="../index.html#trading">Trading</a>
+                <a href="../index.html#tutorials">Tutorials</a>
+                <a href="../roadmap.html">Roadmap</a>
+                <a href="../changelog.html">Changelog</a>
+                <a href="../index.html#games">Games</a>
+                <a href="../index.html#memories">Memories</a>
+
+            </nav>
+
+            <button
+                id="mobile-menu-button"
+                class="mobile-menu-button"
+                type="button"
+                aria-label="Open navigation menu"
+                aria-expanded="false"
+            >
+                ☰
+            </button>
+
+        </div>
+
+    </header>
+<main class="container" style="padding:120px 0 80px; max-width:900px;">
+    <div class="section-heading">
+        <p class="eyebrow">Support toolkit</p>
+        <h2>On-Call Readiness Checklist</h2>
+        <p>Fifteen checks before your shift starts. Your progress saves in this browser — come back anytime.</p>
+    </div>
+
+    <div class="resume-card no-print" style="padding:22px; margin-bottom:18px;">
+        <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:14px;">
+            <input id="ocName" aria-label="Your name" placeholder="Your name"
+                style="flex:1 1 200px; padding:10px 12px; border-radius:10px; border:1px solid var(--border); background:#0a0f1e; color:var(--text);">
+            <span id="ocProgressLabel" style="color:var(--text-muted); font-size:.9rem;">0 / 15</span>
+        </div>
+        <div class="progress-track" role="progressbar" aria-label="Checklist progress"><div class="progress-fill" id="ocFill"></div></div>
+        <p id="ocReady" style="margin:10px 0 0; font-size:.9rem; color:var(--text-muted);"></p>
+    </div>
+
+    <div id="ocList" class="no-print"></div>
+
+    <div class="resume-card no-print" style="padding:22px; margin:18px 0;">
+        <h3 style="margin-top:0;">Shift notes</h3>
+        <textarea id="ocNotes" aria-label="Shift notes" placeholder="Anything the next shift should know…"
+            style="width:100%; min-height:90px; padding:12px; border-radius:10px; border:1px solid var(--border); background:#0a0f1e; color:var(--text);"></textarea>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;">
+            <button class="btn" id="ocHandover" type="button">Generate handover card</button>
+            <button class="btn btn-secondary" id="ocReset" type="button">Reset checklist</button>
+        </div>
+    </div>
+
+    <div id="handover-wrap">
+        <div class="resume-card" id="handover-card" style="padding:28px;">
+            <h2 style="margin-top:0;">On-Call Handover Card</h2>
+            <p><strong>Analyst:</strong> <span id="hoName">—</span> &nbsp;•&nbsp; <strong>Date:</strong> <span id="hoDate">—</span></p>
+            <p><strong>Readiness:</strong> <span id="hoScore">—</span></p>
+            <h3>Completed checks</h3>
+            <ul class="clean-list" id="hoDone"></ul>
+            <h3>Open items — do these first</h3>
+            <ul class="clean-list" id="hoOpen"></ul>
+            <h3>Shift notes</h3>
+            <p id="hoNotes">—</p>
+            <div class="no-print" style="margin-top:18px;">
+                <button class="btn" type="button" onclick="window.print()">Print</button>
+            </div>
+        </div>
+    </div>
+
+    <p class="no-print" style="margin-top:24px;"><a href="../index.html#trading" class="btn btn-secondary">&larr; Back</a></p>
+</main>
+
+<footer class="site-footer">
+
+        <div class="container footer-content">
+
+            <div>
+
+                <strong>
+                    Munir Nweiser
+                </strong>
+
+                <p>
+                    Application Support • Capital Markets • Technology
+                </p>
+
+            </div>
+
+
+            <div class="footer-links">
+
+                <a href="../index.html#home">Home</a>
+                <a href="../resume.html">Resume</a>
+                <a href="../index.html#trading">Trading</a>
+                <a href="../index.html#tutorials">Tutorials</a>
+
+            </div>
+
+
+            <div>
+
+                <small>
+                    © <span id="current-year"></span>
+                    Munir Nweiser
+                </small>
+
+                <br>
+
+                <small class="visitor-count">
+                    <span id="visitor-count"></span>
+                </small>
+
+                <small class="site-credit">
+                    Designed &amp; built with Muse 🤖
+                </small>
+
+            </div>
+
+        </div>
+
+    </footer>
+<style>
+.share-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 28px 0 6px; color: var(--text-muted); font-size: 0.85rem; }
+.share-btn { display: inline-block; padding: 7px 14px; border: 1px solid var(--border); border-radius: 999px; color: var(--cyan); font-size: 0.8rem; background: transparent; cursor: pointer; text-decoration: none; font-family: inherit; }
+.share-btn:hover { border-color: var(--cyan); }
+</style>
+<div class="share-row">
+    <span>Share:</span>
+    <a class="share-btn" data-share="x" target="_blank" rel="noopener" href="#">X</a>
+    <a class="share-btn" data-share="linkedin" target="_blank" rel="noopener" href="#">LinkedIn</a>
+    <button class="share-btn" data-share="copy" type="button">Copy link</button>
+</div>
+<script>
+(function () {
+    'use strict';
+    var pageUrl = encodeURIComponent(window.location.href);
+    var pageTitle = encodeURIComponent(document.title);
+    document.querySelectorAll('[data-share="x"]').forEach(function (a) {
+        a.href = 'https://twitter.com/intent/tweet?text=' + pageTitle + '&url=' + pageUrl;
+    });
+    document.querySelectorAll('[data-share="linkedin"]').forEach(function (a) {
+        a.href = 'https://www.linkedin.com/sharing/share-offsite/?url=' + pageUrl;
+    });
+    document.querySelectorAll('[data-share="copy"]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            function done(msg) { btn.textContent = msg; setTimeout(function () { btn.textContent = 'Copy link'; }, 1500); }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(window.location.href).then(function(){done('Copied!');}, function(){done('Copy failed');});
+            } else { window.prompt('Copy this link:', window.location.href); }
+        });
+    });
+})();
+</script>
+
+<script src="../app.js"></script>
+<script src="../counter.js"></script>
+<script src="../js/progress.js"></script>
+<script src="../js/palette.js"></script>
+<script src="../js/reveal.js"></script>
+</body>
+</html>
+<script>
+(function () {
+    'use strict';
+
+    var KEY = 'oncall-checklist-v1';
+    var CATS = [
+        { name: 'Access & credentials', items: [
+            ['vpn', 'VPN connected and tested from this machine'],
+            ['bastion', 'Prod bastion / jump host reachable (ssh smoke test)'],
+            ['vault', 'Service-account credentials accessible in the vault'] ] },
+        { name: 'Monitoring & alerts', items: [
+            ['dash', 'Geneos / Splunk / Grafana dashboards loading'],
+            ['pager', 'Pager and alert routing confirmed to reach me'],
+            ['thresholds', 'Alert thresholds reviewed for my applications'] ] },
+        { name: 'Runbooks', items: [
+            ['runbooks', 'Runbooks for my top-3 apps bookmarked and open'],
+            ['escalation', 'Escalation contacts up to date (desk head, L3, vendor)'],
+            ['known', 'Known-issues log read — no surprises waiting'] ] },
+        { name: 'Comms', items: [
+            ['bridge', 'Team chat and incident bridge line joined'],
+            ['prevnotes', 'Previous shift handover notes read'],
+            ['hours', 'Desk coverage hours confirmed with teammates'] ] },
+        { name: 'Environment health', items: [
+            ['batch', 'Scheduler (Autosys / Control-M) jobs green'],
+            ['hosts', 'Disk / memory on critical hosts healthy'],
+            ['freeze', 'No ongoing incidents or change freezes in effect'] ] }
+    ];
+
+    function load() {
+        try { return JSON.parse(localStorage.getItem(KEY)) || {}; }
+        catch (e) { return {}; }
+    }
+    function save(s) {
+        try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) {}
+    }
+
+    var state = load();
+    state.checked = state.checked || {};
+
+    var listEl = document.getElementById('ocList');
+    var fillEl = document.getElementById('ocFill');
+    var labelEl = document.getElementById('ocProgressLabel');
+    var readyEl = document.getElementById('ocReady');
+    var total = 0;
+    CATS.forEach(function (c) { total += c.items.length; });
+
+    function count() {
+        var n = 0;
+        CATS.forEach(function (c) { c.items.forEach(function (it) { if (state.checked[it[0]]) n++; }); });
+        return n;
+    }
+
+    function render() {
+        var n = count();
+        fillEl.style.width = Math.round(n / total * 100) + '%';
+        labelEl.textContent = n + ' / ' + total;
+        readyEl.textContent = n === total ? '✓ Shift-ready. Generate your handover card below.' :
+            (n >= 10 ? 'Almost there — ' + (total - n) + ' to go.' : 'Work through the checks before your shift.');
+        listEl.querySelectorAll('.check-item input').forEach(function (cb) {
+            cb.checked = !!state.checked[cb.getAttribute('data-id')];
+            cb.closest('.check-item').classList.toggle('done', cb.checked);
+        });
+        if (n === total && window.PortalProgress) {
+            var today = new Date().toISOString().slice(0, 10);
+            if (state.xpDay !== today) {
+                state.xpDay = today; save(state);
+                try { window.PortalProgress.addXP(25, 'oncall-ready'); } catch (e) {}
+            }
+        }
+    }
+
+    CATS.forEach(function (c) {
+        var card = document.createElement('div');
+        card.className = 'resume-card';
+        card.style.cssText = 'padding:20px 22px; margin-bottom:14px;';
+        var h = document.createElement('h3');
+        h.style.marginTop = '0';
+        h.textContent = c.name;
+        card.appendChild(h);
+        c.items.forEach(function (it) {
+            var lab = document.createElement('label');
+            lab.className = 'check-item';
+            var cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.setAttribute('data-id', it[0]);
+            cb.setAttribute('aria-label', it[1]);
+            cb.checked = !!state.checked[it[0]];
+            if (cb.checked) lab.classList.add('done');
+            cb.addEventListener('change', function () {
+                state.checked[it[0]] = cb.checked;
+                save(state);
+                render();
+            });
+            var sp = document.createElement('span');
+            sp.className = 'check-label';
+            sp.textContent = it[1];
+            lab.appendChild(cb);
+            lab.appendChild(sp);
+            card.appendChild(lab);
+        });
+        listEl.appendChild(card);
+    });
+
+    var nameEl = document.getElementById('ocName');
+    var notesEl = document.getElementById('ocNotes');
+    nameEl.value = state.name || '';
+    notesEl.value = state.notes || '';
+    nameEl.addEventListener('input', function () { state.name = nameEl.value; save(state); });
+    notesEl.addEventListener('input', function () { state.notes = notesEl.value; save(state); });
+
+    document.getElementById('ocReset').addEventListener('click', function () {
+        if (!window.confirm('Reset all 15 checks?')) return;
+        state.checked = {};
+        save(state);
+        render();
+    });
+
+    document.getElementById('ocHandover').addEventListener('click', function () {
+        var n = count();
+        document.getElementById('hoName').textContent = (state.name || '').trim() || '—';
+        document.getElementById('hoDate').textContent = new Date().toLocaleString();
+        document.getElementById('hoScore').textContent = n + ' / ' + total + ' checks complete';
+        var done = [], open = [];
+        CATS.forEach(function (c) {
+            c.items.forEach(function (it) {
+                (state.checked[it[0]] ? done : open).push(c.name + ': ' + it[1]);
+            });
+        });
+        document.getElementById('hoDone').innerHTML = done.length ?
+            done.map(function (d) { return '<li>✓ ' + d.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</li>'; }).join('') :
+            '<li>None yet.</li>';
+        document.getElementById('hoOpen').innerHTML = open.length ?
+            open.map(function (d) { return '<li>▢ ' + d.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</li>'; }).join('') :
+            '<li>All clear — nothing open.</li>';
+        document.getElementById('hoNotes').textContent = (state.notes || '').trim() || '—';
+        document.getElementById('handover-wrap').style.display = 'block';
+        document.getElementById('handover-wrap').scrollIntoView({ behavior: 'smooth' });
+    });
+
+    render();
+})();
+</script>
