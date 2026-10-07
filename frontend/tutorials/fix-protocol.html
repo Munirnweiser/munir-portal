@@ -21,13 +21,42 @@
         .tag-table th { text-align:left; color:#7dd3fc; font-size:.8rem; padding:8px 10px; border-bottom:1px solid rgba(148,163,184,.2); }
         .tag-table td { color:#cbd5e1; font-size:.85rem; padding:8px 10px; border-bottom:1px solid rgba(148,163,184,.08); }
         .tag-table td:first-child { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; white-space:nowrap; }
-    </style>
+    
+        .last-updated { color: var(--text-muted); font-size: 0.8rem; margin: -4px 0 14px; }
+        .toc-box ul { list-style: none; padding: 0; margin: 4px 0 0; columns: 2; column-gap: 28px; }
+        .toc-box li { margin-bottom: 7px; break-inside: avoid; }
+        .toc-box a { color: var(--cyan); text-decoration: none; font-size: 0.88rem; }
+        .toc-box a:hover { text-decoration: underline; }
+        @media (max-width: 700px) { .toc-box ul { columns: 1; } }
+        .takeaways-box h4, .toc-box h4 { color: #7dd3fc; margin-bottom: 10px; }
+        .takeaways-box ul { margin-bottom: 0; }
+        .copyable { position: relative; }
+        .copy-btn { position: absolute; top: 8px; right: 8px; padding: 4px 12px; font-size: 0.72rem; }
+        .quiz-q { margin: 18px 0; padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; }
+        .quiz-q > p:first-child { margin-bottom: 10px; }
+        .quiz-opt { display: block; padding: 8px 10px; margin: 6px 0; border-radius: 8px; cursor: pointer; color: #cbd5e1; }
+        .quiz-opt:hover { background: rgba(125,211,252,0.06); }
+        .quiz-opt input { margin-right: 10px; }
+        .opt-right { outline: 1px solid #4ade80; color: #4ade80; }
+        .quiz-feedback { margin-top: 10px; font-size: 0.9rem; }
+        .fb-ok { color: #4ade80; }
+        .fb-no { color: #fca5a5; }
+        .quiz-score { font-weight: 700; margin-top: 12px; color: #f8fafc; }
+        details.practice { margin: 10px 0; border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; }
+        details.practice summary { cursor: pointer; color: #7dd3fc; font-weight: 600; }
+        details.practice summary + p { margin: 10px 0 4px; }
+        .practice-tier { color: #7dd3fc; font-size: 0.95rem; margin: 22px 0 6px; font-weight: 700; }
+        .author-box { border-left: 3px solid #7dd3fc; }
+</style>
     <meta property="og:title" content="FIX Protocol Deep Dive | Munir Nweiser">
     <meta property="og:description" content="FIX protocol deep dive: session management, message anatomy, and a NewOrderSingle walkthrough. Written from production support experience.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://munirnweiser.github.io/munir-portal/tutorials/fix-protocol.html">
     <meta property="og:site_name" content="Munir Nweiser — Capital Markets Technology">
     <meta name="twitter:card" content="summary">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@type": "Article", "headline": "FIX Protocol Deep Dive", "author": {"@type": "Person", "name": "Munir Nweiser"}, "datePublished": "2026-10-07"}
+</script>
 </head>
 <body>
 <div id="fairy-layer" aria-hidden="true"></div>
@@ -52,16 +81,44 @@
 
 <div class="section-heading">
 <p class="eyebrow">Tutorials • Connectivity — my specialty</p>
+<p class="last-updated">Last updated: October 7, 2026</p>
 <h2>FIX Protocol Deep Dive</h2>
 <p>Session management, message anatomy, and a NewOrderSingle dissected tag by tag — from years of onboarding clients and chasing session drops.</p>
 </div>
 
-<div class="resume-card">
+<div class="example-box takeaways-box">
+<h4>Key takeaways</h4>
+<ul>
+<li><strong>FIX sessions run on sequence numbers (tag 34):</strong> every message is numbered, so gaps are detected the instant they happen.</li>
+<li><strong>Logon (35=A) negotiates the session:</strong> tag 98 encryption, 108 heartbeat interval, 141 reset flag.</li>
+<li><strong>Expecting 34=152 but receiving 34=155?</strong> Send 35=2 ResendRequest for 152–154 and queue 155+ until the replay arrives.</li>
+<li><strong>NewOrderSingle (35=D) carries the order:</strong> 11=ClOrdID, 55=symbol, 54=side, 38=quantity, 40=type, 44=price.</li>
+<li><strong>Read tag 58 first on rejects</strong> (35=3 / 35=j) — the human-readable text says exactly why the message died.</li>
+</ul>
+</div>
+
+<div class="example-box toc-box">
+<h4>On this page</h4>
+<ul>
+<li><a href="#sec-1">What FIX is</a></li>
+<li><a href="#sec-2">Session management: the heartbeat of connectivity</a></li>
+<li><a href="#sec-3">Message anatomy</a></li>
+<li><a href="#sec-4">NewOrderSingle (35=D), dissected</a></li>
+<li><a href="#sec-5">What production support watches</a></li>
+<li><a href="#sec-6">Logon (35=A), walked through tag by tag</a></li>
+<li><a href="#sec-7">Sequence gap recovery, step by step</a></li>
+<li><a href="#sec-8">Common rejects and what tag 58 tells you</a></li>
+<li><a href="#sec-9">Session recovery decision tree</a></li>
+<li><a href="#sec-10">FIX certification checklist</a></li>
+</ul>
+</div>
+
+<div class="resume-card"> id="sec-1"
 <h3>What FIX is</h3>
 <p>The <strong>Financial Information eXchange</strong> protocol is the messaging standard for electronic trading — orders, executions, market data and allocations all travel as FIX messages over TCP. The common dialects are <strong>FIX 4.2</strong> (still everywhere in equities), <strong>FIX 4.4</strong> (adds more asset classes), and <strong>FIX 5.0 / 5.0 SP2</strong>, which splits the session layer out into <strong>FIXT</strong> so the application version can evolve independently. Every production support analyst in trading eventually learns to read raw FIX the way a mechanic reads an engine.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-2"
 <h3>Session management: the heartbeat of connectivity</h3>
 <p>Before any order flows, the two sides establish a <strong>FIX session</strong> — a persistent, sequenced, acknowledged conversation. The session messages (all identified by tag 35):</p>
 <ul>
@@ -75,7 +132,7 @@
 <p>Every message carries <strong>34=MsgSeqNum</strong>, incrementing per sender. If you receive 34=105 right after 34=103, message 104 is missing — you issue a ResendRequest for 104–104. This gap detection is the entire reliability model of FIX, and most session incidents are sequence-number incidents.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-3"
 <h3>Message anatomy</h3>
 <p>A FIX message is tag=value pairs separated by a delimiter (shown here as |, really 0x01 SOH). Three tags form the envelope of <em>every</em> message:</p>
 <table class="tag-table">
@@ -91,7 +148,7 @@
 </table>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-4"
 <h3>NewOrderSingle (35=D), dissected</h3>
 <p>Here is a buy-side limit order for 500 AAPL at 150.50, walked through tag by tag:</p>
 <p class="formula">8=FIX.4.2|9=176|35=D|49=BUYSIDE|56=BROKER|34=2|52=20261006-14:30:00|11=ORDER123|21=1|40=2|44=150.50|54=1|55=AAPL|59=0|10=128|</p>
@@ -108,7 +165,7 @@
 <p>The broker answers with an <strong>ExecutionReport (35=8)</strong>: first 39=0 (New), then 39=1 (Partial fill) / 39=2 (Filled) as the order works, each carrying 14=CumQty, 6=AvgPx and 150=ExecType. The order's full state machine lives in tag 39 — support analysts trace "where is my order?" by grepping 11=ORDER123 and reading the 39s.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-5"
 <h3>What production support watches</h3>
 <ul class="clean-list">
 <li><strong>Session drops</strong> — heartbeat timeouts at 108-second multiples; first check is always network, second is the counterparty's engine.</li>
@@ -123,7 +180,7 @@
 </div>
 
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-6"
 <h3>Logon (35=A), walked through tag by tag</h3>
 <p>The Logon message opens every FIX session. Here is a typical one, dissected:</p>
 <p class="formula">8=FIX.4.4|9=95|35=A|49=CLIENT1|56=VENUE|34=1|52=20261006-14:29:55|98=0|108=30|141=Y|10=042|</p>
@@ -138,7 +195,7 @@
 <p>Some venues also require <strong>553=username / 554=password</strong> on the Logon for authentication. The number-one Logon failure in support: one side sends 141=Y and the other does not expect a reset — sequence numbers disagree from message one, and the session never stabilizes. Always confirm the reset convention during certification.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-7"
 <h3>Sequence gap recovery, step by step</h3>
 <p>When you receive 34=105 immediately after 34=103, message 104 never arrived. The recovery procedure is mechanical:</p>
 <ul>
@@ -151,7 +208,7 @@
 <p><strong>Support watches:</strong> ResendRequest <em>storms</em> — after a counterparty failover, hundreds of sessions can request retransmission simultaneously, flooding the engine. Throttle, watch queue depth, and confirm PossDupFlag handling is correct before the storm, not during it.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-8"
 <h3>Common rejects and what tag 58 tells you</h3>
 <p>When FIX says no, it says it in tag 58 (Text). Learn to read these — they are the fastest diagnosis in connectivity support:</p>
 <table class="tag-table">
@@ -167,7 +224,7 @@
 </div>
 
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-9"
 <h3>Session recovery decision tree</h3>
 <p>When a FIX session misbehaves, support walks the same triage every time, top to bottom:</p>
 <ul class="clean-list">
@@ -182,7 +239,7 @@
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-10"
 <h3>FIX certification checklist</h3>
 <p>Before a venue lets you trade, you certify. Support usually owns the checklist:</p>
 <table class="tag-table">
@@ -241,7 +298,130 @@
 })();
 </script>
 
+
+
+<div class="resume-card" id="practice">
+<h3>Practice: easy, medium, hard</h3>
+<p>Try these before moving on — click a question to reveal the answer.</p>
+<h4 class="practice-tier">Easy</h4>
+<details class="practice"><summary><strong>1.</strong> What does tag 35 identify? Give two examples.</summary><p><strong>Answer:</strong> MsgType — e.g. 35=D is NewOrderSingle, 35=8 is ExecutionReport, 35=A is Logon.</p></details>
+<details class="practice"><summary><strong>2.</strong> You receive 34=155 when expecting 152. What do you send?</summary><p><strong>Answer:</strong> 35=2 ResendRequest with 7=152 (BeginSeqNo) and 16=154 (EndSeqNo); queue message 155 and later until the replay arrives.</p></details>
+<h4 class="practice-tier">Medium</h4>
+<details class="practice"><summary><strong>3.</strong> Decode: 35=D|11=ORD99|55=AAPL|54=1|38=100|40=2|44=150.25</summary><p><strong>Answer:</strong> NewOrderSingle, ClOrdID ORD99, symbol AAPL, side 1 = Buy, quantity 100, order type 2 = Limit, price 150.25.</p></details>
+<details class="practice"><summary><strong>4.</strong> Heartbeats stop arriving but the socket is still open. First two checks?</summary><p><strong>Answer:</strong> Send 35=1 TestRequest and compare against the 108 HeartBtInt — likely a firewall silently dropping, or a hung session; then ResendRequest if a sequence gap opened.</p></details>
+<h4 class="practice-tier">Hard</h4>
+<details class="practice"><summary><strong>5.</strong> After a gap the venue replays 152–154 with 43=Y, then sends 35=4 GapFill. Explain both.</summary><p><strong>Answer:</strong> 43=Y is PossDupFlag — possible duplicate, so don&#x27;t double-book the trades. The 35=4 SequenceReset-GapFill consumes sequence numbers used by admin traffic so numbering stays continuous.</p></details>
+<details class="practice"><summary><strong>6.</strong> FIX certification keeps failing on cancel/replace. Top three likely causes?</summary><p><strong>Answer:</strong> Wrong 41 OrigClOrdID chain, a 40/44 mismatch on the replace, or sending 35=F (cancel) where 35=G (cancel/replace) was required.</p></details>
+</div>
+
+<div class="resume-card" id="quiz">
+<h3>Knowledge check</h3>
+<p>Pick the best answer for each question, then check your score.</p>
+<div class="quiz-q" data-answer="0" data-why="Tag 34 numbers every message in the session — the basis of gap detection.">
+<p><strong>1. Tag 34 is:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="0"> MsgSeqNum</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="1"> SenderCompID</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="2"> ClOrdID</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="3"> CheckSum</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<div class="quiz-q" data-answer="0" data-why="35=2 asks the counterparty to retransmit a sequence-number range (7=BeginSeqNo, 16=EndSeqNo).">
+<p><strong>2. 35=2 means:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="0"> ResendRequest</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="1"> Reject</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="2"> Logout</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="3"> MarketDataRequest</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<div class="quiz-q" data-answer="0" data-why="Tag 58 Text explains the reject — always read it before escalating.">
+<p><strong>3. On a 35=3 reject, tag 58 gives you:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="0"> Human-readable reason text</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="1"> The session password</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="2"> Nothing useful</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="3"> The next expected sequence number</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<button class="btn quiz-check" type="button">Check answers</button>
+<p class="quiz-score" aria-live="polite"></p>
+</div>
+
+<div class="resume-card" id="read-next">
+<h3>What to read next</h3>
+<ul class="clean-list">
+<li><a href="trade-lifecycle.html" style="color:#7dd3fc">Trade Lifecycle Walkthrough</a></li>
+<li><a href="stp.html" style="color:#7dd3fc">Straight-Through Processing</a></li>
+<li><a href="frontend-backend-middleware.html" style="color:#7dd3fc">Frontend / Backend / Middleware</a></li>
+</ul>
+</div>
+
+<div class="example-box author-box">
+<p style="margin:0;font-size:0.9rem;color:#94a3b8"><strong style="color:#7dd3fc">About the author.</strong> Written by <strong>Munir Nweiser</strong> — 5 years L1–L3 Capital Markets production support (Morgan Stanley, Société Générale, Crédit Agricole CIB).</p>
+</div>
+
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+<script>
+(function () {
+    'use strict';
+
+    /* Copy buttons on code / formula blocks */
+    function copyText(text, btn) {
+        var label = btn.textContent;
+        function done(msg) {
+            btn.textContent = msg;
+            setTimeout(function () { btn.textContent = label; }, 1500);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(
+                function () { done('Copied!'); },
+                function () { done('Failed'); }
+            );
+        } else {
+            done('Select & copy');
+        }
+    }
+    document.querySelectorAll('main pre, main p.formula').forEach(function (el) {
+        if (el.querySelector('.copy-btn')) { return; }
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn copy-btn';
+        btn.textContent = 'Copy';
+        btn.setAttribute('aria-label', 'Copy to clipboard');
+        btn.addEventListener('click', function () { copyText(el.innerText, btn); });
+        el.classList.add('copyable');
+        el.appendChild(btn);
+    });
+
+    /* Knowledge-check quiz */
+    var quiz = document.getElementById('quiz');
+    if (quiz) {
+        var checkBtn = quiz.querySelector('.quiz-check');
+        var scoreEl = quiz.querySelector('.quiz-score');
+        checkBtn.addEventListener('click', function () {
+            var questions = quiz.querySelectorAll('.quiz-q');
+            var correct = 0;
+            questions.forEach(function (q) {
+                var answer = parseInt(q.getAttribute('data-answer'), 10);
+                var why = q.getAttribute('data-why') || '';
+                var picked = q.querySelector('input[type="radio"]:checked');
+                var fb = q.querySelector('.quiz-feedback');
+                q.querySelectorAll('.quiz-opt').forEach(function (l) { l.classList.remove('opt-right'); });
+                var labels = q.querySelectorAll('.quiz-opt');
+                if (labels[answer]) { labels[answer].classList.add('opt-right'); }
+                if (picked && parseInt(picked.value, 10) === answer) {
+                    correct += 1;
+                    fb.textContent = '\u2713 Correct. ' + why;
+                    fb.className = 'quiz-feedback fb-ok';
+                } else {
+                    fb.textContent = '\u2717 Not quite. ' + why;
+                    fb.className = 'quiz-feedback fb-no';
+                }
+                fb.hidden = false;
+            });
+            scoreEl.textContent = 'Score: ' + correct + ' / ' + questions.length;
+        });
+    }
+})();
+</script>
 </main>
 
 <footer class="site-footer"><div class="container footer-content">

@@ -18,13 +18,42 @@
         .example-box p { margin-bottom:8px; }
         .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
         pre.formula { padding:14px 16px; background:rgba(15,23,42,.7); border-radius:10px; overflow-x:auto; line-height:1.6; }
-    </style>
+    
+        .last-updated { color: var(--text-muted); font-size: 0.8rem; margin: -4px 0 14px; }
+        .toc-box ul { list-style: none; padding: 0; margin: 4px 0 0; columns: 2; column-gap: 28px; }
+        .toc-box li { margin-bottom: 7px; break-inside: avoid; }
+        .toc-box a { color: var(--cyan); text-decoration: none; font-size: 0.88rem; }
+        .toc-box a:hover { text-decoration: underline; }
+        @media (max-width: 700px) { .toc-box ul { columns: 1; } }
+        .takeaways-box h4, .toc-box h4 { color: #7dd3fc; margin-bottom: 10px; }
+        .takeaways-box ul { margin-bottom: 0; }
+        .copyable { position: relative; }
+        .copy-btn { position: absolute; top: 8px; right: 8px; padding: 4px 12px; font-size: 0.72rem; }
+        .quiz-q { margin: 18px 0; padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; }
+        .quiz-q > p:first-child { margin-bottom: 10px; }
+        .quiz-opt { display: block; padding: 8px 10px; margin: 6px 0; border-radius: 8px; cursor: pointer; color: #cbd5e1; }
+        .quiz-opt:hover { background: rgba(125,211,252,0.06); }
+        .quiz-opt input { margin-right: 10px; }
+        .opt-right { outline: 1px solid #4ade80; color: #4ade80; }
+        .quiz-feedback { margin-top: 10px; font-size: 0.9rem; }
+        .fb-ok { color: #4ade80; }
+        .fb-no { color: #fca5a5; }
+        .quiz-score { font-weight: 700; margin-top: 12px; color: #f8fafc; }
+        details.practice { margin: 10px 0; border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; }
+        details.practice summary { cursor: pointer; color: #7dd3fc; font-weight: 600; }
+        details.practice summary + p { margin: 10px 0 4px; }
+        .practice-tier { color: #7dd3fc; font-size: 0.95rem; margin: 22px 0 6px; font-weight: 700; }
+        .author-box { border-left: 3px solid #7dd3fc; }
+</style>
     <meta property="og:title" content="Ansible | Munir Nweiser">
     <meta property="og:description" content="Ansible for production support: playbooks, inventory, ad-hoc commands, idempotency, failed-task triage and vault basics.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://munirnweiser.github.io/munir-portal/tutorials/ansible.html">
     <meta property="og:site_name" content="Munir Nweiser — Capital Markets Technology">
     <meta name="twitter:card" content="summary">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@type": "Article", "headline": "Ansible", "author": {"@type": "Person", "name": "Munir Nweiser"}, "datePublished": "2026-10-07"}
+</script>
 </head>
 <body>
 <div id="fairy-layer" aria-hidden="true"></div>
@@ -49,11 +78,37 @@
 
 <div class="section-heading">
 <p class="eyebrow">Tutorials • Automation</p>
+<p class="last-updated">Last updated: October 7, 2026</p>
 <h2>Ansible</h2>
 <p>Agentless automation for support: run one command on fifty servers, and know exactly what a failed playbook did and didn't do.</p>
 </div>
 
-<div class="resume-card">
+<div class="example-box takeaways-box">
+<h4>Key takeaways</h4>
+<ul>
+<li><strong>Ad-hoc for checks, playbooks for state:</strong> df -h across appservers in one line; logrotate config enforced by a play.</li>
+<li><strong>Idempotency makes re-runs safe</strong> — the second run converges to the same state with no side effects.</li>
+<li><strong>9 of 12 succeed, 3 fail &#x27;start service: port in use&#x27;</strong> → stale processes on those 3; kill them and re-run.</li>
+<li><strong>Handlers run once</strong> even when notified twelve times; flush_handlers when ordering matters.</li>
+<li><strong>Become failures are identity problems:</strong> debug with ansible host -b -m ping before touching the playbook.</li>
+</ul>
+</div>
+
+<div class="example-box toc-box">
+<h4>On this page</h4>
+<ul>
+<li><a href="#sec-1">Playbooks, inventory and ad-hoc commands</a></li>
+<li><a href="#sec-2">Idempotency: safe to re-run</a></li>
+<li><a href="#sec-3">Triaging a failed playbook</a></li>
+<li><a href="#sec-4">Roles: the directory layout that scales</a></li>
+<li><a href="#sec-5">Handlers and notify: restart once, not twelve times</a></li>
+<li><a href="#sec-6">Dynamic inventory: the AWS EC2 plugin</a></li>
+<li><a href="#sec-7">Debugging become: privilege escalation failures</a></li>
+<li><a href="#sec-8">What production support watches</a></li>
+</ul>
+</div>
+
+<div class="resume-card"> id="sec-1"
 <h3>Playbooks, inventory and ad-hoc commands</h3>
 <p>Ansible connects over SSH — no agent to install. <em>Inventory</em> lists the target hosts (grouped: <span class="formula">[pricing]</span>, <span class="formula">[databases]</span>); <em>playbooks</em> are YAML files declaring the desired state in <em>tasks</em>; <em>ad-hoc commands</em> run a single module without a playbook.</p>
 <div class="example-box">
@@ -71,12 +126,12 @@ ansible appservers -m shell -a "df -h /opt | tail -1"
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-2"
 <h3>Idempotency: safe to re-run</h3>
 <p>Good Ansible tasks are <em>idempotent</em> — running them twice changes nothing the second time. Modules like <span class="formula">copy</span>, <span class="formula">service</span> and <span class="formula">user</span> check state first; raw <span class="formula">shell</span>/<span class="formula">command</span> tasks do not. That distinction decides whether re-running a half-failed playbook is safe: re-running idempotent tasks converges; re-running raw shell tasks can double-apply — two restarts, two config appends, two database migrations.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-3"
 <h3>Triaging a failed playbook</h3>
 <p>Ansible stops at the first failed task by default and reports per host: <span class="formula">ok</span>, <span class="formula">changed</span>, <span class="formula">failed</span>, <span class="formula">unreachable</span>. Read the recap at the bottom first — it tells you which hosts failed and which never got that far.</p>
 <ul class="clean-list">
@@ -89,7 +144,7 @@ ansible appservers -m shell -a "df -h /opt | tail -1"
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-4"
 <h3>Roles: the directory layout that scales</h3>
 <p>Past a handful of playbooks, teams organize automation into <em>roles</em> — reusable units with a fixed directory structure. Ansible auto-loads each subdirectory by name, so the layout is the documentation.</p>
 <div class="example-box">
@@ -105,7 +160,7 @@ ansible appservers -m shell -a "df -h /opt | tail -1"
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-5"
 <h3>Handlers and notify: restart once, not twelve times</h3>
 <p>A <em>handler</em> is a task that runs only when <em>notified</em> — and only once per play, even if twelve tasks notify it. The pattern: configuration tasks notify "restart feed service"; Ansible applies all changes, then restarts the service a single time at the end.</p>
 <div class="example-box">
@@ -125,7 +180,7 @@ handlers:
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-6"
 <h3>Dynamic inventory: the AWS EC2 plugin</h3>
 <p>Static inventory files rot — servers are replaced and nobody updates the list. The <span class="formula">aws_ec2</span> inventory plugin queries the AWS API at run time and builds groups from instance tags, so new hosts appear automatically.</p>
 <div class="example-box">
@@ -142,7 +197,7 @@ keyed_groups:
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-7"
 <h3>Debugging become: privilege escalation failures</h3>
 <p>Tasks needing root use <span class="formula">become: yes</span> (default method: sudo). When escalation breaks, the error is usually one of four things:</p>
 <ul class="clean-list">
@@ -156,7 +211,7 @@ keyed_groups:
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-8"
 <h3>What production support watches</h3>
 <ul class="clean-list">
 <li><strong>Vault for secrets</strong> — Ansible Vault encrypts passwords and keys in playbooks; plaintext secrets in a repo are an incident waiting for an audit.</li>
@@ -211,7 +266,130 @@ keyed_groups:
 })();
 </script>
 
+
+
+<div class="resume-card" id="practice">
+<h3>Practice: easy, medium, hard</h3>
+<p>Try these before moving on — click a question to reveal the answer.</p>
+<h4 class="practice-tier">Easy</h4>
+<details class="practice"><summary><strong>1.</strong> Check disk usage on /opt across every app server in one command.</summary><p><strong>Answer:</strong> ansible appservers -m shell -a &quot;df -h /opt | tail -1&quot;</p></details>
+<details class="practice"><summary><strong>2.</strong> What does idempotent mean for a playbook?</summary><p><strong>Answer:</strong> Re-running it converges to the same desired state without unintended side effects.</p></details>
+<h4 class="practice-tier">Medium</h4>
+<details class="practice"><summary><strong>3.</strong> A restart playbook: 9 hosts ok, 3 fail at &#x27;start service&#x27; — port already in use. Fix?</summary><p><strong>Answer:</strong> The old process never died on those 3 hosts — kill the stale process, then re-run the play.</p></details>
+<details class="practice"><summary><strong>4.</strong> Two tasks notify the same handler. How many restarts happen?</summary><p><strong>Answer:</strong> One — handlers run once at the end of the play, no matter how many notifications.</p></details>
+<h4 class="practice-tier">Hard</h4>
+<details class="practice"><summary><strong>5.</strong> Become fails on some hosts but not others. Debug order?</summary><p><strong>Answer:</strong> ansible &lt;host&gt; -b -m ping first, then check sudoers/NOPASSWD, password vs key auth, and requiretty settings.</p></details>
+<details class="practice"><summary><strong>6.</strong> The AWS EC2 dynamic inventory plugin returns zero hosts. Likely causes?</summary><p><strong>Answer:</strong> Wrong AWS credentials or region, tag filters that match nothing, or a misconfigured plugin path.</p></details>
+</div>
+
+<div class="resume-card" id="quiz">
+<h3>Knowledge check</h3>
+<p>Pick the best answer for each question, then check your score.</p>
+<div class="quiz-q" data-answer="0" data-why="Ad-hoc is for questions; playbooks are for converging infrastructure to a state.">
+<p><strong>1. Ad-hoc commands versus playbooks:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="0"> One-off checks vs repeatable desired state</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="1"> They are the same thing</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="2"> Playbooks are always slower</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="3"> Ad-hoc needs YAML files</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<div class="quiz-q" data-answer="0" data-why="Handlers deduplicate — one run at the end of the play regardless of notification count.">
+<p><strong>2. A handler notified twice will:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="0"> Run once</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="1"> Run twice</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="2"> Be skipped</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="3"> Fail the play</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<div class="quiz-q" data-answer="0" data-why="You can run the same playbook ten times and get the same infrastructure once.">
+<p><strong>3. Idempotency matters because it makes:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="0"> Re-runs safe</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="1"> Plays faster</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="2"> Logs prettier</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="3"> Vault unnecessary</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<button class="btn quiz-check" type="button">Check answers</button>
+<p class="quiz-score" aria-live="polite"></p>
+</div>
+
+<div class="resume-card" id="read-next">
+<h3>What to read next</h3>
+<ul class="clean-list">
+<li><a href="terraform.html" style="color:#7dd3fc">Terraform</a></li>
+<li><a href="yaml-dockerfiles.html" style="color:#7dd3fc">YAML &amp; Dockerfiles</a></li>
+<li><a href="jenkins.html" style="color:#7dd3fc">Jenkins</a></li>
+</ul>
+</div>
+
+<div class="example-box author-box">
+<p style="margin:0;font-size:0.9rem;color:#94a3b8"><strong style="color:#7dd3fc">About the author.</strong> Written by <strong>Munir Nweiser</strong> — 5 years L1–L3 Capital Markets production support (Morgan Stanley, Société Générale, Crédit Agricole CIB).</p>
+</div>
+
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+<script>
+(function () {
+    'use strict';
+
+    /* Copy buttons on code / formula blocks */
+    function copyText(text, btn) {
+        var label = btn.textContent;
+        function done(msg) {
+            btn.textContent = msg;
+            setTimeout(function () { btn.textContent = label; }, 1500);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(
+                function () { done('Copied!'); },
+                function () { done('Failed'); }
+            );
+        } else {
+            done('Select & copy');
+        }
+    }
+    document.querySelectorAll('main pre, main p.formula').forEach(function (el) {
+        if (el.querySelector('.copy-btn')) { return; }
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn copy-btn';
+        btn.textContent = 'Copy';
+        btn.setAttribute('aria-label', 'Copy to clipboard');
+        btn.addEventListener('click', function () { copyText(el.innerText, btn); });
+        el.classList.add('copyable');
+        el.appendChild(btn);
+    });
+
+    /* Knowledge-check quiz */
+    var quiz = document.getElementById('quiz');
+    if (quiz) {
+        var checkBtn = quiz.querySelector('.quiz-check');
+        var scoreEl = quiz.querySelector('.quiz-score');
+        checkBtn.addEventListener('click', function () {
+            var questions = quiz.querySelectorAll('.quiz-q');
+            var correct = 0;
+            questions.forEach(function (q) {
+                var answer = parseInt(q.getAttribute('data-answer'), 10);
+                var why = q.getAttribute('data-why') || '';
+                var picked = q.querySelector('input[type="radio"]:checked');
+                var fb = q.querySelector('.quiz-feedback');
+                q.querySelectorAll('.quiz-opt').forEach(function (l) { l.classList.remove('opt-right'); });
+                var labels = q.querySelectorAll('.quiz-opt');
+                if (labels[answer]) { labels[answer].classList.add('opt-right'); }
+                if (picked && parseInt(picked.value, 10) === answer) {
+                    correct += 1;
+                    fb.textContent = '\u2713 Correct. ' + why;
+                    fb.className = 'quiz-feedback fb-ok';
+                } else {
+                    fb.textContent = '\u2717 Not quite. ' + why;
+                    fb.className = 'quiz-feedback fb-no';
+                }
+                fb.hidden = false;
+            });
+            scoreEl.textContent = 'Score: ' + correct + ' / ' + questions.length;
+        });
+    }
+})();
+</script>
 </main>
 
 <footer class="site-footer"><div class="container footer-content">

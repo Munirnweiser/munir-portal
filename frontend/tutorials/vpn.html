@@ -18,13 +18,42 @@
         .example-box p { margin-bottom:8px; }
         .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
         pre.formula { padding:14px 16px; background:rgba(15,23,42,.7); border-radius:10px; overflow-x:auto; line-height:1.6; }
-    </style>
+    
+        .last-updated { color: var(--text-muted); font-size: 0.8rem; margin: -4px 0 14px; }
+        .toc-box ul { list-style: none; padding: 0; margin: 4px 0 0; columns: 2; column-gap: 28px; }
+        .toc-box li { margin-bottom: 7px; break-inside: avoid; }
+        .toc-box a { color: var(--cyan); text-decoration: none; font-size: 0.88rem; }
+        .toc-box a:hover { text-decoration: underline; }
+        @media (max-width: 700px) { .toc-box ul { columns: 1; } }
+        .takeaways-box h4, .toc-box h4 { color: #7dd3fc; margin-bottom: 10px; }
+        .takeaways-box ul { margin-bottom: 0; }
+        .copyable { position: relative; }
+        .copy-btn { position: absolute; top: 8px; right: 8px; padding: 4px 12px; font-size: 0.72rem; }
+        .quiz-q { margin: 18px 0; padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; }
+        .quiz-q > p:first-child { margin-bottom: 10px; }
+        .quiz-opt { display: block; padding: 8px 10px; margin: 6px 0; border-radius: 8px; cursor: pointer; color: #cbd5e1; }
+        .quiz-opt:hover { background: rgba(125,211,252,0.06); }
+        .quiz-opt input { margin-right: 10px; }
+        .opt-right { outline: 1px solid #4ade80; color: #4ade80; }
+        .quiz-feedback { margin-top: 10px; font-size: 0.9rem; }
+        .fb-ok { color: #4ade80; }
+        .fb-no { color: #fca5a5; }
+        .quiz-score { font-weight: 700; margin-top: 12px; color: #f8fafc; }
+        details.practice { margin: 10px 0; border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; }
+        details.practice summary { cursor: pointer; color: #7dd3fc; font-weight: 600; }
+        details.practice summary + p { margin: 10px 0 4px; }
+        .practice-tier { color: #7dd3fc; font-size: 0.95rem; margin: 22px 0 6px; font-weight: 700; }
+        .author-box { border-left: 3px solid #7dd3fc; }
+</style>
     <meta property="og:title" content="VPN | Munir Nweiser">
     <meta property="og:description" content="VPN for production support: site-to-site vs client VPN, tunnel diagnostics, phase 1/2 failures, DPD, MTU issues and a trader-connectivity incident walkthrough.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://munirnweiser.github.io/munir-portal/tutorials/vpn.html">
     <meta property="og:site_name" content="Munir Nweiser — Capital Markets Technology">
     <meta name="twitter:card" content="summary">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@type": "Article", "headline": "VPN", "author": {"@type": "Person", "name": "Munir Nweiser"}, "datePublished": "2026-10-07"}
+</script>
 </head>
 <body>
 <div id="fairy-layer" aria-hidden="true"></div>
@@ -49,16 +78,43 @@
 
 <div class="section-heading">
 <p class="eyebrow">Tutorials • Networking</p>
+<p class="last-updated">Last updated: October 7, 2026</p>
 <h2>VPN</h2>
 <p>The tunnel every remote trader depends on: how VPNs work, how they fail, and the diagnostics that find it in minutes.</p>
 </div>
 
-<div class="resume-card">
+<div class="example-box takeaways-box">
+<h4>Key takeaways</h4>
+<ul>
+<li><strong>Phase 1 (IKE) builds the secure channel;</strong> phase 2 (IPsec) moves the traffic — check MM_ACTIVE, then encaps/decaps counters.</li>
+<li><strong>Encaps rising + decaps stuck at 0</strong> means our packets leave but nothing returns — a far-side problem.</li>
+<li><strong>Remote trader triage order:</strong> VPN client connected? → anything internal reachable? → the app — layer by layer.</li>
+<li><strong>Split tunneling trades convenience for control</strong> — hairpins and DNS leaks need deliberate policy.</li>
+<li><strong>mtr separates real loss from ICMP deprioritization</strong> — loss that doesn&#x27;t propagate downstream isn&#x27;t path loss.</li>
+</ul>
+</div>
+
+<div class="example-box toc-box">
+<h4>On this page</h4>
+<ul>
+<li><a href="#sec-1">Site-to-site vs client VPN</a></li>
+<li><a href="#sec-2">How the tunnel is built: phase 1 and phase 2</a></li>
+<li><a href="#sec-3">The usual suspects: DPD, MTU and credentials</a></li>
+<li><a href="#sec-4">Incident walkthrough: trader can&#x27;t reach the trading system</a></li>
+<li><a href="#sec-5">Split tunneling: convenience vs control</a></li>
+<li><a href="#sec-6">Certificate renewal: where auto-enrollment breaks</a></li>
+<li><a href="#sec-7">SD-WAN vs classic VPN, in one paragraph</a></li>
+<li><a href="#sec-8">Latency and jitter diagnosis with mtr</a></li>
+<li><a href="#sec-9">What production support watches</a></li>
+</ul>
+</div>
+
+<div class="resume-card"> id="sec-1"
 <h3>Site-to-site vs client VPN</h3>
 <p>A <em>site-to-site</em> VPN permanently connects two networks — bank data center to exchange colocation, head office to disaster-recovery site. It is always on and carries production traffic. A <em>client</em> (remote-access) VPN connects one laptop to the corporate network — the work-from-home trader's lifeline to the trading systems. Support cares about both, but the triage differs: a site-to-site failure hits a whole location at once; a client VPN failure hits one person and is usually their machine, their ISP, or their credentials.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-2"
 <h3>How the tunnel is built: phase 1 and phase 2</h3>
 <p>IPsec VPNs negotiate in two phases. <strong>Phase 1</strong> (IKE) establishes a secure channel between the two gateways — authenticating each side and agreeing on encryption. <strong>Phase 2</strong> negotiates the actual data tunnel (the security associations carrying traffic). The diagnostic rule: if phase 1 fails, the gateways can't talk securely at all — check pre-shared keys, certificates, and reachability on UDP 500/4500. If phase 1 is up but phase 2 fails, check the interesting-traffic definitions (proxy IDs / traffic selectors) — the two sides disagree about what traffic the tunnel should carry.</p>
 <div class="example-box">
@@ -70,7 +126,7 @@ show crypto ipsec sa       # phase 2 up? check encaps/decaps counters
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-3"
 <h3>The usual suspects: DPD, MTU and credentials</h3>
 <ul class="clean-list">
 <li><strong>DPD (Dead Peer Detection)</strong> — heartbeats that detect a dead tunnel and rebuild it. A tunnel that "drops every 30 minutes" with no config change is often DPD misfiring across NAT, or lifetimes mismatched between sides.</li>
@@ -79,20 +135,20 @@ show crypto ipsec sa       # phase 2 up? check encaps/decaps counters
 </ul>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-4"
 <h3>Incident walkthrough: trader can't reach the trading system</h3>
 <div class="example-box">
 <p>8:55 AM: a trader working from home reports the order-entry screen won't load; colleagues in the office are fine. Triage order: (1) Is the VPN client connected? Yes, tunnel is up. (2) Can they reach anything internal? Intranet loads — so the tunnel works and it's not credentials. (3) Traceroute to the trading server dies after the VPN gateway. The trading VLAN's route was removed from the VPN concentrator's config during weekend maintenance. Fix: re-add the route, trader reconnects, orders flow. Total: 12 minutes — because the triage isolated "tunnel up, one destination unreachable" instead of reinstalling the VPN client.</p>
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-5"
 <h3>Split tunneling: convenience vs control</h3>
 <p>With <em>full tunneling</em>, every packet from the laptop — trading traffic and video calls alike — goes through the corporate VPN concentrator: inspectable and policy-controlled, but every byte consumes concentrator bandwidth and adds latency. With <em>split tunneling</em>, only corporate destinations use the tunnel; streaming and personal browsing go direct: faster for the user, cheaper for the network, but the endpoint is more exposed and DNS can leak internal names.</p>
 <p>Banks almost always force full tunnel for trading staff — the compliance and DLP requirements leave no choice. Support angle: "the trading app is slow from home but fine in the office" on a full-tunnel setup often means the home traffic is hairpinning through an overloaded concentrator; check concentrator load and the user's assigned gateway before blaming their ISP.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-6"
 <h3>Certificate renewal: where auto-enrollment breaks</h3>
 <p>Machine and user certificates typically live 1–2 years and renew via SCEP or EST auto-enrollment — silently, until it doesn't. The failure modes, in order of frequency:</p>
 <ul class="clean-list">
@@ -106,12 +162,12 @@ show crypto ipsec sa       # phase 2 up? check encaps/decaps counters
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-7"
 <h3>SD-WAN vs classic VPN, in one paragraph</h3>
 <p>Classic VPN is static: manually configured tunnels, manual failover, all branch traffic backhauled through headquarters — simple to reason about, slow to adapt. SD-WAN builds an overlay across whatever links exist (MPLS, broadband, LTE), measures them continuously, and steers each application down the best path with sub-second failover, all from central policy. For trading sites it means better resilience and less backhaul tromboning — at the cost of a new control plane to operate: when traffic takes a surprising path, the answer is now a controller query, not a static route table, and a controller outage is a new kind of very bad day.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-8"
 <h3>Latency and jitter diagnosis with mtr</h3>
 <p><span class="formula">mtr</span> fuses ping and traceroute: per-hop loss and latency, updated live. Run it <em>during</em> the incident, for at least 50 cycles, against the real destination — and keep a baseline from a good day for comparison.</p>
 <div class="example-box">
@@ -124,7 +180,7 @@ gateway-hop-5    0.0%   13.0   12.5   15.1</pre>
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-9"
 <h3>What production support watches</h3>
 <ul class="clean-list">
 <li><strong>Tunnel uptime and throughput</strong> — alert on tunnel state changes and on throughput drops, which precede user complaints by minutes.</li>
@@ -179,7 +235,130 @@ gateway-hop-5    0.0%   13.0   12.5   15.1</pre>
 })();
 </script>
 
+
+
+<div class="resume-card" id="practice">
+<h3>Practice: easy, medium, hard</h3>
+<p>Try these before moving on — click a question to reveal the answer.</p>
+<h4 class="practice-tier">Easy</h4>
+<details class="practice"><summary><strong>1.</strong> Phase 1 vs phase 2 — one line each.</summary><p><strong>Answer:</strong> Phase 1 (IKE) authenticates and builds the security association; phase 2 (IPsec) encrypts the actual traffic.</p></details>
+<details class="practice"><summary><strong>2.</strong> show crypto ikev1 sa shows MM_ACTIVE. What does that tell you?</summary><p><strong>Answer:</strong> Phase 1 is up — the IKE negotiation completed.</p></details>
+<h4 class="practice-tier">Medium</h4>
+<details class="practice"><summary><strong>3.</strong> Encaps counters climbing, decaps stuck at 0. Diagnose.</summary><p><strong>Answer:</strong> Our encrypted packets leave but nothing comes back — far-side issue, return routing, or policy blocking the return path.</p></details>
+<details class="practice"><summary><strong>4.</strong> Trader at home: VPN shows connected, but nothing internal loads. Next step?</summary><p><strong>Answer:</strong> Split-tunnel/DNS check: try an internal IP vs hostname, verify the pushed routes.</p></details>
+<h4 class="practice-tier">Hard</h4>
+<details class="practice"><summary><strong>5.</strong> Certificate auto-renewal broke on 200 laptops overnight. Usual suspects?</summary><p><strong>Answer:</strong> CA unreachable, clock skew, certificate template permissions, or a stale cached certificate.</p></details>
+<details class="practice"><summary><strong>6.</strong> mtr shows 30% loss at hop 3 but 0% at every later hop. Real loss?</summary><p><strong>Answer:</strong> Almost certainly ICMP deprioritization at that router — loss that doesn&#x27;t propagate isn&#x27;t real path loss.</p></details>
+</div>
+
+<div class="resume-card" id="quiz">
+<h3>Knowledge check</h3>
+<p>Pick the best answer for each question, then check your score.</p>
+<div class="quiz-q" data-answer="0" data-why="Main Mode active = the IKE phase-1 negotiation completed successfully.">
+<p><strong>1. MM_ACTIVE in the IKE SA table indicates:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="0"> Phase 1 is up</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="1"> Phase 2 is up</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="2"> The tunnel is down</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="3"> A rekey is running</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<div class="quiz-q" data-answer="0" data-why="We encrypt and send, but nothing comes back — investigate the far side.">
+<p><strong>2. Decaps counters stuck at zero while encaps climbs means:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="0"> No return traffic is arriving</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="1"> Everything is healthy</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="2"> Phase 1 is down</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="3"> A rekey just finished</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<div class="quiz-q" data-answer="0" data-why="Triage layer by layer from the user outward — VPN first, then reachability, then the app.">
+<p><strong>3. A remote trader can&#x27;t reach the order-entry screen. First check:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="0"> Is the VPN client connected?</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="1"> Reinstall the application</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="2"> Call the network team</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="3"> Reboot the exchange</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<button class="btn quiz-check" type="button">Check answers</button>
+<p class="quiz-score" aria-live="polite"></p>
+</div>
+
+<div class="resume-card" id="read-next">
+<h3>What to read next</h3>
+<ul class="clean-list">
+<li><a href="frontend-backend-middleware.html" style="color:#7dd3fc">Frontend / Backend / Middleware</a></li>
+<li><a href="fix-protocol.html" style="color:#7dd3fc">FIX Protocol Deep Dive</a></li>
+<li><a href="kubernetes.html" style="color:#7dd3fc">Kubernetes for Production Support</a></li>
+</ul>
+</div>
+
+<div class="example-box author-box">
+<p style="margin:0;font-size:0.9rem;color:#94a3b8"><strong style="color:#7dd3fc">About the author.</strong> Written by <strong>Munir Nweiser</strong> — 5 years L1–L3 Capital Markets production support (Morgan Stanley, Société Générale, Crédit Agricole CIB).</p>
+</div>
+
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+<script>
+(function () {
+    'use strict';
+
+    /* Copy buttons on code / formula blocks */
+    function copyText(text, btn) {
+        var label = btn.textContent;
+        function done(msg) {
+            btn.textContent = msg;
+            setTimeout(function () { btn.textContent = label; }, 1500);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(
+                function () { done('Copied!'); },
+                function () { done('Failed'); }
+            );
+        } else {
+            done('Select & copy');
+        }
+    }
+    document.querySelectorAll('main pre, main p.formula').forEach(function (el) {
+        if (el.querySelector('.copy-btn')) { return; }
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn copy-btn';
+        btn.textContent = 'Copy';
+        btn.setAttribute('aria-label', 'Copy to clipboard');
+        btn.addEventListener('click', function () { copyText(el.innerText, btn); });
+        el.classList.add('copyable');
+        el.appendChild(btn);
+    });
+
+    /* Knowledge-check quiz */
+    var quiz = document.getElementById('quiz');
+    if (quiz) {
+        var checkBtn = quiz.querySelector('.quiz-check');
+        var scoreEl = quiz.querySelector('.quiz-score');
+        checkBtn.addEventListener('click', function () {
+            var questions = quiz.querySelectorAll('.quiz-q');
+            var correct = 0;
+            questions.forEach(function (q) {
+                var answer = parseInt(q.getAttribute('data-answer'), 10);
+                var why = q.getAttribute('data-why') || '';
+                var picked = q.querySelector('input[type="radio"]:checked');
+                var fb = q.querySelector('.quiz-feedback');
+                q.querySelectorAll('.quiz-opt').forEach(function (l) { l.classList.remove('opt-right'); });
+                var labels = q.querySelectorAll('.quiz-opt');
+                if (labels[answer]) { labels[answer].classList.add('opt-right'); }
+                if (picked && parseInt(picked.value, 10) === answer) {
+                    correct += 1;
+                    fb.textContent = '\u2713 Correct. ' + why;
+                    fb.className = 'quiz-feedback fb-ok';
+                } else {
+                    fb.textContent = '\u2717 Not quite. ' + why;
+                    fb.className = 'quiz-feedback fb-no';
+                }
+                fb.hidden = false;
+            });
+            scoreEl.textContent = 'Score: ' + correct + ' / ' + questions.length;
+        });
+    }
+})();
+</script>
 </main>
 
 <footer class="site-footer"><div class="container footer-content">

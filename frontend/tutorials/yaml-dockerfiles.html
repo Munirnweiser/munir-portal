@@ -18,13 +18,42 @@
         .example-box p { margin-bottom:8px; }
         .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
         pre.formula { padding:14px 16px; background:rgba(15,23,42,.7); border-radius:10px; overflow-x:auto; line-height:1.6; }
-    </style>
+    
+        .last-updated { color: var(--text-muted); font-size: 0.8rem; margin: -4px 0 14px; }
+        .toc-box ul { list-style: none; padding: 0; margin: 4px 0 0; columns: 2; column-gap: 28px; }
+        .toc-box li { margin-bottom: 7px; break-inside: avoid; }
+        .toc-box a { color: var(--cyan); text-decoration: none; font-size: 0.88rem; }
+        .toc-box a:hover { text-decoration: underline; }
+        @media (max-width: 700px) { .toc-box ul { columns: 1; } }
+        .takeaways-box h4, .toc-box h4 { color: #7dd3fc; margin-bottom: 10px; }
+        .takeaways-box ul { margin-bottom: 0; }
+        .copyable { position: relative; }
+        .copy-btn { position: absolute; top: 8px; right: 8px; padding: 4px 12px; font-size: 0.72rem; }
+        .quiz-q { margin: 18px 0; padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; }
+        .quiz-q > p:first-child { margin-bottom: 10px; }
+        .quiz-opt { display: block; padding: 8px 10px; margin: 6px 0; border-radius: 8px; cursor: pointer; color: #cbd5e1; }
+        .quiz-opt:hover { background: rgba(125,211,252,0.06); }
+        .quiz-opt input { margin-right: 10px; }
+        .opt-right { outline: 1px solid #4ade80; color: #4ade80; }
+        .quiz-feedback { margin-top: 10px; font-size: 0.9rem; }
+        .fb-ok { color: #4ade80; }
+        .fb-no { color: #fca5a5; }
+        .quiz-score { font-weight: 700; margin-top: 12px; color: #f8fafc; }
+        details.practice { margin: 10px 0; border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; }
+        details.practice summary { cursor: pointer; color: #7dd3fc; font-weight: 600; }
+        details.practice summary + p { margin: 10px 0 4px; }
+        .practice-tier { color: #7dd3fc; font-size: 0.95rem; margin: 22px 0 6px; font-weight: 700; }
+        .author-box { border-left: 3px solid #7dd3fc; }
+</style>
     <meta property="og:title" content="YAML &amp;amp; Dockerfiles | Munir Nweiser">
     <meta property="og:description" content="YAML gotchas and Dockerfile best practices for production support: indentation traps, layer caching, multi-stage builds and running as non-root.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://munirnweiser.github.io/munir-portal/tutorials/yaml-dockerfiles.html">
     <meta property="og:site_name" content="Munir Nweiser — Capital Markets Technology">
     <meta name="twitter:card" content="summary">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@type": "Article", "headline": "YAML & Dockerfiles", "author": {"@type": "Person", "name": "Munir Nweiser"}, "datePublished": "2026-10-07"}
+</script>
 </head>
 <body>
 <div id="fairy-layer" aria-hidden="true"></div>
@@ -49,11 +78,37 @@
 
 <div class="section-heading">
 <p class="eyebrow">Tutorials • Containers</p>
+<p class="last-updated">Last updated: October 7, 2026</p>
 <h2>YAML &amp; Dockerfiles</h2>
 <p>Two files that break deployments silently: YAML's indentation traps and Dockerfiles that build slow, fat, insecure images.</p>
 </div>
 
-<div class="resume-card">
+<div class="example-box takeaways-box">
+<h4>Key takeaways</h4>
+<ul>
+<li><strong>Indentation is structure:</strong> ports listed under env parses fine — and is completely wrong; it belongs at container level.</li>
+<li><strong>| keeps newlines, &gt; folds them;</strong> |- strips the trailing newline. Pick deliberately.</li>
+<li><strong>Anchors, aliases and &lt;&lt;: merges</strong> deduplicate YAML — but merges are shallow, not deep.</li>
+<li><strong>Dockerfile layering:</strong> dependencies first (cached), code last; non-root USER; multi-stage for slim images.</li>
+<li><strong>BuildKit cache mounts</strong> speed up builds without fattening the final image.</li>
+</ul>
+</div>
+
+<div class="example-box toc-box">
+<h4>On this page</h4>
+<ul>
+<li><a href="#sec-1">YAML gotchas that page support</a></li>
+<li><a href="#sec-2">Dockerfile best practices</a></li>
+<li><a href="#sec-3">HEALTHCHECK: let the orchestrator know you&#x27;re alive</a></li>
+<li><a href="#sec-4">Multi-line strings: | keeps lines, &gt; folds them</a></li>
+<li><a href="#sec-5">Anchors and aliases, worked</a></li>
+<li><a href="#sec-6">BuildKit cache mounts: fast builds without fat images</a></li>
+<li><a href="#sec-7">Distroless images: smaller, safer, harder to debug</a></li>
+<li><a href="#sec-8">What production support watches</a></li>
+</ul>
+</div>
+
+<div class="resume-card"> id="sec-1"
 <h3>YAML gotchas that page support</h3>
 <p>YAML is whitespace-significant: two spaces per level, never tabs. The classic traps:</p>
 <ul class="clean-list">
@@ -79,7 +134,7 @@ ports:                      # wrong indent: belongs to the pod spec level
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-2"
 <h3>Dockerfile best practices</h3>
 <p>Each instruction creates a cached <em>layer</em>. Order instructions from least-frequently-changed to most: dependencies first, application code last — so a code change rebuilds only the final layers instead of reinstalling the world.</p>
 <div class="example-box">
@@ -100,7 +155,7 @@ ENTRYPOINT ["java","-jar","/app.jar"]</pre>
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-3"
 <h3>HEALTHCHECK: let the orchestrator know you're alive</h3>
 <p>A <span class="formula">HEALTHCHECK</span> instruction tells Docker how to probe the container — and Kubernetes and load balancers rely on the same idea with liveness/readiness probes. Without one, the orchestrator considers a container healthy as long as its main process hasn't exited — even if the application inside is wedged and rejecting every request.</p>
 <div class="example-box">
@@ -110,7 +165,7 @@ ENTRYPOINT ["java","-jar","/app.jar"]</pre>
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-4"
 <h3>Multi-line strings: | keeps lines, &gt; folds them</h3>
 <p>YAML has two block scalars and they are not interchangeable. <span class="formula">|</span> (literal) preserves newlines — for scripts and config files where line breaks matter. <span class="formula">&gt;</span> (folded) turns newlines into spaces — for long human-readable text. The chomping indicator controls the trailing newline: <span class="formula">|-</span> strips it, <span class="formula">|+</span> keeps every blank line.</p>
 <div class="example-box">
@@ -132,7 +187,7 @@ command: |-
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-5"
 <h3>Anchors and aliases, worked</h3>
 <p>Define once with <span class="formula">&amp;name</span>, reuse with <span class="formula">*name</span>, and merge maps with <span class="formula">&lt;&lt;: *name</span>. The merge key is the workhorse for repeated environment blocks.</p>
 <div class="example-box">
@@ -153,7 +208,7 @@ services:
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-6"
 <h3>BuildKit cache mounts: fast builds without fat images</h3>
 <p>Dependency downloads dominate build time, and the naive fix — copying the package cache into the image — bloats every layer forever. BuildKit cache mounts persist a cache <em>outside</em> the image: the build reuses it, the image never contains it.</p>
 <div class="example-box">
@@ -166,13 +221,13 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-7"
 <h3>Distroless images: smaller, safer, harder to debug</h3>
 <p><em>Distroless</em> images ship only the application and its runtime — no shell, no package manager, no utilities. The payoff is real: a dramatically smaller attack surface and far fewer CVE findings in image scans. The price is paid at 3 AM: the runbook step "exec into the container and check" fails because there is no shell to exec into.</p>
 <p>The workarounds, in order of preference: <span class="formula">kubectl debug</span> with an ephemeral debug container attached to the pod's namespaces; the <span class="formula">:debug</span> variant tags most distroless images publish (busybox shell included); and structured logging done well enough that you rarely need the shell at all. Support angle: know <em>before</em> the incident which images are distroless — discovering it mid-bridge-call wastes the first ten minutes.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-8"
 <h3>What production support watches</h3>
 <ul class="clean-list">
 <li><strong>Image pull failures</strong> — ImagePullBackOff usually means a wrong tag, a deleted image, or expired registry credentials; the Dockerfile is fine, the reference is not.</li>
@@ -227,7 +282,130 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 })();
 </script>
 
+
+
+<div class="resume-card" id="practice">
+<h3>Practice: easy, medium, hard</h3>
+<p>Try these before moving on — click a question to reveal the answer.</p>
+<h4 class="practice-tier">Easy</h4>
+<details class="practice"><summary><strong>1.</strong> In the broken example, ports: sits under env:. What&#x27;s wrong?</summary><p><strong>Answer:</strong> Wrong indent level — ports belongs to the container spec, not under env; YAML parses it without complaint.</p></details>
+<details class="practice"><summary><strong>2.</strong> | versus &gt; in YAML block scalars?</summary><p><strong>Answer:</strong> | (literal) keeps line breaks; &gt; (folded) joins lines with spaces.</p></details>
+<h4 class="practice-tier">Medium</h4>
+<details class="practice"><summary><strong>3.</strong> Why COPY pom.xml and run dependency:go-offline before COPY src?</summary><p><strong>Answer:</strong> The dependency layer caches — later code changes don&#x27;t re-download the world.</p></details>
+<details class="practice"><summary><strong>4.</strong> The image runs as root. Give the two-line fix.</summary><p><strong>Answer:</strong> Create a user (RUN groupadd/useradd appuser) and add USER appuser before the CMD.</p></details>
+<h4 class="practice-tier">Hard</h4>
+<details class="practice"><summary><strong>5.</strong> What is the &lt;&lt;: merge-key surprise?</summary><p><strong>Answer:</strong> Merges are shallow — nested maps are replaced wholesale rather than deep-merged.</p></details>
+<details class="practice"><summary><strong>6.</strong> Distroless images have no shell. How do you debug one in Kubernetes?</summary><p><strong>Answer:</strong> kubectl debug with an ephemeral debug container attached to the pod.</p></details>
+</div>
+
+<div class="resume-card" id="quiz">
+<h3>Knowledge check</h3>
+<p>Pick the best answer for each question, then check your score.</p>
+<div class="quiz-q" data-answer="0" data-why="ports under env is valid YAML with the wrong meaning — the worst kind of bug.">
+<p><strong>1. A YAML indentation mistake usually causes:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="0"> Silently wrong structure</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="1"> Always a parse error</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="2"> No effect at all</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="3"> Faster parsing</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<div class="quiz-q" data-answer="0" data-why="Compilers and SDKs stay in the build stage; only the artifact ships.">
+<p><strong>2. The main win of multi-stage Docker builds is:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="0"> A smaller final image</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="1"> More build stages</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="2"> Better YAML</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="3"> Free registry space</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<div class="quiz-q" data-answer="0" data-why="It limits the blast radius if the process is compromised.">
+<p><strong>3. Running containers as non-root matters for:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="0"> Security</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="1"> Speed</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="2"> Image size</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="3"> Build caching</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<button class="btn quiz-check" type="button">Check answers</button>
+<p class="quiz-score" aria-live="polite"></p>
+</div>
+
+<div class="resume-card" id="read-next">
+<h3>What to read next</h3>
+<ul class="clean-list">
+<li><a href="docker.html" style="color:#7dd3fc">Docker for Production Support</a></li>
+<li><a href="kubernetes.html" style="color:#7dd3fc">Kubernetes for Production Support</a></li>
+<li><a href="git-essentials.html" style="color:#7dd3fc">Git Essentials</a></li>
+</ul>
+</div>
+
+<div class="example-box author-box">
+<p style="margin:0;font-size:0.9rem;color:#94a3b8"><strong style="color:#7dd3fc">About the author.</strong> Written by <strong>Munir Nweiser</strong> — 5 years L1–L3 Capital Markets production support (Morgan Stanley, Société Générale, Crédit Agricole CIB).</p>
+</div>
+
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+<script>
+(function () {
+    'use strict';
+
+    /* Copy buttons on code / formula blocks */
+    function copyText(text, btn) {
+        var label = btn.textContent;
+        function done(msg) {
+            btn.textContent = msg;
+            setTimeout(function () { btn.textContent = label; }, 1500);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(
+                function () { done('Copied!'); },
+                function () { done('Failed'); }
+            );
+        } else {
+            done('Select & copy');
+        }
+    }
+    document.querySelectorAll('main pre, main p.formula').forEach(function (el) {
+        if (el.querySelector('.copy-btn')) { return; }
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn copy-btn';
+        btn.textContent = 'Copy';
+        btn.setAttribute('aria-label', 'Copy to clipboard');
+        btn.addEventListener('click', function () { copyText(el.innerText, btn); });
+        el.classList.add('copyable');
+        el.appendChild(btn);
+    });
+
+    /* Knowledge-check quiz */
+    var quiz = document.getElementById('quiz');
+    if (quiz) {
+        var checkBtn = quiz.querySelector('.quiz-check');
+        var scoreEl = quiz.querySelector('.quiz-score');
+        checkBtn.addEventListener('click', function () {
+            var questions = quiz.querySelectorAll('.quiz-q');
+            var correct = 0;
+            questions.forEach(function (q) {
+                var answer = parseInt(q.getAttribute('data-answer'), 10);
+                var why = q.getAttribute('data-why') || '';
+                var picked = q.querySelector('input[type="radio"]:checked');
+                var fb = q.querySelector('.quiz-feedback');
+                q.querySelectorAll('.quiz-opt').forEach(function (l) { l.classList.remove('opt-right'); });
+                var labels = q.querySelectorAll('.quiz-opt');
+                if (labels[answer]) { labels[answer].classList.add('opt-right'); }
+                if (picked && parseInt(picked.value, 10) === answer) {
+                    correct += 1;
+                    fb.textContent = '\u2713 Correct. ' + why;
+                    fb.className = 'quiz-feedback fb-ok';
+                } else {
+                    fb.textContent = '\u2717 Not quite. ' + why;
+                    fb.className = 'quiz-feedback fb-no';
+                }
+                fb.hidden = false;
+            });
+            scoreEl.textContent = 'Score: ' + correct + ' / ' + questions.length;
+        });
+    }
+})();
+</script>
 </main>
 
 <footer class="site-footer"><div class="container footer-content">

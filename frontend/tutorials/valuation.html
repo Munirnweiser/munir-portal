@@ -17,13 +17,42 @@
         .example-box { margin:18px 0; padding:18px 20px; border-left:3px solid #7dd3fc; background:rgba(30,41,59,.5); border-radius:10px; }
         .example-box p { margin-bottom:8px; }
         .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
-    </style>
+    
+        .last-updated { color: var(--text-muted); font-size: 0.8rem; margin: -4px 0 14px; }
+        .toc-box ul { list-style: none; padding: 0; margin: 4px 0 0; columns: 2; column-gap: 28px; }
+        .toc-box li { margin-bottom: 7px; break-inside: avoid; }
+        .toc-box a { color: var(--cyan); text-decoration: none; font-size: 0.88rem; }
+        .toc-box a:hover { text-decoration: underline; }
+        @media (max-width: 700px) { .toc-box ul { columns: 1; } }
+        .takeaways-box h4, .toc-box h4 { color: #7dd3fc; margin-bottom: 10px; }
+        .takeaways-box ul { margin-bottom: 0; }
+        .copyable { position: relative; }
+        .copy-btn { position: absolute; top: 8px; right: 8px; padding: 4px 12px; font-size: 0.72rem; }
+        .quiz-q { margin: 18px 0; padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; }
+        .quiz-q > p:first-child { margin-bottom: 10px; }
+        .quiz-opt { display: block; padding: 8px 10px; margin: 6px 0; border-radius: 8px; cursor: pointer; color: #cbd5e1; }
+        .quiz-opt:hover { background: rgba(125,211,252,0.06); }
+        .quiz-opt input { margin-right: 10px; }
+        .opt-right { outline: 1px solid #4ade80; color: #4ade80; }
+        .quiz-feedback { margin-top: 10px; font-size: 0.9rem; }
+        .fb-ok { color: #4ade80; }
+        .fb-no { color: #fca5a5; }
+        .quiz-score { font-weight: 700; margin-top: 12px; color: #f8fafc; }
+        details.practice { margin: 10px 0; border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; }
+        details.practice summary { cursor: pointer; color: #7dd3fc; font-weight: 600; }
+        details.practice summary + p { margin: 10px 0 4px; }
+        .practice-tier { color: #7dd3fc; font-size: 0.95rem; margin: 22px 0 6px; font-weight: 700; }
+        .author-box { border-left: 3px solid #7dd3fc; }
+</style>
     <meta property="og:title" content="Valuation Methods | Munir Nweiser">
     <meta property="og:description" content="Valuation methods explained: DCF, multiples, bond valuation and option pricing intuition, with worked examples.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://munirnweiser.github.io/munir-portal/tutorials/valuation.html">
     <meta property="og:site_name" content="Munir Nweiser — Capital Markets Technology">
     <meta name="twitter:card" content="summary">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@type": "Article", "headline": "Valuation Methods", "author": {"@type": "Person", "name": "Munir Nweiser"}, "datePublished": "2026-10-07"}
+</script>
 </head>
 <body>
 <div id="fairy-layer" aria-hidden="true"></div>
@@ -48,11 +77,36 @@
 
 <div class="section-heading">
 <p class="eyebrow">Tutorials • Valuation</p>
+<p class="last-updated">Last updated: October 7, 2026</p>
 <h2>Valuation Methods</h2>
 <p>DCF, multiples, bond and option valuation — how the market decides what something is worth, with the math kept honest.</p>
 </div>
 
-<div class="resume-card">
+<div class="example-box takeaways-box">
+<h4>Key takeaways</h4>
+<ul>
+<li><strong>DCF:</strong> $100M growing at 3% discounted at 8% = $2,000M — and a one-point rise in the discount rate destroys 17% of value.</li>
+<li><strong>Multiples</strong> value by comparison — fast, but only as good as the peer set you pick.</li>
+<li><strong>Bonds:</strong> discount the coupons and principal; settlement price is clean price + accrued (dirty).</li>
+<li><strong>Black-Scholes worked:</strong> S=K=100, r=5%, σ=25%, T=0.5 → call ≈ $8.27, and N(d1) ≈ 0.59 doubles as the delta.</li>
+<li><strong>Binomial trees</strong> reach ≈ $7.14 for the same call via risk-neutral p=0.75 — option pricing without calculus.</li>
+</ul>
+</div>
+
+<div class="example-box toc-box">
+<h4>On this page</h4>
+<ul>
+<li><a href="#sec-1">DCF: value is future cash, discounted</a></li>
+<li><a href="#sec-2">Multiples: value by comparison</a></li>
+<li><a href="#sec-3">Bond valuation: discount the coupons</a></li>
+<li><a href="#sec-4">Option valuation: Black-Scholes intuition, no heavy math</a></li>
+<li><a href="#sec-5">Black-Scholes, worked end to end</a></li>
+<li><a href="#sec-6">Binomial trees: Black-Scholes without calculus</a></li>
+<li><a href="#sec-7">Dirty vs clean price: a worked settlement example</a></li>
+</ul>
+</div>
+
+<div class="resume-card"> id="sec-1"
 <h3>DCF: value is future cash, discounted</h3>
 <p>Discounted cash flow values an asset as the present value of the cash it will generate. The simplest form — a perpetuity growing at rate g, discounted at r — is the Gordon growth formula:</p>
 <p class="formula">Value = CF₁ / (r − g)</p>
@@ -63,18 +117,18 @@
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-2"
 <h3>Multiples: value by comparison</h3>
 <p>Instead of forecasting cash flows, multiples price an asset relative to peers: <strong>P/E</strong> (price per dollar of earnings), <strong>EV/EBITDA</strong> (enterprise value per dollar of operating profit). If comparable banks trade at 12× earnings and yours earns $5/share, the multiple implies $60/share.</p>
 <p>Multiples are fast and market-grounded, but they inherit the market's mood — in a bubble, every multiple says "fair value" right up until it doesn't. Good analysts use multiples to <em>check</em> a DCF, never to replace one.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-3"
 <h3>Bond valuation: discount the coupons</h3>
 <p>A bond is worth the present value of its coupons plus principal, discounted at the market yield — the same seesaw from the fixed-income tutorial. The practical wrinkle is <em>which</em> yield: each cash flow is really discounted at its own point on the curve (bootstrapped spot rates), though a single yield-to-maturity is the market's shorthand quote.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-4"
 <h3>Option valuation: Black-Scholes intuition, no heavy math</h3>
 <p>The Black-Scholes model prices an option from five inputs — and the intuition for each is straightforward:</p>
 <ul>
@@ -94,7 +148,7 @@
 </div>
 
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-5"
 <h3>Black-Scholes, worked end to end</h3>
 <p>Time to run the actual formula. Price a 6-month European call: stock S = 100, strike K = 100, risk-free rate r = 5%, volatility σ = 25%, time T = 0.5 years.</p>
 <p class="formula">d1 = [ln(S/K) + (r + σ²/2)·T] / (σ√T)<br>d2 = d1 − σ√T<br>Call = S·N(d1) − K·e<sup>−rT</sup>·N(d2)</p>
@@ -105,7 +159,7 @@
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-6"
 <h3>Binomial trees: Black-Scholes without calculus</h3>
 <p>A <strong>binomial tree</strong> prices options by brute force: the stock can go up or down each step; work backwards from expiry, discounting expected payoffs at the risk-free rate using <strong>risk-neutral probabilities</strong>. As the steps multiply, the tree converges to the Black-Scholes price — same answer, no calculus.</p>
 <div class="example-box">
@@ -115,7 +169,7 @@
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-7"
 <h3>Dirty vs clean price: a worked settlement example</h3>
 <p>Bonds are <em>quoted</em> clean but <em>settle</em> dirty — clean price plus accrued interest. From the fixed-income tutorial's 30/360 example: 5% annual coupon, last coupon 15 January, settlement 15 May (120 days), clean price 98.00.</p>
 <div class="example-box">
@@ -167,7 +221,130 @@
 })();
 </script>
 
+
+
+<div class="resume-card" id="practice">
+<h3>Practice: easy, medium, hard</h3>
+<p>Try these before moving on — click a question to reveal the answer.</p>
+<h4 class="practice-tier">Easy</h4>
+<details class="practice"><summary><strong>1.</strong> DCF: $100M free cash flow, 3% growth, 8% discount rate. Value?</summary><p><strong>Answer:</strong> 100 / (0.08 − 0.03) = $2,000M.</p></details>
+<details class="practice"><summary><strong>2.</strong> Clean price 98.00, accrued interest 1.67. Settlement (dirty) price?</summary><p><strong>Answer:</strong> 99.67 per 100 of face.</p></details>
+<h4 class="practice-tier">Medium</h4>
+<details class="practice"><summary><strong>3.</strong> The discount rate rises from 8% to 9% on the $2,000M DCF. New value and percentage change?</summary><p><strong>Answer:</strong> 100 / 0.06 = $1,667M — a 17% fall from one point of discount rate.</p></details>
+<details class="practice"><summary><strong>4.</strong> One-step binomial: stock 100 → 110 or 90, risk-free 5% per period, 100-strike call. Price it.</summary><p><strong>Answer:</strong> Risk-neutral p = (1.05 − 0.90)/(1.10 − 0.90) = 0.75; payoffs 10 and 0 → (0.75 × 10)/1.05 ≈ $7.14.</p></details>
+<h4 class="practice-tier">Hard</h4>
+<details class="practice"><summary><strong>5.</strong> A 1-month at-the-money call costs $2.30 at 20% implied vol. Vol doubles to 40%. Rough new price?</summary><p><strong>Answer:</strong> ≈ $4.60 — short-dated at-the-money options scale almost linearly with volatility.</p></details>
+<details class="practice"><summary><strong>6.</strong> N(d1) came out at 0.59 on the worked Black-Scholes call. What does it tell the trader besides the price?</summary><p><strong>Answer:</strong> Delta ≈ 0.59 — hedge roughly 59 shares per 100-share equivalent.</p></details>
+</div>
+
+<div class="resume-card" id="quiz">
+<h3>Knowledge check</h3>
+<p>Pick the best answer for each question, then check your score.</p>
+<div class="quiz-q" data-answer="0" data-why="One point of discount rate (8%→9%) cut $2,000M to $1,667M — 17% gone.">
+<p><strong>1. In a DCF, which input moves the value most violently?</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="0"> The discount rate</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="1"> The face value</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="2"> The coupon dates</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="3"> The ticker symbol</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<div class="quiz-q" data-answer="0" data-why="Settlement is quoted clean; the buyer pays clean plus the seller&#x27;s earned coupon share.">
+<p><strong>2. Dirty price equals:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="0"> Clean price + accrued interest</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="1"> Clean price − accrued interest</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="2"> Par + coupon</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="3"> Bid + ask</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<div class="quiz-q" data-answer="0" data-why="More volatility means more upside chance while the downside stays floored at the premium.">
+<p><strong>3. In Black-Scholes, higher volatility makes a call:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="0"> More expensive</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="1"> Cheaper</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="2"> Unchanged</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="3"> Worthless</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<button class="btn quiz-check" type="button">Check answers</button>
+<p class="quiz-score" aria-live="polite"></p>
+</div>
+
+<div class="resume-card" id="read-next">
+<h3>What to read next</h3>
+<ul class="clean-list">
+<li><a href="fixed-income.html" style="color:#7dd3fc">Fixed Income Essentials</a></li>
+<li><a href="risk-measures.html" style="color:#7dd3fc">Risk Measures: VaR &amp; Stress</a></li>
+<li><a href="futures-options.html" style="color:#7dd3fc">Futures &amp; Options</a></li>
+</ul>
+</div>
+
+<div class="example-box author-box">
+<p style="margin:0;font-size:0.9rem;color:#94a3b8"><strong style="color:#7dd3fc">About the author.</strong> Written by <strong>Munir Nweiser</strong> — 5 years L1–L3 Capital Markets production support (Morgan Stanley, Société Générale, Crédit Agricole CIB).</p>
+</div>
+
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+<script>
+(function () {
+    'use strict';
+
+    /* Copy buttons on code / formula blocks */
+    function copyText(text, btn) {
+        var label = btn.textContent;
+        function done(msg) {
+            btn.textContent = msg;
+            setTimeout(function () { btn.textContent = label; }, 1500);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(
+                function () { done('Copied!'); },
+                function () { done('Failed'); }
+            );
+        } else {
+            done('Select & copy');
+        }
+    }
+    document.querySelectorAll('main pre, main p.formula').forEach(function (el) {
+        if (el.querySelector('.copy-btn')) { return; }
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn copy-btn';
+        btn.textContent = 'Copy';
+        btn.setAttribute('aria-label', 'Copy to clipboard');
+        btn.addEventListener('click', function () { copyText(el.innerText, btn); });
+        el.classList.add('copyable');
+        el.appendChild(btn);
+    });
+
+    /* Knowledge-check quiz */
+    var quiz = document.getElementById('quiz');
+    if (quiz) {
+        var checkBtn = quiz.querySelector('.quiz-check');
+        var scoreEl = quiz.querySelector('.quiz-score');
+        checkBtn.addEventListener('click', function () {
+            var questions = quiz.querySelectorAll('.quiz-q');
+            var correct = 0;
+            questions.forEach(function (q) {
+                var answer = parseInt(q.getAttribute('data-answer'), 10);
+                var why = q.getAttribute('data-why') || '';
+                var picked = q.querySelector('input[type="radio"]:checked');
+                var fb = q.querySelector('.quiz-feedback');
+                q.querySelectorAll('.quiz-opt').forEach(function (l) { l.classList.remove('opt-right'); });
+                var labels = q.querySelectorAll('.quiz-opt');
+                if (labels[answer]) { labels[answer].classList.add('opt-right'); }
+                if (picked && parseInt(picked.value, 10) === answer) {
+                    correct += 1;
+                    fb.textContent = '\u2713 Correct. ' + why;
+                    fb.className = 'quiz-feedback fb-ok';
+                } else {
+                    fb.textContent = '\u2717 Not quite. ' + why;
+                    fb.className = 'quiz-feedback fb-no';
+                }
+                fb.hidden = false;
+            });
+            scoreEl.textContent = 'Score: ' + correct + ' / ' + questions.length;
+        });
+    }
+})();
+</script>
 </main>
 
 <footer class="site-footer"><div class="container footer-content">

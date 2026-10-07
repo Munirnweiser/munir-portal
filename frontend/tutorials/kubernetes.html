@@ -20,13 +20,42 @@
         .cmd { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.88rem; color:#e2e8f0;
                background:rgba(2,6,23,.7); border:1px solid rgba(125,211,252,.15); border-radius:10px;
                padding:14px 16px; overflow-x:auto; white-space:pre; margin:14px 0; }
-    </style>
+    
+        .last-updated { color: var(--text-muted); font-size: 0.8rem; margin: -4px 0 14px; }
+        .toc-box ul { list-style: none; padding: 0; margin: 4px 0 0; columns: 2; column-gap: 28px; }
+        .toc-box li { margin-bottom: 7px; break-inside: avoid; }
+        .toc-box a { color: var(--cyan); text-decoration: none; font-size: 0.88rem; }
+        .toc-box a:hover { text-decoration: underline; }
+        @media (max-width: 700px) { .toc-box ul { columns: 1; } }
+        .takeaways-box h4, .toc-box h4 { color: #7dd3fc; margin-bottom: 10px; }
+        .takeaways-box ul { margin-bottom: 0; }
+        .copyable { position: relative; }
+        .copy-btn { position: absolute; top: 8px; right: 8px; padding: 4px 12px; font-size: 0.72rem; }
+        .quiz-q { margin: 18px 0; padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; }
+        .quiz-q > p:first-child { margin-bottom: 10px; }
+        .quiz-opt { display: block; padding: 8px 10px; margin: 6px 0; border-radius: 8px; cursor: pointer; color: #cbd5e1; }
+        .quiz-opt:hover { background: rgba(125,211,252,0.06); }
+        .quiz-opt input { margin-right: 10px; }
+        .opt-right { outline: 1px solid #4ade80; color: #4ade80; }
+        .quiz-feedback { margin-top: 10px; font-size: 0.9rem; }
+        .fb-ok { color: #4ade80; }
+        .fb-no { color: #fca5a5; }
+        .quiz-score { font-weight: 700; margin-top: 12px; color: #f8fafc; }
+        details.practice { margin: 10px 0; border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; }
+        details.practice summary { cursor: pointer; color: #7dd3fc; font-weight: 600; }
+        details.practice summary + p { margin: 10px 0 4px; }
+        .practice-tier { color: #7dd3fc; font-size: 0.95rem; margin: 22px 0 6px; font-weight: 700; }
+        .author-box { border-left: 3px solid #7dd3fc; }
+</style>
     <meta property="og:title" content="Kubernetes for Production Support | Munir Nweiser">
     <meta property="og:description" content="Kubernetes for production support: kubectl triage, CrashLoopBackOff diagnosis, probes and a full incident walkthrough.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://munirnweiser.github.io/munir-portal/tutorials/kubernetes.html">
     <meta property="og:site_name" content="Munir Nweiser — Capital Markets Technology">
     <meta name="twitter:card" content="summary">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@type": "Article", "headline": "Kubernetes for Production Support", "author": {"@type": "Person", "name": "Munir Nweiser"}, "datePublished": "2026-10-07"}
+</script>
 </head>
 <body>
 <div id="fairy-layer" aria-hidden="true"></div>
@@ -89,15 +118,104 @@
 })();
 </script>
 
+
+
+<div class="resume-card" id="practice">
+<h3>Practice: easy, medium, hard</h3>
+<p>Try these before moving on — click a question to reveal the answer.</p>
+<h4 class="practice-tier">Easy</h4>
+<details class="practice"><summary><strong>1.</strong> Pod vs Deployment vs Service — one line each.</summary><p><strong>Answer:</strong> Pod runs the containers; Deployment manages replicas and rollouts; Service gives stable networking to the pods.</p></details>
+<details class="practice"><summary><strong>2.</strong> First two commands for a CrashLooping pod?</summary><p><strong>Answer:</strong> kubectl describe pod/&lt;name&gt; and kubectl logs &lt;name&gt; --previous.</p></details>
+<h4 class="practice-tier">Medium</h4>
+<details class="practice"><summary><strong>3.</strong> Worked yesterday, CrashLoops today right after a release. Action?</summary><p><strong>Answer:</strong> kubectl rollout history deployment/&lt;name&gt;, then kubectl rollout undo — bad image until proven otherwise.</p></details>
+<details class="practice"><summary><strong>4.</strong> Ingress returns 404 for one path but 503 for another. Meaning?</summary><p><strong>Answer:</strong> 404 = no ingress rule matched the path; 503 = a rule matched but there are no healthy endpoints (often a port-name mismatch).</p></details>
+<h4 class="practice-tier">Hard</h4>
+<details class="practice"><summary><strong>5.</strong> Deploy fails with &#x27;Forbidden: exceeded quota&#x27;. Diagnose?</summary><p><strong>Answer:</strong> ResourceQuota or LimitRange in the namespace — kubectl describe quota; then request a quota increase or trim the requests.</p></details>
+<details class="practice"><summary><strong>6.</strong> A node keeps evicting pods with DiskPressure. Beyond deleting evicted pods?</summary><p><strong>Answer:</strong> Find what fills the disk (logs, emptyDir) and fix the source, or the evictions repeat within the hour — use cordon/drain discipline for node work.</p></details>
+</div>
+
+<div class="resume-card" id="quiz">
+<h3>Knowledge check</h3>
+<p>Pick the best answer for each question, then check your score.</p>
+<div class="quiz-q" data-answer="0" data-why="Correlate with the release first — rollout undo is the fastest test.">
+<p><strong>1. A pod CrashLoops immediately after a new deploy. Most likely:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="0"> A bad image</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="1"> A DNS outage</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="2"> A dead node</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="3"> An RBAC change</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<div class="quiz-q" data-answer="0" data-why="--previous reads the last terminated container — the one that actually died.">
+<p><strong>2. kubectl logs --previous shows:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="0"> The crashed instance&#x27;s logs</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="1"> Logs of old versions</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="2"> Node-level logs</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="3"> The audit log</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<div class="quiz-q" data-answer="0" data-why="HorizontalPodAutoscaler adds replicas when observed metrics cross thresholds.">
+<p><strong>3. The HPA scales workloads based on:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="0"> Metrics such as CPU</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="1"> Time of day</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="2"> Manual approval</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="3"> Git pushes</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<button class="btn quiz-check" type="button">Check answers</button>
+<p class="quiz-score" aria-live="polite"></p>
+</div>
+
+<div class="resume-card" id="read-next">
+<h3>What to read next</h3>
+<ul class="clean-list">
+<li><a href="docker.html" style="color:#7dd3fc">Docker for Production Support</a></li>
+<li><a href="yaml-dockerfiles.html" style="color:#7dd3fc">YAML &amp; Dockerfiles</a></li>
+<li><a href="jenkins.html" style="color:#7dd3fc">Jenkins</a></li>
+</ul>
+</div>
+
+<div class="example-box author-box">
+<p style="margin:0;font-size:0.9rem;color:#94a3b8"><strong style="color:#7dd3fc">About the author.</strong> Written by <strong>Munir Nweiser</strong> — 5 years L1–L3 Capital Markets production support (Morgan Stanley, Société Générale, Crédit Agricole CIB).</p>
+</div>
+
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
 
 <div class="section-heading">
 <p class="eyebrow">Tutorials • Engineering</p>
+<p class="last-updated">Last updated: October 7, 2026</p>
 <h2>Kubernetes for Production Support</h2>
 <p>The kubectl commands and mental models for triaging Kubernetes incidents: what is unhealthy, why a pod will not start, and how to read the story the cluster is telling.</p>
 </div>
 
-<div class="resume-card">
+<div class="example-box takeaways-box">
+<h4>Key takeaways</h4>
+<ul>
+<li><strong>Pod &lt; Deployment &lt; Service:</strong> know which of the three layers you&#x27;re debugging before you run commands.</li>
+<li><strong>kubectl describe + kubectl logs (--previous)</strong> is the triage pair that solves most incidents.</li>
+<li><strong>CrashLoop right after a release = bad image</strong> until proven otherwise — rollout undo is the fastest fix.</li>
+<li><strong>ImagePullBackOff and Pending are scheduler/registry problems,</strong> not application bugs.</li>
+<li><strong>Probes, HPA, PDBs and helm status</strong> are the guardrails — diff staging vs prod values before diffing code.</li>
+</ul>
+</div>
+
+<div class="example-box toc-box">
+<h4>On this page</h4>
+<ul>
+<li><a href="#sec-1">Pods, Deployments, Services: the three layers</a></li>
+<li><a href="#sec-2">The triage pair: describe and logs</a></li>
+<li><a href="#sec-3">CrashLoopBackOff: reading the loop</a></li>
+<li><a href="#sec-4">ImagePullBackOff and Pending: the other two states</a></li>
+<li><a href="#sec-5">Probes and HPA: the guardrails</a></li>
+<li><a href="#sec-6">Incident walkthrough: pricing service down</a></li>
+<li><a href="#sec-7">Helm: releases, history and rollback</a></li>
+<li><a href="#sec-8">Quotas and limits: &quot;Forbidden: exceeded quota&quot;</a></li>
+<li><a href="#sec-9">Ingress debugging: 404 vs 503</a></li>
+<li><a href="#sec-10">Node pressure and evictions</a></li>
+<li><a href="#sec-11">Production readiness checklist</a></li>
+</ul>
+</div>
+
+<div class="resume-card"> id="sec-1"
 <h3>Pods, Deployments, Services: the three layers</h3>
 <p>A <em>Pod</em> is the smallest unit — one or more containers that live and die together. You almost never manage pods directly: a <em>Deployment</em> owns a set of identical pods (a ReplicaSet) and keeps the desired count running. A <em>Service</em> is the stable network endpoint in front of those pods, because pod IPs change on every restart. When support hears "the app is down", the check order is: Service → Deployment → Pods → container logs. Skipping straight to logs wastes the first ten minutes.</p>
 <div class="cmd">kubectl get pods -n trading             # pod states: Running? CrashLoopBackOff? Pending?
@@ -106,7 +224,7 @@ kubectl get services -n trading        # cluster IPs and ports
 kubectl top pods -n trading            # live CPU/memory per pod</div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-2"
 <h3>The triage pair: describe and logs</h3>
 <p><span class="formula">kubectl describe pod</span> shows the pod's recent history — restarts, the last termination reason, and the Events section at the bottom, which is the cluster's own incident log. <span class="formula">kubectl logs</span> shows what the application said:</p>
 <div class="cmd">kubectl describe pod trade-api-7d9f8c6b5-x2k4p -n trading
@@ -115,7 +233,7 @@ kubectl logs trade-api-7d9f8c6b5-x2k4p -n trading --previous   # logs of the LAS
 <p>The <span class="formula">--previous</span> flag is the one people forget: without it you read the fresh container's logs, which say nothing, while the crash evidence died with the previous instance.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-3"
 <h3>CrashLoopBackOff: reading the loop</h3>
 <p>CrashLoopBackOff means the container starts, dies, and Kubernetes retries with increasing backoff. The diagnosis is in the <em>previous</em> logs plus the last termination state in describe output:</p>
 <ul>
@@ -128,19 +246,19 @@ kubectl logs trade-api-7d9f8c6b5-x2k4p -n trading --previous   # logs of the LAS
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-4"
 <h3>ImagePullBackOff and Pending: the other two states</h3>
 <p><em>ImagePullBackOff</em> — the node cannot fetch the image. Causes in order of likelihood: typo in the image tag, missing imagePullSecret for a private registry, or the registry itself being down. <span class="formula">kubectl describe pod</span> names the exact failure.</p>
 <p><em>Pending</em> — the pod was never scheduled. Usually insufficient CPU/memory on the nodes, or a PersistentVolumeClaim that cannot be satisfied. <span class="formula">kubectl describe pod</span> events say plainly: "0/3 nodes are available: 3 Insufficient memory."</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-5"
 <h3>Probes and HPA: the guardrails</h3>
 <p><em>Liveness probes</em> decide whether to restart a stuck container; <em>readiness probes</em> decide whether it receives traffic. A readiness probe failing across all pods means the Service has no endpoints — the app looks "up" in pod listings while serving nothing. Check with <span class="formula">kubectl get endpoints</span>.</p>
 <p>The <em>HorizontalPodAutoscaler</em> scales replicas on CPU or custom metrics. During a traffic spike, verify the HPA is actually scaling (<span class="formula">kubectl get hpa</span>) and that the deployment's max replicas and the nodes' capacity can absorb the load — autoscaling into an unschedulable state just creates Pending pods faster.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-6"
 <h3>Incident walkthrough: pricing service down</h3>
 <p>Alert: pricing API returning 503s. The sequence:</p>
 <ul>
@@ -153,7 +271,7 @@ kubectl logs trade-api-7d9f8c6b5-x2k4p -n trading --previous   # logs of the LAS
 <p>Total time with this sequence: minutes. The pattern is always the same — states, previous logs, describe events, recent changes — and it works for nearly every Kubernetes incident.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-7"
 <h3>Helm: releases, history and rollback</h3>
 <p>Most bank workloads deploy via Helm charts, not raw YAML. A Helm <em>release</em> is a versioned deployment of a chart; every upgrade increments the revision and keeps the history:</p>
 <div class="cmd">helm list -n trading                  # releases and their status
@@ -165,7 +283,7 @@ helm rollback trade-api 4 -n trading  # back to revision 4</div>
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-8"
 <h3>Quotas and limits: "Forbidden: exceeded quota"</h3>
 <p>A deployment that fails instantly with <span class="formula">Forbidden: exceeded quota</span> is not an application problem — the namespace hit its <em>ResourceQuota</em> (max pods, CPU, memory for the whole namespace) or a <em>LimitRange</em> rejected the pod's resource requests:</p>
 <div class="cmd">kubectl describe resourcequota -n trading   # used vs hard limits
@@ -174,7 +292,7 @@ kubectl get events -n trading --sort-by=.lastTimestamp | tail -20</div>
 <p>Classic scenario: the quota allows 50 pods, the HPA just scaled to 51 during a traffic spike, and the 51st pod is rejected. The events stream says so plainly. Support's escalation is precise: "namespace trading is at 50/50 pods against quota; request a quota increase or scale something down" — not "Kubernetes is broken."</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-9"
 <h3>Ingress debugging: 404 vs 503</h3>
 <p>The ingress is the front door; its errors have distinct meanings:</p>
 <ul>
@@ -185,7 +303,7 @@ kubectl get events -n trading --sort-by=.lastTimestamp | tail -20</div>
 <p>Debug order: ingress rules → service → endpoints → pod readiness. Each layer has exactly one command, and skipping layers is how 404s get "fixed" by restarting pods that were never the problem.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-10"
 <h3>Node pressure and evictions</h3>
 <p>When a node runs out of disk or memory, the kubelet starts <em>evicting</em> pods to protect the node. <span class="formula">kubectl describe node</span> shows the Conditions section:</p>
 <div class="cmd">kubectl describe node node-3 | grep -A 3 Conditions
@@ -198,7 +316,7 @@ kubectl top node</div>
 </div>
 
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-11"
 <h3>Production readiness checklist</h3>
 <p>Before any workload enters the prod cluster, it passes this gate. Every item is a past incident:</p>
 <table class="tag-table">
@@ -223,6 +341,69 @@ kubectl top node</div>
 <p>Support takeaway: most Kubernetes incidents are not Kubernetes problems - they are missing guardrails. When triaging, check the guardrails first: <span class="formula">kubectl get pdb,networkpolicy -A</span> plus the deployment's probe definitions tell you in seconds whether this workload was ever prod-ready.</p>
 </div>
 
+<script>
+(function () {
+    'use strict';
+
+    /* Copy buttons on code / formula blocks */
+    function copyText(text, btn) {
+        var label = btn.textContent;
+        function done(msg) {
+            btn.textContent = msg;
+            setTimeout(function () { btn.textContent = label; }, 1500);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(
+                function () { done('Copied!'); },
+                function () { done('Failed'); }
+            );
+        } else {
+            done('Select & copy');
+        }
+    }
+    document.querySelectorAll('main pre, main p.formula').forEach(function (el) {
+        if (el.querySelector('.copy-btn')) { return; }
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn copy-btn';
+        btn.textContent = 'Copy';
+        btn.setAttribute('aria-label', 'Copy to clipboard');
+        btn.addEventListener('click', function () { copyText(el.innerText, btn); });
+        el.classList.add('copyable');
+        el.appendChild(btn);
+    });
+
+    /* Knowledge-check quiz */
+    var quiz = document.getElementById('quiz');
+    if (quiz) {
+        var checkBtn = quiz.querySelector('.quiz-check');
+        var scoreEl = quiz.querySelector('.quiz-score');
+        checkBtn.addEventListener('click', function () {
+            var questions = quiz.querySelectorAll('.quiz-q');
+            var correct = 0;
+            questions.forEach(function (q) {
+                var answer = parseInt(q.getAttribute('data-answer'), 10);
+                var why = q.getAttribute('data-why') || '';
+                var picked = q.querySelector('input[type="radio"]:checked');
+                var fb = q.querySelector('.quiz-feedback');
+                q.querySelectorAll('.quiz-opt').forEach(function (l) { l.classList.remove('opt-right'); });
+                var labels = q.querySelectorAll('.quiz-opt');
+                if (labels[answer]) { labels[answer].classList.add('opt-right'); }
+                if (picked && parseInt(picked.value, 10) === answer) {
+                    correct += 1;
+                    fb.textContent = '\u2713 Correct. ' + why;
+                    fb.className = 'quiz-feedback fb-ok';
+                } else {
+                    fb.textContent = '\u2717 Not quite. ' + why;
+                    fb.className = 'quiz-feedback fb-no';
+                }
+                fb.hidden = false;
+            });
+            scoreEl.textContent = 'Score: ' + correct + ' / ' + questions.length;
+        });
+    }
+})();
+</script>
 </main>
 
 <footer class="site-footer"><div class="container footer-content">

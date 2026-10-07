@@ -18,13 +18,42 @@
         .example-box p { margin-bottom:8px; }
         .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
         pre.formula { padding:14px 16px; background:rgba(15,23,42,.7); border-radius:10px; overflow-x:auto; line-height:1.6; }
-    </style>
+    
+        .last-updated { color: var(--text-muted); font-size: 0.8rem; margin: -4px 0 14px; }
+        .toc-box ul { list-style: none; padding: 0; margin: 4px 0 0; columns: 2; column-gap: 28px; }
+        .toc-box li { margin-bottom: 7px; break-inside: avoid; }
+        .toc-box a { color: var(--cyan); text-decoration: none; font-size: 0.88rem; }
+        .toc-box a:hover { text-decoration: underline; }
+        @media (max-width: 700px) { .toc-box ul { columns: 1; } }
+        .takeaways-box h4, .toc-box h4 { color: #7dd3fc; margin-bottom: 10px; }
+        .takeaways-box ul { margin-bottom: 0; }
+        .copyable { position: relative; }
+        .copy-btn { position: absolute; top: 8px; right: 8px; padding: 4px 12px; font-size: 0.72rem; }
+        .quiz-q { margin: 18px 0; padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; }
+        .quiz-q > p:first-child { margin-bottom: 10px; }
+        .quiz-opt { display: block; padding: 8px 10px; margin: 6px 0; border-radius: 8px; cursor: pointer; color: #cbd5e1; }
+        .quiz-opt:hover { background: rgba(125,211,252,0.06); }
+        .quiz-opt input { margin-right: 10px; }
+        .opt-right { outline: 1px solid #4ade80; color: #4ade80; }
+        .quiz-feedback { margin-top: 10px; font-size: 0.9rem; }
+        .fb-ok { color: #4ade80; }
+        .fb-no { color: #fca5a5; }
+        .quiz-score { font-weight: 700; margin-top: 12px; color: #f8fafc; }
+        details.practice { margin: 10px 0; border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; }
+        details.practice summary { cursor: pointer; color: #7dd3fc; font-weight: 600; }
+        details.practice summary + p { margin: 10px 0 4px; }
+        .practice-tier { color: #7dd3fc; font-size: 0.95rem; margin: 22px 0 6px; font-weight: 700; }
+        .author-box { border-left: 3px solid #7dd3fc; }
+</style>
     <meta property="og:title" content="Building AI Agents | Munir Nweiser">
     <meta property="og:description" content="Building AI agents: the perceive-reason-act loop, tools and function calling, memory, the ReAct pattern, guardrails, and a worked alert-triage support bot design.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://munirnweiser.github.io/munir-portal/tutorials/ai-agents.html">
     <meta property="og:site_name" content="Munir Nweiser — Capital Markets Technology">
     <meta name="twitter:card" content="summary">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@type": "Article", "headline": "Building AI Agents", "author": {"@type": "Person", "name": "Munir Nweiser"}, "datePublished": "2026-10-07"}
+</script>
 </head>
 <body>
 <div id="fairy-layer" aria-hidden="true"></div>
@@ -49,16 +78,46 @@
 
 <div class="section-heading">
 <p class="eyebrow">Tutorials • Artificial Intelligence</p>
+<p class="last-updated">Last updated: October 7, 2026</p>
 <h2>Building AI Agents</h2>
 <p>What an AI agent actually is, how it uses tools and memory, and how to design one that triages production alerts.</p>
 </div>
 
-<div class="resume-card">
+<div class="example-box takeaways-box">
+<h4>Key takeaways</h4>
+<ul>
+<li><strong>The agent loop is perceive → reason → act</strong> — tools are the agent&#x27;s hands on the world.</li>
+<li><strong>Tools need strict schemas and least privilege:</strong> read-only query_logs vs approval-gated restart_service.</li>
+<li><strong>ReAct interleaves reasoning and acting;</strong> memory carries context across loop iterations.</li>
+<li><strong>Failure modes are concrete:</strong> hallucinated arguments (&#x27;pricing-engne&#x27;), wrong tool choice, unsafe parallel calls.</li>
+<li><strong>Guardrails are the product:</strong> tiered approvals, audit logs, and cost caps (≈ $0.10 per incident at 8 iterations).</li>
+</ul>
+</div>
+
+<div class="example-box toc-box">
+<h4>On this page</h4>
+<ul>
+<li><a href="#sec-1">The agent loop: perceive → reason → act</a></li>
+<li><a href="#sec-2">Tools: function calling</a></li>
+<li><a href="#sec-3">Memory and the ReAct pattern</a></li>
+<li><a href="#sec-4">Guardrails: what the agent may never do</a></li>
+<li><a href="#sec-5">Worked example: an alert-triage agent</a></li>
+<li><a href="#sec-6">Tool-calling failure modes</a></li>
+<li><a href="#sec-7">An evaluation harness for a support agent</a></li>
+<li><a href="#sec-8">Human-in-the-loop approval patterns</a></li>
+<li><a href="#sec-9">Cost and latency budgeting for agent loops</a></li>
+<li><a href="#sec-10">What production support watches</a></li>
+<li><a href="#sec-11">Agent architecture, in one diagram</a></li>
+<li><a href="#sec-12">Tool schema design example</a></li>
+</ul>
+</div>
+
+<div class="resume-card"> id="sec-1"
 <h3>The agent loop: perceive → reason → act</h3>
 <p>A chatbot answers a prompt. An <em>agent</em> works a loop: it <strong>perceives</strong> (reads the alert, the logs, the dashboard), <strong>reasons</strong> (decides what the evidence means and what to check next), and <strong>acts</strong> (queries a tool, runs a command, escalates) — then perceives the result and loops again until the task is done. The loop is what turns a language model into something that can resolve an incident rather than just describe one.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-2"
 <h3>Tools: function calling</h3>
 <p>An agent can't SSH into a server by thinking about it — it needs <em>tools</em>: declared functions the model can invoke, like <span class="formula">query_logs(service, time_range)</span> or <span class="formula">get_metric(host, metric)</span>. The model outputs a structured tool call, the harness executes it, and the result feeds back into the next reasoning step. Tool design is the real engineering: narrow, well-described tools with safe defaults beat a giant toolbox the model misuses.</p>
 <div class="example-box">
@@ -74,12 +133,12 @@
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-3"
 <h3>Memory and the ReAct pattern</h3>
 <p><em>Short-term memory</em> is the conversation and tool results within one incident — what the agent has already checked. <em>Long-term memory</em> persists across incidents: past resolutions, runbooks, known issues. The <em>ReAct</em> pattern structures each loop iteration explicitly as <strong>Reasoning</strong> (what do I know, what's the next best check) then <strong>Acting</strong> (call the tool) then <strong>Observation</strong> (what did the tool return) — written out, so the agent's thinking is auditable later.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-4"
 <h3>Guardrails: what the agent may never do</h3>
 <ul class="clean-list">
 <li><strong>Read-only by default</strong> — diagnostics tools need no approval; anything that changes state (restarts, config edits, trade cancellations) requires explicit human confirmation.</li>
@@ -89,7 +148,7 @@
 </ul>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-5"
 <h3>Worked example: an alert-triage agent</h3>
 <div class="example-box">
 <p><strong>Design.</strong> Input: a PagerDuty-style alert — "pricing-engine CPU &gt; 90% for 5 min." Tools: <span class="formula">get_metric</span>, <span class="formula">query_logs</span>, <span class="formula">list_recent_deploys</span>, <span class="formula">check_runbook</span>, <span class="formula">page_human</span>.</p>
@@ -98,7 +157,7 @@
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-6"
 <h3>Tool-calling failure modes</h3>
 <p>Function calling looks robust until the model starts improvising. The failure modes, from most to least common:</p>
 <ul class="clean-list">
@@ -112,7 +171,7 @@
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-7"
 <h3>An evaluation harness for a support agent</h3>
 <p>Evals are the agent's unit tests: a golden set of 20–30 past incidents, each with the triage a senior engineer actually performed. Score every agent change against the set before it nears production:</p>
 <ul class="clean-list">
@@ -124,7 +183,7 @@
 <p>Run the harness on every prompt, tool, or model change, and gate deployment on it like a CI pipeline. An agent that passes evals 95% of the time still gets guardrails — evals measure the average case, guardrails cover the tail.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-8"
 <h3>Human-in-the-loop approval patterns</h3>
 <p>Approvals should be tiered by blast radius, not one-size-fits-all:</p>
 <ul class="clean-list">
@@ -138,7 +197,7 @@
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-9"
 <h3>Cost and latency budgeting for agent loops</h3>
 <p>Every loop iteration is at least one model call, so an uncapped agent is a billing incident waiting for a weekend. Set the budget up front: max 12 iterations, 90 seconds wall-clock, $0.50 per incident — and enforce it in the harness, not in the prompt. Exit early when confidence is high instead of running out the clock.</p>
 <div class="example-box">
@@ -147,7 +206,7 @@
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-10"
 <h3>What production support watches</h3>
 <ul class="clean-list">
 <li><strong>Agent actions are changes</strong> — every agent with write tools needs the same change-control discipline as a human operator, including rollback plans.</li>
@@ -161,7 +220,7 @@
 </div>
 
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-11"
 <h3>Agent architecture, in one diagram</h3>
 <p>Every production agent - from alert triage to deployment approval - has the same skeleton:</p>
 <div class="example-box"><pre class="formula" style="white-space:pre;overflow-x:auto;margin:0;">+--------+     +------------------+     +--------------+
@@ -181,7 +240,7 @@
 <p>The loop is the whole game: the model never touches production directly - it only <em>reasons</em> and calls tools. Everything dangerous lives behind the tool layer and the guardrails, which is exactly where support's controls (approvals, audit logs, read-only defaults) plug in.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-12"
 <h3>Tool schema design example</h3>
 <p>A tool is a contract. This is the schema for the read-only database tool our alert-triage agent uses - note how narrow it is on purpose:</p>
 <div class="example-box"><pre class="formula" style="white-space:pre;overflow-x:auto;margin:0;">{
@@ -245,7 +304,130 @@
 })();
 </script>
 
+
+
+<div class="resume-card" id="practice">
+<h3>Practice: easy, medium, hard</h3>
+<p>Try these before moving on — click a question to reveal the answer.</p>
+<h4 class="practice-tier">Easy</h4>
+<details class="practice"><summary><strong>1.</strong> Name the three steps of the agent loop.</summary><p><strong>Answer:</strong> Perceive (read state), reason (plan), act (call tools) — then loop.</p></details>
+<details class="practice"><summary><strong>2.</strong> Why is query_logs read-only while restart_service needs approval?</summary><p><strong>Answer:</strong> Least privilege: reads can&#x27;t break production, restarts can — the schema encodes the blast radius.</p></details>
+<h4 class="practice-tier">Medium</h4>
+<details class="practice"><summary><strong>3.</strong> Alert: &#x27;pricing-engine CPU &gt; 90% for 5 min.&#x27; Sketch the agent&#x27;s first three tool calls.</summary><p><strong>Answer:</strong> get_metric (confirm the reading), query_logs (look for errors), list_recent_deploys (find what changed).</p></details>
+<details class="practice"><summary><strong>4.</strong> The agent calls restart_service with service=&#x27;pricing-engne&#x27; (typo). What defense stops it?</summary><p><strong>Answer:</strong> Schema validation against a registry of known services — unknown names are rejected before execution.</p></details>
+<h4 class="practice-tier">Hard</h4>
+<details class="practice"><summary><strong>5.</strong> Design approval tiers for a trading-floor support agent.</summary><p><strong>Answer:</strong> Read-only tools auto-run; standard restarts need one click; production deploys need two-person approval; break-glass actions run with a full audit trail.</p></details>
+<details class="practice"><summary><strong>6.</strong> Eight iterations cost ≈ $0.10 per incident. Budget 500 incidents a day.</summary><p><strong>Answer:</strong> $50/day — which is why caps, early-exit rules and iteration budgets are part of the design, not an afterthought.</p></details>
+</div>
+
+<div class="resume-card" id="quiz">
+<h3>Knowledge check</h3>
+<p>Pick the best answer for each question, then check your score.</p>
+<div class="quiz-q" data-answer="0" data-why="Reason → act → observe → reason — each tool result feeds the next thought.">
+<p><strong>1. The ReAct pattern means the agent:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="0"> Alternates reasoning and acting</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="1"> Uses the React.js framework</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="2"> Only reasons, never acts</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="3"> Acts randomly</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<div class="quiz-q" data-answer="0" data-why="A confident &#x27;pricing-engne&#x27; goes nowhere good — validate arguments against reality.">
+<p><strong>2. The biggest practical risk in tool calling is:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="0"> Hallucinated or wrong arguments</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="1"> Slow typing speed</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="2"> Listing too many tools</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="3"> JSON being verbose</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<div class="quiz-q" data-answer="0" data-why="Reads run free; restarts, deploys and money-moving calls wait for a human.">
+<p><strong>3. Human-in-the-loop approval exists to:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="0"> Gate risky actions</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="1"> Write better prompts</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="2"> Pay the API bills</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="3"> Train the model</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<button class="btn quiz-check" type="button">Check answers</button>
+<p class="quiz-score" aria-live="polite"></p>
+</div>
+
+<div class="resume-card" id="read-next">
+<h3>What to read next</h3>
+<ul class="clean-list">
+<li><a href="ansible.html" style="color:#7dd3fc">Ansible</a></li>
+<li><a href="frontend-backend-middleware.html" style="color:#7dd3fc">Frontend / Backend / Middleware</a></li>
+<li><a href="databases-sql.html" style="color:#7dd3fc">SQL for Production Support</a></li>
+</ul>
+</div>
+
+<div class="example-box author-box">
+<p style="margin:0;font-size:0.9rem;color:#94a3b8"><strong style="color:#7dd3fc">About the author.</strong> Written by <strong>Munir Nweiser</strong> — 5 years L1–L3 Capital Markets production support (Morgan Stanley, Société Générale, Crédit Agricole CIB).</p>
+</div>
+
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+<script>
+(function () {
+    'use strict';
+
+    /* Copy buttons on code / formula blocks */
+    function copyText(text, btn) {
+        var label = btn.textContent;
+        function done(msg) {
+            btn.textContent = msg;
+            setTimeout(function () { btn.textContent = label; }, 1500);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(
+                function () { done('Copied!'); },
+                function () { done('Failed'); }
+            );
+        } else {
+            done('Select & copy');
+        }
+    }
+    document.querySelectorAll('main pre, main p.formula').forEach(function (el) {
+        if (el.querySelector('.copy-btn')) { return; }
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn copy-btn';
+        btn.textContent = 'Copy';
+        btn.setAttribute('aria-label', 'Copy to clipboard');
+        btn.addEventListener('click', function () { copyText(el.innerText, btn); });
+        el.classList.add('copyable');
+        el.appendChild(btn);
+    });
+
+    /* Knowledge-check quiz */
+    var quiz = document.getElementById('quiz');
+    if (quiz) {
+        var checkBtn = quiz.querySelector('.quiz-check');
+        var scoreEl = quiz.querySelector('.quiz-score');
+        checkBtn.addEventListener('click', function () {
+            var questions = quiz.querySelectorAll('.quiz-q');
+            var correct = 0;
+            questions.forEach(function (q) {
+                var answer = parseInt(q.getAttribute('data-answer'), 10);
+                var why = q.getAttribute('data-why') || '';
+                var picked = q.querySelector('input[type="radio"]:checked');
+                var fb = q.querySelector('.quiz-feedback');
+                q.querySelectorAll('.quiz-opt').forEach(function (l) { l.classList.remove('opt-right'); });
+                var labels = q.querySelectorAll('.quiz-opt');
+                if (labels[answer]) { labels[answer].classList.add('opt-right'); }
+                if (picked && parseInt(picked.value, 10) === answer) {
+                    correct += 1;
+                    fb.textContent = '\u2713 Correct. ' + why;
+                    fb.className = 'quiz-feedback fb-ok';
+                } else {
+                    fb.textContent = '\u2717 Not quite. ' + why;
+                    fb.className = 'quiz-feedback fb-no';
+                }
+                fb.hidden = false;
+            });
+            scoreEl.textContent = 'Score: ' + correct + ' / ' + questions.length;
+        });
+    }
+})();
+</script>
 </main>
 
 <footer class="site-footer"><div class="container footer-content">

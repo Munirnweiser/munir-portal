@@ -17,13 +17,42 @@
         .example-box { margin:18px 0; padding:18px 20px; border-left:3px solid #7dd3fc; background:rgba(30,41,59,.5); border-radius:10px; }
         .example-box p { margin-bottom:8px; }
         .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
-    </style>
+    
+        .last-updated { color: var(--text-muted); font-size: 0.8rem; margin: -4px 0 14px; }
+        .toc-box ul { list-style: none; padding: 0; margin: 4px 0 0; columns: 2; column-gap: 28px; }
+        .toc-box li { margin-bottom: 7px; break-inside: avoid; }
+        .toc-box a { color: var(--cyan); text-decoration: none; font-size: 0.88rem; }
+        .toc-box a:hover { text-decoration: underline; }
+        @media (max-width: 700px) { .toc-box ul { columns: 1; } }
+        .takeaways-box h4, .toc-box h4 { color: #7dd3fc; margin-bottom: 10px; }
+        .takeaways-box ul { margin-bottom: 0; }
+        .copyable { position: relative; }
+        .copy-btn { position: absolute; top: 8px; right: 8px; padding: 4px 12px; font-size: 0.72rem; }
+        .quiz-q { margin: 18px 0; padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; }
+        .quiz-q > p:first-child { margin-bottom: 10px; }
+        .quiz-opt { display: block; padding: 8px 10px; margin: 6px 0; border-radius: 8px; cursor: pointer; color: #cbd5e1; }
+        .quiz-opt:hover { background: rgba(125,211,252,0.06); }
+        .quiz-opt input { margin-right: 10px; }
+        .opt-right { outline: 1px solid #4ade80; color: #4ade80; }
+        .quiz-feedback { margin-top: 10px; font-size: 0.9rem; }
+        .fb-ok { color: #4ade80; }
+        .fb-no { color: #fca5a5; }
+        .quiz-score { font-weight: 700; margin-top: 12px; color: #f8fafc; }
+        details.practice { margin: 10px 0; border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; }
+        details.practice summary { cursor: pointer; color: #7dd3fc; font-weight: 600; }
+        details.practice summary + p { margin: 10px 0 4px; }
+        .practice-tier { color: #7dd3fc; font-size: 0.95rem; margin: 22px 0 6px; font-weight: 700; }
+        .author-box { border-left: 3px solid #7dd3fc; }
+</style>
     <meta property="og:title" content="Risk Measures: VaR &amp;amp; Stress | Munir Nweiser">
     <meta property="og:description" content="Risk measures for production support: VaR (parametric and historical), Stressed VaR, stress testing, Expected Shortfall and backtesting, with worked numbers.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://munirnweiser.github.io/munir-portal/tutorials/risk-measures.html">
     <meta property="og:site_name" content="Munir Nweiser — Capital Markets Technology">
     <meta name="twitter:card" content="summary">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@type": "Article", "headline": "Risk Measures: VaR & Stress", "author": {"@type": "Person", "name": "Munir Nweiser"}, "datePublished": "2026-10-07"}
+</script>
 </head>
 <body>
 <div id="fairy-layer" aria-hidden="true"></div>
@@ -48,11 +77,41 @@
 
 <div class="section-heading">
 <p class="eyebrow">Tutorials • Risk</p>
+<p class="last-updated">Last updated: October 7, 2026</p>
 <h2>Risk Measures: VaR &amp; Stress</h2>
 <p>VaR, Stressed VaR, stress tests and Expected Shortfall — the numbers risk engines produce every night, and what support does when they look wrong.</p>
 </div>
 
-<div class="resume-card">
+<div class="example-box takeaways-box">
+<h4>Key takeaways</h4>
+<ul>
+<li><strong>Parametric VaR:</strong> $10M book, 1.2% daily vol → $198k one-day 95%; scale by √10 → $626k ten-day.</li>
+<li><strong>Stressed VaR recalibrates on a crisis window:</strong> 3.8% vol (2008) → $2.8M ten-day 99% — capital follows the stressed number, not the calm one.</li>
+<li><strong>Stress tests use DV01:</strong> $1.2M DV01 × 200bp shock ≈ $240M loss before convexity.</li>
+<li><strong>Backtesting traffic lights:</strong> 0–4 exceptions green (×3.0), 5–9 yellow (×3.4–3.85), 10+ red — model rejected.</li>
+<li><strong>Expected Shortfall ($380k) exceeds VaR ($350k) by construction</strong> — it averages the tail instead of just marking its edge.</li>
+</ul>
+</div>
+
+<div class="example-box toc-box">
+<h4>On this page</h4>
+<ul>
+<li><a href="#sec-1">Parametric VaR: the formula approach</a></li>
+<li><a href="#sec-2">Historical VaR: let the data speak</a></li>
+<li><a href="#sec-3">Stressed VaR (SVaR): VaR in a crisis</a></li>
+<li><a href="#sec-4">Stress testing and scenario analysis</a></li>
+<li><a href="#sec-5">Expected Shortfall and backtesting</a></li>
+<li><a href="#sec-6">Backtesting traffic lights, in detail</a></li>
+<li><a href="#sec-7">Choosing the stressed period: the rationale</a></li>
+<li><a href="#sec-8">Expected Shortfall, worked</a></li>
+<li><a href="#sec-9">FRTB in one paragraph: internal models vs standardized</a></li>
+<li><a href="#sec-10">What production support watches</a></li>
+<li><a href="#sec-11">VaR model comparison</a></li>
+<li><a href="#sec-12">A note on backtesting Expected Shortfall</a></li>
+</ul>
+</div>
+
+<div class="resume-card"> id="sec-1"
 <h3>Parametric VaR: the formula approach</h3>
 <p><em>Value at Risk</em> answers: "what is the most we can lose over a horizon, with a given confidence?" Parametric VaR assumes returns are normally distributed:</p>
 <p class="formula">VaR = z × σ × √t × portfolio value</p>
@@ -63,13 +122,13 @@
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-2"
 <h3>Historical VaR: let the data speak</h3>
 <p>Historical VaR makes no normality assumption. Take the last 250 daily P&amp;L observations, sort worst to best, and read off the loss at the 5% tail — the 13th worst day (5% of 250 = 12.5). That loss is the 1-day 95% historical VaR.</p>
 <p>It captures fat tails and real market behavior, but it is only as good as its window: a calm year produces a VaR that understates risk the moment volatility returns. That weakness is exactly why regulators added Stressed VaR.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-3"
 <h3>Stressed VaR (SVaR): VaR in a crisis</h3>
 <p>SVaR runs the same VaR calculation but calibrated on a continuous 12-month period of significant market stress (2008, March 2020). Because stressed volatility is far higher, SVaR is typically 2–4× normal VaR — it answers "what would our risk look like if 2008 happened to today's book?"</p>
 <div class="example-box">
@@ -77,7 +136,7 @@
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-4"
 <h3>Stress testing and scenario analysis</h3>
 <p>Stress tests skip probability entirely and ask "what if?": apply a defined shock to every position and revalue. Typical scenarios: +200bp parallel rate shift, −30% global equities, oil +50%, credit spreads ×3. Unlike VaR, a stress test shows the actual dollar loss under each named scenario — no confidence level, no distribution, just the number.</p>
 <div class="example-box">
@@ -85,12 +144,12 @@
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-5"
 <h3>Expected Shortfall and backtesting</h3>
 <p><em>Expected Shortfall</em> (ES) fixes VaR's blind spot: it is the average loss on the days VaR is breached — the tail beyond the line. <em>Backtesting</em> checks the model against reality: count how many times the actual loss exceeded 1-day 99% VaR over 250 days. Regulators use traffic lights: 0–4 exceptions = green, 5–9 = yellow (capital add-on), 10+ = red (model rejected).</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-6"
 <h3>Backtesting traffic lights, in detail</h3>
 <p>Regulators backtest 1-day 99% VaR over 250 trading days. With 99% confidence, about 2.5 exceptions are expected even from a perfect model — exceptions follow a binomial distribution, and the chance of 5 or more exceptions from a correct model is roughly 10%. That is why the zones scale instead of failing outright.</p>
 <ul class="clean-list">
@@ -103,13 +162,13 @@
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-7"
 <h3>Choosing the stressed period: the rationale</h3>
 <p>SVaR must be calibrated on a continuous 12-month window of significant stress that is <em>relevant to the current portfolio</em> — and the choice must be reviewed at least annually. The rationale is anti-procyclicality: capital set only on calm-period VaR collapses exactly when it is most needed, then spikes in a crisis. A fixed stress window keeps a crisis-sized charge on the books through the good years.</p>
 <p>The subtlety is relevance: a rates-heavy book calibrated on the 2008 credit crisis may understate its risk, while an equities book calibrated on March 2020 is well covered. Supervisors expect documented justification, and the re-selection is a scheduled annual job — miss it and it becomes a regulatory finding, not a modeling debate.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-8"
 <h3>Expected Shortfall, worked</h3>
 <p>Expected Shortfall at 99% is the average loss over the worst 1% of outcomes — the tail VaR ignores. It is always at least as large as VaR, and unlike VaR it is <em>coherent</em>: it aggregates properly across books, while VaR can claim two risky books are safer combined than apart.</p>
 <div class="example-box">
@@ -117,12 +176,12 @@
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-9"
 <h3>FRTB in one paragraph: internal models vs standardized</h3>
 <p>The Fundamental Review of the Trading Book replaced 99% VaR with 97.5% Expected Shortfall as the regulatory standard and gave banks two ways to compute capital. The <em>internal models approach (IMA)</em> lets a bank use its own ES models — but each trading desk must pass P&amp;L attribution tests and backtesting, and failing desks fall back. The <em>standardized approach (SA)</em> is the regulator's prescribed sensitivities-based calculation: always available, no approval needed, usually more punitive capital. Desks can be split across the two, and support teams feel it the same way: SA and IMA numbers both come from overnight batches, and a feed break corrupts both.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-10"
 <h3>What production support watches</h3>
 <ul class="clean-list">
 <li><strong>Risk-feed breaks</strong> — VaR engines consume positions, market data and curves; a missing feed means stale or missing risk numbers, and traders notice before risk managers do.</li>
@@ -136,7 +195,7 @@
 </div>
 
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-11"
 <h3>VaR model comparison</h3>
 <table class="tag-table">
 <tr><th></th><th>Parametric</th><th>Historical</th><th>Monte Carlo</th></tr>
@@ -149,7 +208,7 @@
 <p>Support angle: when the desk says "VaR looks wrong", the first question is always <em>which model, and what changed in its inputs</em> - a stale volatility feed breaks parametric VaR exactly the way a bad market-data feed breaks pricing.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-12"
 <h3>A note on backtesting Expected Shortfall</h3>
 <p>VaR is backtested by counting exceptions - clean and simple. Expected Shortfall is harder: ES is not <em>elicitable</em>, meaning no scoring function is minimized only by the true ES. In practice, desks backtest the VaR that ES is conditioned on, then apply the Acerbi-Szekely test statistic, which checks whether realized tail losses are consistent with the reported ES.</p>
 <p>What this means for support: risk reports carry both numbers, and the validation jobs that check them are different jobs with different failure modes. When the ES validation feed breaks but VaR is fine, the report still goes out - flagged. Know which downstream consumers read the flag and which ignore it.</p>
@@ -197,7 +256,130 @@
 })();
 </script>
 
+
+
+<div class="resume-card" id="practice">
+<h3>Practice: easy, medium, hard</h3>
+<p>Try these before moving on — click a question to reveal the answer.</p>
+<h4 class="practice-tier">Easy</h4>
+<details class="practice"><summary><strong>1.</strong> One-day 95% parametric VaR: $10M book, 1.2% daily volatility?</summary><p><strong>Answer:</strong> 1.65 × 0.012 × $10M ≈ $198,000.</p></details>
+<details class="practice"><summary><strong>2.</strong> Backtesting shows 5–9 exceptions. Zone and multiplier?</summary><p><strong>Answer:</strong> Yellow zone, multiplier 3.4–3.85× — capital add-on and model review.</p></details>
+<h4 class="practice-tier">Medium</h4>
+<details class="practice"><summary><strong>3.</strong> Same book: ten-day 99% SVaR calibrated on a 2008 window with 3.8% daily vol?</summary><p><strong>Answer:</strong> 2.33 × 0.038 × √10 × $10M ≈ $2.8M.</p></details>
+<details class="practice"><summary><strong>4.</strong> Bond book DV01 $1.2M; apply a +200bp shock. Expected loss?</summary><p><strong>Answer:</strong> ≈ $240M (200 × $1.2M), before convexity softens it.</p></details>
+<h4 class="practice-tier">Hard</h4>
+<details class="practice"><summary><strong>5.</strong> Seven exceptions in 250 trading days. Zone, multiplier, consequence?</summary><p><strong>Answer:</strong> Yellow (5–9): multiplier ≈ 3.65×, higher capital charge and a model review — not rejection.</p></details>
+<details class="practice"><summary><strong>6.</strong> Why can&#x27;t Expected Shortfall be backtested the way VaR is?</summary><p><strong>Answer:</strong> ES is not elicitable — no single scoring function is minimized only by the true ES, so joint Acerbi–Szekely tests are needed instead.</p></details>
+</div>
+
+<div class="resume-card" id="quiz">
+<h3>Knowledge check</h3>
+<p>Pick the best answer for each question, then check your score.</p>
+<div class="quiz-q" data-answer="0" data-why="SVaR re-estimates volatility on a stressed period (e.g. 2008 at 3.8% daily vol) — capital is set by the stressed number.">
+<p><strong>1. Stressed VaR differs from ordinary VaR in that it is:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="0"> Calibrated on a historical crisis window</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="1"> Always a longer horizon</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="2"> A different confidence level</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="3"> Calculated without volatility</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<div class="quiz-q" data-answer="0" data-why="10+ exceptions in 250 days rejects the model outright; it must be fixed, not just capitalized.">
+<p><strong>2. Ten or more backtesting exceptions means:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="0"> Red zone — the model is rejected</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="1"> Green zone</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="2"> Yellow zone</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="3"> Just hold more capital</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<div class="quiz-q" data-answer="0" data-why="VaR marks where the tail starts ($350k); ES averages what happens inside it ($380k).">
+<p><strong>3. Expected Shortfall versus VaR:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="0"> ES ≥ VaR — it averages the tail losses</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="1"> ES is always smaller</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="2"> They are always equal</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="3"> They measure unrelated things</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<button class="btn quiz-check" type="button">Check answers</button>
+<p class="quiz-score" aria-live="polite"></p>
+</div>
+
+<div class="resume-card" id="read-next">
+<h3>What to read next</h3>
+<ul class="clean-list">
+<li><a href="risk.html" style="color:#7dd3fc">Risk Measures</a></li>
+<li><a href="valuation.html" style="color:#7dd3fc">Valuation Methods</a></li>
+<li><a href="databases-sql.html" style="color:#7dd3fc">SQL for Production Support</a></li>
+</ul>
+</div>
+
+<div class="example-box author-box">
+<p style="margin:0;font-size:0.9rem;color:#94a3b8"><strong style="color:#7dd3fc">About the author.</strong> Written by <strong>Munir Nweiser</strong> — 5 years L1–L3 Capital Markets production support (Morgan Stanley, Société Générale, Crédit Agricole CIB).</p>
+</div>
+
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+<script>
+(function () {
+    'use strict';
+
+    /* Copy buttons on code / formula blocks */
+    function copyText(text, btn) {
+        var label = btn.textContent;
+        function done(msg) {
+            btn.textContent = msg;
+            setTimeout(function () { btn.textContent = label; }, 1500);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(
+                function () { done('Copied!'); },
+                function () { done('Failed'); }
+            );
+        } else {
+            done('Select & copy');
+        }
+    }
+    document.querySelectorAll('main pre, main p.formula').forEach(function (el) {
+        if (el.querySelector('.copy-btn')) { return; }
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn copy-btn';
+        btn.textContent = 'Copy';
+        btn.setAttribute('aria-label', 'Copy to clipboard');
+        btn.addEventListener('click', function () { copyText(el.innerText, btn); });
+        el.classList.add('copyable');
+        el.appendChild(btn);
+    });
+
+    /* Knowledge-check quiz */
+    var quiz = document.getElementById('quiz');
+    if (quiz) {
+        var checkBtn = quiz.querySelector('.quiz-check');
+        var scoreEl = quiz.querySelector('.quiz-score');
+        checkBtn.addEventListener('click', function () {
+            var questions = quiz.querySelectorAll('.quiz-q');
+            var correct = 0;
+            questions.forEach(function (q) {
+                var answer = parseInt(q.getAttribute('data-answer'), 10);
+                var why = q.getAttribute('data-why') || '';
+                var picked = q.querySelector('input[type="radio"]:checked');
+                var fb = q.querySelector('.quiz-feedback');
+                q.querySelectorAll('.quiz-opt').forEach(function (l) { l.classList.remove('opt-right'); });
+                var labels = q.querySelectorAll('.quiz-opt');
+                if (labels[answer]) { labels[answer].classList.add('opt-right'); }
+                if (picked && parseInt(picked.value, 10) === answer) {
+                    correct += 1;
+                    fb.textContent = '\u2713 Correct. ' + why;
+                    fb.className = 'quiz-feedback fb-ok';
+                } else {
+                    fb.textContent = '\u2717 Not quite. ' + why;
+                    fb.className = 'quiz-feedback fb-no';
+                }
+                fb.hidden = false;
+            });
+            scoreEl.textContent = 'Score: ' + correct + ' / ' + questions.length;
+        });
+    }
+})();
+</script>
 </main>
 
 <footer class="site-footer"><div class="container footer-content">

@@ -20,13 +20,42 @@
         .sql { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.88rem; color:#e2e8f0;
                background:rgba(2,6,23,.7); border:1px solid rgba(125,211,252,.15); border-radius:10px;
                padding:14px 16px; overflow-x:auto; white-space:pre; margin:14px 0; }
-    </style>
+    
+        .last-updated { color: var(--text-muted); font-size: 0.8rem; margin: -4px 0 14px; }
+        .toc-box ul { list-style: none; padding: 0; margin: 4px 0 0; columns: 2; column-gap: 28px; }
+        .toc-box li { margin-bottom: 7px; break-inside: avoid; }
+        .toc-box a { color: var(--cyan); text-decoration: none; font-size: 0.88rem; }
+        .toc-box a:hover { text-decoration: underline; }
+        @media (max-width: 700px) { .toc-box ul { columns: 1; } }
+        .takeaways-box h4, .toc-box h4 { color: #7dd3fc; margin-bottom: 10px; }
+        .takeaways-box ul { margin-bottom: 0; }
+        .copyable { position: relative; }
+        .copy-btn { position: absolute; top: 8px; right: 8px; padding: 4px 12px; font-size: 0.72rem; }
+        .quiz-q { margin: 18px 0; padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; }
+        .quiz-q > p:first-child { margin-bottom: 10px; }
+        .quiz-opt { display: block; padding: 8px 10px; margin: 6px 0; border-radius: 8px; cursor: pointer; color: #cbd5e1; }
+        .quiz-opt:hover { background: rgba(125,211,252,0.06); }
+        .quiz-opt input { margin-right: 10px; }
+        .opt-right { outline: 1px solid #4ade80; color: #4ade80; }
+        .quiz-feedback { margin-top: 10px; font-size: 0.9rem; }
+        .fb-ok { color: #4ade80; }
+        .fb-no { color: #fca5a5; }
+        .quiz-score { font-weight: 700; margin-top: 12px; color: #f8fafc; }
+        details.practice { margin: 10px 0; border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; }
+        details.practice summary { cursor: pointer; color: #7dd3fc; font-weight: 600; }
+        details.practice summary + p { margin: 10px 0 4px; }
+        .practice-tier { color: #7dd3fc; font-size: 0.95rem; margin: 22px 0 6px; font-weight: 700; }
+        .author-box { border-left: 3px solid #7dd3fc; }
+</style>
     <meta property="og:title" content="SQL for Production Support | Munir Nweiser">
     <meta property="og:description" content="SQL for production support: the SELECT/JOIN patterns, aggregations and window functions behind real incident triage.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://munirnweiser.github.io/munir-portal/tutorials/databases-sql.html">
     <meta property="og:site_name" content="Munir Nweiser — Capital Markets Technology">
     <meta name="twitter:card" content="summary">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@type": "Article", "headline": "SQL for Production Support", "author": {"@type": "Person", "name": "Munir Nweiser"}, "datePublished": "2026-10-07"}
+</script>
 </head>
 <body>
 <div id="fairy-layer" aria-hidden="true"></div>
@@ -89,15 +118,103 @@
 })();
 </script>
 
+
+
+<div class="resume-card" id="practice">
+<h3>Practice: easy, medium, hard</h3>
+<p>Try these before moving on — click a question to reveal the answer.</p>
+<h4 class="practice-tier">Easy</h4>
+<details class="practice"><summary><strong>1.</strong> Write the &#x27;did my orders reach the market in the last hour&#x27; check.</summary><p><strong>Answer:</strong> SELECT o.* FROM orders o LEFT JOIN executions e ON e.order_id = o.order_id WHERE e.order_id IS NULL AND o.created_ts &gt; now() - interval &#x27;1 hour&#x27;;</p></details>
+<details class="practice"><summary><strong>2.</strong> Why is WHERE TRUNC(created_ts) = TRUNC(SYSDATE) bad?</summary><p><strong>Answer:</strong> The function wraps the indexed column, so the index can&#x27;t be used — use created_ts &gt;= TRUNC(SYSDATE) AND created_ts &lt; TRUNC(SYSDATE)+1 instead.</p></details>
+<h4 class="practice-tier">Medium</h4>
+<details class="practice"><summary><strong>3.</strong> Sketch gap-and-island sessionization of logins with 30-minute gaps.</summary><p><strong>Answer:</strong> Use LAG(login_ts) to flag rows where the gap exceeds 30 minutes, then a running SUM() over the flag to assign session ids.</p></details>
+<details class="practice"><summary><strong>4.</strong> Recite the slow-query triage checklist in order.</summary><p><strong>Answer:</strong> 1) Missing index on filter/join columns → 2) stale statistics → 3) function wrapping an indexed column → 4) bad execution plan.</p></details>
+<h4 class="practice-tier">Hard</h4>
+<details class="practice"><summary><strong>5.</strong> Nested loops vs hash join: when does the optimizer pick wrong, and what&#x27;s the fix?</summary><p><strong>Answer:</strong> Stale statistics or bind peeking mislead cardinality estimates; fix with fresh stats, histograms, or a plan baseline.</p></details>
+<details class="practice"><summary><strong>6.</strong> A deadlock trace lands in the alert log. What do you extract from it?</summary><p><strong>Answer:</strong> The two sessions, the objects/rows each held and wanted, and the access order — then fix the ordering or shorten the transactions.</p></details>
+</div>
+
+<div class="resume-card" id="quiz">
+<h3>Knowledge check</h3>
+<p>Pick the best answer for each question, then check your score.</p>
+<div class="quiz-q" data-answer="0" data-why="The anti-join returns exactly the orphaned orders — no aggregation needed.">
+<p><strong>1. The fastest &#x27;did my orders reach the market&#x27; check is:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="0"> LEFT JOIN … WHERE execution IS NULL</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="1"> SELECT COUNT(*)</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="2"> NOT IN subquery</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="3"> Full table scan</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<div class="quiz-q" data-answer="0" data-why="TRUNC(created_ts) forces a full scan; a date range keeps the index usable.">
+<p><strong>2. Wrapping an indexed column in a function:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="0"> Prevents index use</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="1"> Speeds the query up</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="2"> Has no effect</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="3"> Creates a new index</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<div class="quiz-q" data-answer="0" data-why="Repeated versions signal an unstable source — fix the feed, not each trade.">
+<p><strong>3. More than 3 amendments per day on the same trade usually means:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="0"> The upstream feed is flapping</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="1"> Normal trading</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="2"> A DBA problem</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="3"> The disk is full</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<button class="btn quiz-check" type="button">Check answers</button>
+<p class="quiz-score" aria-live="polite"></p>
+</div>
+
+<div class="resume-card" id="read-next">
+<h3>What to read next</h3>
+<ul class="clean-list">
+<li><a href="databases-oracle.html" style="color:#7dd3fc">Oracle for Production Support</a></li>
+<li><a href="databases-sqlserver.html" style="color:#7dd3fc">SQL Server for Production Support</a></li>
+<li><a href="stp.html" style="color:#7dd3fc">Straight-Through Processing</a></li>
+</ul>
+</div>
+
+<div class="example-box author-box">
+<p style="margin:0;font-size:0.9rem;color:#94a3b8"><strong style="color:#7dd3fc">About the author.</strong> Written by <strong>Munir Nweiser</strong> — 5 years L1–L3 Capital Markets production support (Morgan Stanley, Société Générale, Crédit Agricole CIB).</p>
+</div>
+
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
 
 <div class="section-heading">
 <p class="eyebrow">Tutorials • Databases</p>
+<p class="last-updated">Last updated: October 7, 2026</p>
 <h2>SQL for Production Support</h2>
 <p>The queries that actually get run during incidents: filtering trade data, joining it to reference data, and spotting the anomaly before the trader does.</p>
 </div>
 
-<div class="resume-card">
+<div class="example-box takeaways-box">
+<h4>Key takeaways</h4>
+<ul>
+<li><strong>Filter first, join second</strong> — shrink the row set before the expensive join, not after.</li>
+<li><strong>The fastest market-reach check:</strong> LEFT JOIN orders to executions and filter WHERE the execution side IS NULL.</li>
+<li><strong>Window functions turn events into sessions</strong> — LAG plus a running SUM implements gap-and-island sessionization.</li>
+<li><strong>TRUNC(created_ts) kills index use</strong> — always use a date range instead.</li>
+<li><strong>Amendment chains longer than 3 versions/day</strong> on one trade mean the upstream feed is flapping — fix the feed, not the trades.</li>
+</ul>
+</div>
+
+<div class="example-box toc-box">
+<h4>On this page</h4>
+<ul>
+<li><a href="#sec-1">SELECT with intent: filter first, join second</a></li>
+<li><a href="#sec-2">JOINs: the three you use daily</a></li>
+<li><a href="#sec-3">Aggregations: counting what is broken</a></li>
+<li><a href="#sec-4">Window functions: queue and spike analysis</a></li>
+<li><a href="#sec-5">Reading an execution plan</a></li>
+<li><a href="#sec-6">Sessionization: turning events into sessions</a></li>
+<li><a href="#sec-7">Hierarchical queries: following amendment chains</a></li>
+<li><a href="#sec-8">Index design for trade tables</a></li>
+<li><a href="#sec-9">Reading deadlocks in the logs</a></li>
+<li><a href="#sec-10">Reading an execution plan</a></li>
+</ul>
+</div>
+
+<div class="resume-card"> id="sec-1"
 <h3>SELECT with intent: filter first, join second</h3>
 <p>In support you rarely query whole tables. You start from a symptom — a trade ID, a book, a time window — and you filter hard before you join anything. A typical first query during a booking incident:</p>
 <div class="sql">SELECT trade_id, book, status, ccy_pair, notional, created_ts
@@ -109,7 +226,7 @@ FETCH FIRST 50 ROWS ONLY;</div>
 <p>Only after the suspect rows are isolated do you join to reference data (counterparties, books, static data). Joining first and filtering later is how a "quick check" becomes a full table scan that pages the DBA.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-2"
 <h3>JOINs: the three you use daily</h3>
 <ul>
 <li><strong>INNER JOIN</strong> — trades to their static data. Rows without a match are dropped, which is exactly what you want when hunting orphaned records.</li>
@@ -121,7 +238,7 @@ FETCH FIRST 50 ROWS ONLY;</div>
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-3"
 <h3>Aggregations: counting what is broken</h3>
 <p>GROUP BY turns a million-row mess into a five-line answer:</p>
 <div class="sql">SELECT status, COUNT(*) AS n, SUM(notional) AS total_notional
@@ -133,7 +250,7 @@ ORDER BY n DESC;</div>
 <p>Run this on settlement-date trades and you instantly see how many are stuck in each state — the same shape as an STP-rate dashboard, built ad hoc in thirty seconds.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-4"
 <h3>Window functions: queue and spike analysis</h3>
 <p>When a feed slows down, you need row-by-row context, not just totals. <span class="formula">LAG()</span> compares each event to the previous one:</p>
 <div class="sql">SELECT event_ts,
@@ -145,7 +262,7 @@ WHERE symbol = 'EURUSD'
 <p>Sort by <span class="formula">gap_sec</span> descending and the feed gaps jump out. <span class="formula">ROW_NUMBER() OVER (PARTITION BY trade_id ORDER BY version DESC)</span> is the standard trick for keeping only the latest version of an amended trade.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-5"
 <h3>Reading an execution plan</h3>
 <p>A slow query is a plan problem. The two things to read first:</p>
 <ul>
@@ -157,7 +274,7 @@ WHERE symbol = 'EURUSD'
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-6"
 <h3>Sessionization: turning events into sessions</h3>
 <p>Traders log in and out all day; support questions are about <em>sessions</em>, not raw logins. The gap-and-island pattern groups events into sessions whenever the gap exceeds a threshold — here 30 minutes:</p>
 <div class="sql">WITH ordered AS (
@@ -180,7 +297,7 @@ ORDER BY trader_id, login_ts;</div>
 <p><span class="formula">LAG()</span> finds the previous login; the CASE flags session starts; the running <span class="formula">SUM()</span> turns flags into session numbers. Logins at 09:00, 09:12 and 09:55 become sessions 1, 1, 2. This is the same technique used to sessionize FIX connections when a client reconnects repeatedly — each reconnect cluster is one "session" for the incident timeline.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-7"
 <h3>Hierarchical queries: following amendment chains</h3>
 <p>A trade amended five times is a chain, not five independent rows. Oracle's <span class="formula">CONNECT BY</span> walks the chain in one query:</p>
 <div class="sql">SELECT trade_id, amends_trade_id, LEVEL AS depth
@@ -193,7 +310,7 @@ CONNECT BY PRIOR amends_trade_id = trade_id;</div>
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-8"
 <h3>Index design for trade tables</h3>
 <p>Trade tables are huge and queried by the same few patterns, so index column order matters. Rules of thumb:</p>
 <ul>
@@ -204,7 +321,7 @@ CONNECT BY PRIOR amends_trade_id = trade_id;</div>
 <p>Support rarely creates indexes — that is a DBA change — but identifying the missing index in the incident report ("filter on book+trade_date does a full scan; composite index would fix it") is exactly what gets the change approved fast.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-9"
 <h3>Reading deadlocks in the logs</h3>
 <p>When Oracle detects a deadlock it writes <span class="formula">ORA-00060: deadlock detected</span> to the alert log and dumps a deadlock graph to a trace file. The graph lists the two sessions, the SQL each was running, and the exact rows (by rowid) they fought over. Support's job:</p>
 <ul>
@@ -218,7 +335,7 @@ CONNECT BY PRIOR amends_trade_id = trade_id;</div>
 </div>
 
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-10"
 <h3>Reading an execution plan</h3>
 <p>When a query is slow, read its plan before touching anything. The plan is the optimizer telling you what it decided. The two join strategies that matter most:</p>
 <div class="sql">-- trade blotter: 40 rows from ORDERS, 2M rows in TRADES
@@ -250,6 +367,69 @@ WHERE o.trade_date = CURRENT_DATE;
 <p>Support discipline: capture the good plan (baseline / stored outline) before you need it, so "the query got slow overnight" becomes a ten-minute compare-and-restore instead of a war room. Hints are the last resort, not the first - fix the inputs (stats, indexes) before overriding the optimizer.</p>
 </div>
 
+<script>
+(function () {
+    'use strict';
+
+    /* Copy buttons on code / formula blocks */
+    function copyText(text, btn) {
+        var label = btn.textContent;
+        function done(msg) {
+            btn.textContent = msg;
+            setTimeout(function () { btn.textContent = label; }, 1500);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(
+                function () { done('Copied!'); },
+                function () { done('Failed'); }
+            );
+        } else {
+            done('Select & copy');
+        }
+    }
+    document.querySelectorAll('main pre, main p.formula').forEach(function (el) {
+        if (el.querySelector('.copy-btn')) { return; }
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn copy-btn';
+        btn.textContent = 'Copy';
+        btn.setAttribute('aria-label', 'Copy to clipboard');
+        btn.addEventListener('click', function () { copyText(el.innerText, btn); });
+        el.classList.add('copyable');
+        el.appendChild(btn);
+    });
+
+    /* Knowledge-check quiz */
+    var quiz = document.getElementById('quiz');
+    if (quiz) {
+        var checkBtn = quiz.querySelector('.quiz-check');
+        var scoreEl = quiz.querySelector('.quiz-score');
+        checkBtn.addEventListener('click', function () {
+            var questions = quiz.querySelectorAll('.quiz-q');
+            var correct = 0;
+            questions.forEach(function (q) {
+                var answer = parseInt(q.getAttribute('data-answer'), 10);
+                var why = q.getAttribute('data-why') || '';
+                var picked = q.querySelector('input[type="radio"]:checked');
+                var fb = q.querySelector('.quiz-feedback');
+                q.querySelectorAll('.quiz-opt').forEach(function (l) { l.classList.remove('opt-right'); });
+                var labels = q.querySelectorAll('.quiz-opt');
+                if (labels[answer]) { labels[answer].classList.add('opt-right'); }
+                if (picked && parseInt(picked.value, 10) === answer) {
+                    correct += 1;
+                    fb.textContent = '\u2713 Correct. ' + why;
+                    fb.className = 'quiz-feedback fb-ok';
+                } else {
+                    fb.textContent = '\u2717 Not quite. ' + why;
+                    fb.className = 'quiz-feedback fb-no';
+                }
+                fb.hidden = false;
+            });
+            scoreEl.textContent = 'Score: ' + correct + ' / ' + questions.length;
+        });
+    }
+})();
+</script>
 </main>
 
 <footer class="site-footer"><div class="container footer-content">

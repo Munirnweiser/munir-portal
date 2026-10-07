@@ -20,13 +20,42 @@
         .cmd { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.88rem; color:#e2e8f0;
                background:rgba(2,6,23,.7); border:1px solid rgba(125,211,252,.15); border-radius:10px;
                padding:14px 16px; overflow-x:auto; white-space:pre; margin:14px 0; }
-    </style>
+    
+        .last-updated { color: var(--text-muted); font-size: 0.8rem; margin: -4px 0 14px; }
+        .toc-box ul { list-style: none; padding: 0; margin: 4px 0 0; columns: 2; column-gap: 28px; }
+        .toc-box li { margin-bottom: 7px; break-inside: avoid; }
+        .toc-box a { color: var(--cyan); text-decoration: none; font-size: 0.88rem; }
+        .toc-box a:hover { text-decoration: underline; }
+        @media (max-width: 700px) { .toc-box ul { columns: 1; } }
+        .takeaways-box h4, .toc-box h4 { color: #7dd3fc; margin-bottom: 10px; }
+        .takeaways-box ul { margin-bottom: 0; }
+        .copyable { position: relative; }
+        .copy-btn { position: absolute; top: 8px; right: 8px; padding: 4px 12px; font-size: 0.72rem; }
+        .quiz-q { margin: 18px 0; padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; }
+        .quiz-q > p:first-child { margin-bottom: 10px; }
+        .quiz-opt { display: block; padding: 8px 10px; margin: 6px 0; border-radius: 8px; cursor: pointer; color: #cbd5e1; }
+        .quiz-opt:hover { background: rgba(125,211,252,0.06); }
+        .quiz-opt input { margin-right: 10px; }
+        .opt-right { outline: 1px solid #4ade80; color: #4ade80; }
+        .quiz-feedback { margin-top: 10px; font-size: 0.9rem; }
+        .fb-ok { color: #4ade80; }
+        .fb-no { color: #fca5a5; }
+        .quiz-score { font-weight: 700; margin-top: 12px; color: #f8fafc; }
+        details.practice { margin: 10px 0; border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; }
+        details.practice summary { cursor: pointer; color: #7dd3fc; font-weight: 600; }
+        details.practice summary + p { margin: 10px 0 4px; }
+        .practice-tier { color: #7dd3fc; font-size: 0.95rem; margin: 22px 0 6px; font-weight: 700; }
+        .author-box { border-left: 3px solid #7dd3fc; }
+</style>
     <meta property="og:title" content="Docker for Production Support | Munir Nweiser">
     <meta property="og:description" content="Docker for production support: images vs containers, debugging crash loops, logs, resources and cleanup.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://munirnweiser.github.io/munir-portal/tutorials/docker.html">
     <meta property="og:site_name" content="Munir Nweiser — Capital Markets Technology">
     <meta name="twitter:card" content="summary">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@type": "Article", "headline": "Docker for Production Support", "author": {"@type": "Person", "name": "Munir Nweiser"}, "datePublished": "2026-10-07"}
+</script>
 </head>
 <body>
 <div id="fairy-layer" aria-hidden="true"></div>
@@ -89,15 +118,101 @@
 })();
 </script>
 
+
+
+<div class="resume-card" id="practice">
+<h3>Practice: easy, medium, hard</h3>
+<p>Try these before moving on — click a question to reveal the answer.</p>
+<h4 class="practice-tier">Easy</h4>
+<details class="practice"><summary><strong>1.</strong> Image vs container — one sentence.</summary><p><strong>Answer:</strong> The image is the read-only template; the container is a running instance of it.</p></details>
+<details class="practice"><summary><strong>2.</strong> A container exits with code 137. What happened?</summary><p><strong>Answer:</strong> OOMKilled — the kernel killed it for exceeding its memory limit.</p></details>
+<h4 class="practice-tier">Medium</h4>
+<details class="practice"><summary><strong>3.</strong> A container CrashLoops and you need the previous run&#x27;s logs. Command?</summary><p><strong>Answer:</strong> docker logs --previous &lt;container&gt; (kubectl logs --previous &lt;pod&gt; on Kubernetes).</p></details>
+<details class="practice"><summary><strong>4.</strong> How did multi-stage builds cut an image from 800MB to 180MB?</summary><p><strong>Answer:</strong> Build in a full SDK image, then COPY only the artifact into a slim runtime image — build tools never ship.</p></details>
+<h4 class="practice-tier">Hard</h4>
+<details class="practice"><summary><strong>5.</strong> A compose stack flaps on a shared host but app logs look clean. First check?</summary><p><strong>Answer:</strong> docker stats on the host — usually resource starvation (the DB is slow to start), not an application bug.</p></details>
+<details class="practice"><summary><strong>6.</strong> Registry push fails 401 in CI but works from your laptop. Checklist?</summary><p><strong>Answer:</strong> Expired CI token, wrong registry URL, missing imagePullSecret on the cluster, or clock skew expiring the token.</p></details>
+</div>
+
+<div class="resume-card" id="quiz">
+<h3>Knowledge check</h3>
+<p>Pick the best answer for each question, then check your score.</p>
+<div class="quiz-q" data-answer="0" data-why="137 = 128 + 9 (SIGKILL) — the classic signature of the OOM killer.">
+<p><strong>1. Container exit code 137 means:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="0"> OOMKilled</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="1"> Clean exit</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="2"> Config error</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="3"> Network unreachable</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<div class="quiz-q" data-answer="0" data-why="Only the final stage ships — compilers and SDKs stay behind.">
+<p><strong>2. Multi-stage builds mainly deliver:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="0"> Smaller, safer images</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="1"> Faster CPUs</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="2"> More layers</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="3"> Free registry storage</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<div class="quiz-q" data-answer="0" data-why="Inspection and triage without rebuilding or restarting.">
+<p><strong>3. docker exec is used to:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="0"> Run commands inside a live container</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="1"> Build images</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="2"> Push to a registry</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="3"> Delete volumes</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<button class="btn quiz-check" type="button">Check answers</button>
+<p class="quiz-score" aria-live="polite"></p>
+</div>
+
+<div class="resume-card" id="read-next">
+<h3>What to read next</h3>
+<ul class="clean-list">
+<li><a href="kubernetes.html" style="color:#7dd3fc">Kubernetes for Production Support</a></li>
+<li><a href="yaml-dockerfiles.html" style="color:#7dd3fc">YAML &amp; Dockerfiles</a></li>
+<li><a href="jenkins.html" style="color:#7dd3fc">Jenkins</a></li>
+</ul>
+</div>
+
+<div class="example-box author-box">
+<p style="margin:0;font-size:0.9rem;color:#94a3b8"><strong style="color:#7dd3fc">About the author.</strong> Written by <strong>Munir Nweiser</strong> — 5 years L1–L3 Capital Markets production support (Morgan Stanley, Société Générale, Crédit Agricole CIB).</p>
+</div>
+
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
 
 <div class="section-heading">
 <p class="eyebrow">Tutorials • Engineering</p>
+<p class="last-updated">Last updated: October 7, 2026</p>
 <h2>Docker for Production Support</h2>
 <p>The Docker knowledge that actually gets used on shift: what is running, why it died, where its logs are, and how to clean up safely.</p>
 </div>
 
-<div class="resume-card">
+<div class="example-box takeaways-box">
+<h4>Key takeaways</h4>
+<ul>
+<li><strong>Image = template, container = running instance</strong> — &#x27;it works in the image&#x27; is not &#x27;it runs&#x27;.</li>
+<li><strong>Dead-container triage starts with the exit code:</strong> 137 = OOM, 1 = app error, 125–127 = docker/config.</li>
+<li><strong>docker exec and docker cp</strong> get you inside and get files out — no rebuild required.</li>
+<li><strong>Volumes hold data, networks hold traffic</strong> — know which you&#x27;re deleting before you delete.</li>
+<li><strong>Exit 137 + climbing memory in docker stats</strong> = a leak hitting its cgroup limit.</li>
+</ul>
+</div>
+
+<div class="example-box toc-box">
+<h4>On this page</h4>
+<ul>
+<li><a href="#sec-1">Images vs containers: the one distinction</a></li>
+<li><a href="#sec-2">The triage sequence for a dead container</a></li>
+<li><a href="#sec-3">Getting inside: exec and copying files</a></li>
+<li><a href="#sec-4">Volumes and networks: where data and traffic live</a></li>
+<li><a href="#sec-5">Cleanup without tears</a></li>
+<li><a href="#sec-6">Multi-stage builds: small, safe images</a></li>
+<li><a href="#sec-7">Compose dependencies: why &quot;connection refused&quot; happens</a></li>
+<li><a href="#sec-8">Image scanning: CVEs block releases</a></li>
+</ul>
+</div>
+
+<div class="resume-card"> id="sec-1"
 <h3>Images vs containers: the one distinction</h3>
 <p>An <em>image</em> is the read-only blueprint (your application plus its runtime, built from a Dockerfile). A <em>container</em> is a running instance of that image. Deleting a container does not delete the image; deleting the image does not stop running containers — but you cannot delete an image while a container still references it. That dependency order is the source of half of all Docker cleanup confusion:</p>
 <div class="cmd">docker ps                  # running containers
@@ -106,7 +221,7 @@ docker images               # local images
 docker inspect &lt;name&gt;     # full JSON: mounts, env, network, health</div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-2"
 <h3>The triage sequence for a dead container</h3>
 <p>When a service container is down, run these in order before touching anything:</p>
 <div class="cmd">docker ps -a --filter "name=trade-api"   # what state is it in? Exited (1)? OOMKilled?
@@ -119,7 +234,7 @@ docker stats --no-stream                     # CPU/mem per container right now</
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-3"
 <h3>Getting inside: exec and copying files</h3>
 <div class="cmd">docker exec -it trade-api sh             # shell inside the running container
 docker exec trade-api env | sort          # environment variables it actually sees
@@ -127,13 +242,13 @@ docker cp trade-api:/app/logs/app.log ./ # pull a log file out for analysis</div
 <p>Note the environment check: most "it works on my machine" container bugs are a missing or wrong environment variable inside the container, not a code bug. Compare <span class="formula">docker exec ... env</span> against the deployment manifest.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-4"
 <h3>Volumes and networks: where data and traffic live</h3>
 <p>Containers are ephemeral — anything written to the container filesystem disappears when it is removed. Persistent data lives in <em>volumes</em> or bind mounts. If a database container lost its data after a recreate, the volume was not mounted: <span class="formula">docker inspect</span> shows the mounts, and an empty mounts list on a stateful service is the finding.</p>
 <p>On networking: containers on the default bridge network reach each other by IP but not by name; user-defined networks give DNS by container name. "Connection refused between services" is very often two containers on different networks, or the target listening on <span class="formula">localhost</span> inside its own container instead of <span class="formula">0.0.0.0</span>.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-5"
 <h3>Cleanup without tears</h3>
 <div class="cmd">docker container prune              # remove STOPPED containers only
 docker image prune                  # remove dangling (untagged) images only
@@ -143,7 +258,7 @@ docker system df                    # what is actually consuming disk</div>
 <p>"No space left on device" on a Docker host is almost always old images and stopped containers. Run <span class="formula">docker system df</span> first so you clean what is actually big, and never prune volumes on a host carrying a database you have not backed up.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-6"
 <h3>Multi-stage builds: small, safe images</h3>
 <p>A Dockerfile that builds <em>and</em> runs in one stage ships the compiler, the source code and every build dependency to production. Multi-stage builds keep only the artifact:</p>
 <div class="cmd">FROM maven:3.9-eclipse-temurin-17 AS build
@@ -161,7 +276,7 @@ ENTRYPOINT ["java", "-jar", "app.jar"]</div>
 <p>The first stage compiles; the second copies only the jar into a minimal JRE image and runs as a non-root user. Typical result: 800 MB down to 180 MB, and no compiler or source code in production for an attacker to use. When support sees a "works locally, fails in prod" ticket, the first question is whether prod actually runs this Dockerfile's output — <span class="formula">docker inspect</span> shows the image digest; compare it with what CI built.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-7"
 <h3>Compose dependencies: why "connection refused" happens</h3>
 <p><span class="formula">depends_on</span> only controls <em>start order</em> — it does not wait for the database to accept connections. The API container starts, tries to connect to a DB that is still initializing, and crashes:</p>
 <div class="cmd">services:
@@ -181,7 +296,7 @@ ENTRYPOINT ["java", "-jar", "app.jar"]</div>
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-8"
 <h3>Image scanning: CVEs block releases</h3>
 <p>Security pipelines scan images for known vulnerabilities (CVEs). A critical CVE in the base image fails the build gate and the release stops — support gets the ticket "deployment blocked":</p>
 <div class="cmd">docker scout cves trade-api:1.4.2
@@ -202,6 +317,69 @@ trivy image trade-api:1.4.2</div>
 </div>
 </div>
 
+<script>
+(function () {
+    'use strict';
+
+    /* Copy buttons on code / formula blocks */
+    function copyText(text, btn) {
+        var label = btn.textContent;
+        function done(msg) {
+            btn.textContent = msg;
+            setTimeout(function () { btn.textContent = label; }, 1500);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(
+                function () { done('Copied!'); },
+                function () { done('Failed'); }
+            );
+        } else {
+            done('Select & copy');
+        }
+    }
+    document.querySelectorAll('main pre, main p.formula').forEach(function (el) {
+        if (el.querySelector('.copy-btn')) { return; }
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn copy-btn';
+        btn.textContent = 'Copy';
+        btn.setAttribute('aria-label', 'Copy to clipboard');
+        btn.addEventListener('click', function () { copyText(el.innerText, btn); });
+        el.classList.add('copyable');
+        el.appendChild(btn);
+    });
+
+    /* Knowledge-check quiz */
+    var quiz = document.getElementById('quiz');
+    if (quiz) {
+        var checkBtn = quiz.querySelector('.quiz-check');
+        var scoreEl = quiz.querySelector('.quiz-score');
+        checkBtn.addEventListener('click', function () {
+            var questions = quiz.querySelectorAll('.quiz-q');
+            var correct = 0;
+            questions.forEach(function (q) {
+                var answer = parseInt(q.getAttribute('data-answer'), 10);
+                var why = q.getAttribute('data-why') || '';
+                var picked = q.querySelector('input[type="radio"]:checked');
+                var fb = q.querySelector('.quiz-feedback');
+                q.querySelectorAll('.quiz-opt').forEach(function (l) { l.classList.remove('opt-right'); });
+                var labels = q.querySelectorAll('.quiz-opt');
+                if (labels[answer]) { labels[answer].classList.add('opt-right'); }
+                if (picked && parseInt(picked.value, 10) === answer) {
+                    correct += 1;
+                    fb.textContent = '\u2713 Correct. ' + why;
+                    fb.className = 'quiz-feedback fb-ok';
+                } else {
+                    fb.textContent = '\u2717 Not quite. ' + why;
+                    fb.className = 'quiz-feedback fb-no';
+                }
+                fb.hidden = false;
+            });
+            scoreEl.textContent = 'Score: ' + correct + ' / ' + questions.length;
+        });
+    }
+})();
+</script>
 </main>
 
 <footer class="site-footer"><div class="container footer-content">

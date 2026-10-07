@@ -17,13 +17,42 @@
         .example-box { margin:18px 0; padding:18px 20px; border-left:3px solid #7dd3fc; background:rgba(30,41,59,.5); border-radius:10px; }
         .example-box p { margin-bottom:8px; }
         .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
-    </style>
+    
+        .last-updated { color: var(--text-muted); font-size: 0.8rem; margin: -4px 0 14px; }
+        .toc-box ul { list-style: none; padding: 0; margin: 4px 0 0; columns: 2; column-gap: 28px; }
+        .toc-box li { margin-bottom: 7px; break-inside: avoid; }
+        .toc-box a { color: var(--cyan); text-decoration: none; font-size: 0.88rem; }
+        .toc-box a:hover { text-decoration: underline; }
+        @media (max-width: 700px) { .toc-box ul { columns: 1; } }
+        .takeaways-box h4, .toc-box h4 { color: #7dd3fc; margin-bottom: 10px; }
+        .takeaways-box ul { margin-bottom: 0; }
+        .copyable { position: relative; }
+        .copy-btn { position: absolute; top: 8px; right: 8px; padding: 4px 12px; font-size: 0.72rem; }
+        .quiz-q { margin: 18px 0; padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; }
+        .quiz-q > p:first-child { margin-bottom: 10px; }
+        .quiz-opt { display: block; padding: 8px 10px; margin: 6px 0; border-radius: 8px; cursor: pointer; color: #cbd5e1; }
+        .quiz-opt:hover { background: rgba(125,211,252,0.06); }
+        .quiz-opt input { margin-right: 10px; }
+        .opt-right { outline: 1px solid #4ade80; color: #4ade80; }
+        .quiz-feedback { margin-top: 10px; font-size: 0.9rem; }
+        .fb-ok { color: #4ade80; }
+        .fb-no { color: #fca5a5; }
+        .quiz-score { font-weight: 700; margin-top: 12px; color: #f8fafc; }
+        details.practice { margin: 10px 0; border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; }
+        details.practice summary { cursor: pointer; color: #7dd3fc; font-weight: 600; }
+        details.practice summary + p { margin: 10px 0 4px; }
+        .practice-tier { color: #7dd3fc; font-size: 0.95rem; margin: 22px 0 6px; font-weight: 700; }
+        .author-box { border-left: 3px solid #7dd3fc; }
+</style>
     <meta property="og:title" content="Fixed Income Essentials | Munir Nweiser">
     <meta property="og:description" content="Fixed income essentials: bonds, the price-yield relationship, yield curves, with a worked bond pricing example.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://munirnweiser.github.io/munir-portal/tutorials/fixed-income.html">
     <meta property="og:site_name" content="Munir Nweiser — Capital Markets Technology">
     <meta name="twitter:card" content="summary">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@type": "Article", "headline": "Fixed Income Essentials", "author": {"@type": "Person", "name": "Munir Nweiser"}, "datePublished": "2026-10-07"}
+</script>
 </head>
 <body>
 <div id="fairy-layer" aria-hidden="true"></div>
@@ -48,16 +77,42 @@
 
 <div class="section-heading">
 <p class="eyebrow">Tutorials • Fixed Income</p>
+<p class="last-updated">Last updated: October 7, 2026</p>
 <h2>Fixed Income Essentials</h2>
 <p>Bonds, the price-yield seesaw, and yield curves — the math behind the biggest asset class on earth.</p>
 </div>
 
-<div class="resume-card">
+<div class="example-box takeaways-box">
+<h4>Key takeaways</h4>
+<ul>
+<li><strong>Price is discounted cash flows</strong> — and price moves opposite to yield: a 4% 5-year bond at 5% yield is worth 95.67, a discount.</li>
+<li><strong>Accrued interest bridges clean and dirty price:</strong> 120 days at 5% (30/360) = 1.67 per 100 face; the buyer pays clean + accrued.</li>
+<li><strong>Repo funds bond desks:</strong> $10M of bonds with a 2% haircut raises $9.8M overnight at about $1,443 interest.</li>
+<li><strong>Bond futures track the cheapest-to-deliver:</strong> most negative basis wins; when yields shift, the CTD can switch.</li>
+<li><strong>Support watches</strong> yield-curve moves, CTD switches, and credit-spread blowouts for mispricing tickets.</li>
+</ul>
+</div>
+
+<div class="example-box toc-box">
+<h4>On this page</h4>
+<ul>
+<li><a href="#sec-1">Anatomy of a bond</a></li>
+<li><a href="#sec-2">Price vs yield: the seesaw</a></li>
+<li><a href="#sec-3">Yield curves: the market&#x27;s forecast</a></li>
+<li><a href="#sec-4">Duration and convexity in one paragraph each</a></li>
+<li><a href="#sec-5">Credit spreads</a></li>
+<li><a href="#sec-6">Accrued interest: who owns the coupon between payments</a></li>
+<li><a href="#sec-7">Repo: the plumbing that funds bond desks</a></li>
+<li><a href="#sec-8">Bond futures and the conversion factor</a></li>
+</ul>
+</div>
+
+<div class="resume-card"> id="sec-1"
 <h3>Anatomy of a bond</h3>
 <p>A bond is a loan from the investor to the issuer. Four terms define it: <strong>face value</strong> (usually 100 or 1,000, repaid at maturity), <strong>coupon</strong> (the annual interest rate, paid semi-annually or annually), <strong>maturity</strong> (when principal is repaid), and <strong>yield</strong> (the market's required return, which moves every day). The coupon is fixed at issuance; the yield is set by the market — and the market price adjusts so that the two reconcile.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-2"
 <h3>Price vs yield: the seesaw</h3>
 <p>A bond's price is the present value of all its future cash flows, discounted at the yield:</p>
 <p class="formula">Price = Σ Coupon<sub>t</sub> / (1 + y)<sup>t</sup> + Face / (1 + y)<sup>n</sup></p>
@@ -69,7 +124,7 @@
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-3"
 <h3>Yield curves: the market's forecast</h3>
 <p>Plotting yields against maturities gives the <strong>yield curve</strong>. Its shape matters:</p>
 <ul>
@@ -80,12 +135,12 @@
 <p>Support teams watch curve feeds closely: a missing or stale curve breaks pricing for <em>every</em> bond on the desk, since yields are interpolated from it.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-4"
 <h3>Duration and convexity in one paragraph each</h3>
 <p><strong>Duration</strong> measures price sensitivity: a duration of 7 means a 1% rise in yield drops the price roughly 7%. Longer maturities and lower coupons both increase duration. <strong>Convexity</strong> is the curvature — the correction term because the price-yield relationship is curved, not straight; it matters most for large yield moves and long-dated bonds.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-5"
 <h3>Credit spreads</h3>
 <p>Corporate bonds yield more than government bonds of the same maturity. The difference is the <strong>credit spread</strong> — compensation for default risk. A bond yielding 6% against a 4% government benchmark trades at a 200bp spread. When spreads widen, corporate bond prices fall even if government yields do not move — a frequent source of "why did my bond drop?" tickets.</p>
 <div class="tag-list" style="margin-top:16px">
@@ -94,7 +149,7 @@
 </div>
 
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-6"
 <h3>Accrued interest: who owns the coupon between payments</h3>
 <p>A bond's coupon accrues every day, but it is only <em>paid</em> on coupon dates. When a bond changes hands between dates, the buyer compensates the seller for the interest earned since the last coupon — this is <strong>accrued interest</strong>, and the buyer pays the <strong>dirty price</strong> (clean price + accrued). The day-count convention defines how days are counted; <strong>30/360</strong> (every month = 30 days) is the classic corporate-bond convention.</p>
 <div class="example-box">
@@ -104,7 +159,7 @@
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-7"
 <h3>Repo: the plumbing that funds bond desks</h3>
 <p>A <strong>repo</strong> (repurchase agreement) is a collateralized short-term loan: the dealer <em>sells</em> bonds today and agrees to <em>buy them back</em> tomorrow (overnight repo) at a slightly higher price. The price difference is the <strong>repo rate</strong> — the interest on the loan. <strong>General collateral (GC)</strong> repo accepts any bond from a basket; <strong>specials</strong> are repos against one specific scarce bond, and their rates can go deeply negative when short-sellers are desperate to borrow it.</p>
 <div class="example-box">
@@ -114,7 +169,7 @@
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-8"
 <h3>Bond futures and the conversion factor</h3>
 <p>Bond futures do not deliver one specific bond — the short can deliver <em>any</em> bond from an eligible basket. To make unlike bonds comparable, each carries a <strong>conversion factor (CF)</strong> that normalizes it to the contract's 6%-coupon notional bond. The invoice price the long pays is:</p>
 <p class="formula">Invoice = Futures price × CF + accrued interest</p>
@@ -166,7 +221,130 @@
 })();
 </script>
 
+
+
+<div class="resume-card" id="practice">
+<h3>Practice: easy, medium, hard</h3>
+<p>Try these before moving on — click a question to reveal the answer.</p>
+<h4 class="practice-tier">Easy</h4>
+<details class="practice"><summary><strong>1.</strong> A 5-year 4% annual bond when the market yield is 5% — discount or premium, and why?</summary><p><strong>Answer:</strong> Discount: 95.67 &lt; 100, because its 4% coupon trails the 5% the market demands.</p></details>
+<details class="practice"><summary><strong>2.</strong> Clean price 98.00, accrued 1.67. What does the buyer actually pay?</summary><p><strong>Answer:</strong> The dirty price: 99.67 per 100 of face value.</p></details>
+<h4 class="practice-tier">Medium</h4>
+<details class="practice"><summary><strong>3.</strong> Compute accrued interest: 5% annual coupon, last coupon 15 January, settlement 15 May (30/360).</summary><p><strong>Answer:</strong> 120 days → 5.00 × 120/360 = 1.67 per 100 face.</p></details>
+<details class="practice"><summary><strong>4.</strong> Futures at 120. Bond A: price 118, CF 0.98 → basis 0.40. Bond B: price 125, CF 1.05 → basis −1.00. Which is CTD?</summary><p><strong>Answer:</strong> Bond B — cheapest-to-deliver is the most negative basis.</p></details>
+<h4 class="practice-tier">Hard</h4>
+<details class="practice"><summary><strong>5.</strong> A dealer repos $10M of bonds overnight at 5.30% with a 2% haircut. Cash raised and interest?</summary><p><strong>Answer:</strong> Cash = $10M × 0.98 = $9.8M; interest ≈ $9.8M × 0.053 × 1/360 ≈ $1,443.</p></details>
+<details class="practice"><summary><strong>6.</strong> Yields jump and the CTD bond switches. What breaks downstream?</summary><p><strong>Answer:</strong> Pricing models keyed to the old CTD misprice the future; hedges sized on the old DV01 drift; traders complain the futures P&amp;L looks &#x27;wrong&#x27;.</p></details>
+</div>
+
+<div class="resume-card" id="quiz">
+<h3>Knowledge check</h3>
+<p>Pick the best answer for each question, then check your score.</p>
+<div class="quiz-q" data-answer="0" data-why="Discount each cash flow at 5%: 4/1.05 + … + 104/1.05⁵ ≈ 95.67. Coupon below yield means discount.">
+<p><strong>1. A 4% 5-year annual bond priced at a 5% yield is worth about:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="0"> 95.67</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="1"> 100.00</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="2"> 104.33</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="3"> 91.20</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<div class="quiz-q" data-answer="0" data-why="The buyer compensates the seller for the days held since the last coupon — settlement is clean price + accrued.">
+<p><strong>2. Accrued interest exists because:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="0"> The seller earned part of the coupon period</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="1"> Bonds always trade dirty by law</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="2"> It is a dealer markup</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="3"> It covers the tax bill</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<div class="quiz-q" data-answer="0" data-why="The lender advances $9.8M against $10M of bonds; the 2% buffer absorbs an overnight price dip.">
+<p><strong>3. In a repo, the haircut protects:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="0"> The cash lender against collateral price falls</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="1"> The borrower against rate rises</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="2"> Only the clearinghouse</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="3"> Nobody — it is just a fee</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<button class="btn quiz-check" type="button">Check answers</button>
+<p class="quiz-score" aria-live="polite"></p>
+</div>
+
+<div class="resume-card" id="read-next">
+<h3>What to read next</h3>
+<ul class="clean-list">
+<li><a href="valuation.html" style="color:#7dd3fc">Valuation Methods</a></li>
+<li><a href="risk.html" style="color:#7dd3fc">Risk Measures</a></li>
+<li><a href="fx.html" style="color:#7dd3fc">FX Essentials</a></li>
+</ul>
+</div>
+
+<div class="example-box author-box">
+<p style="margin:0;font-size:0.9rem;color:#94a3b8"><strong style="color:#7dd3fc">About the author.</strong> Written by <strong>Munir Nweiser</strong> — 5 years L1–L3 Capital Markets production support (Morgan Stanley, Société Générale, Crédit Agricole CIB).</p>
+</div>
+
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+<script>
+(function () {
+    'use strict';
+
+    /* Copy buttons on code / formula blocks */
+    function copyText(text, btn) {
+        var label = btn.textContent;
+        function done(msg) {
+            btn.textContent = msg;
+            setTimeout(function () { btn.textContent = label; }, 1500);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(
+                function () { done('Copied!'); },
+                function () { done('Failed'); }
+            );
+        } else {
+            done('Select & copy');
+        }
+    }
+    document.querySelectorAll('main pre, main p.formula').forEach(function (el) {
+        if (el.querySelector('.copy-btn')) { return; }
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn copy-btn';
+        btn.textContent = 'Copy';
+        btn.setAttribute('aria-label', 'Copy to clipboard');
+        btn.addEventListener('click', function () { copyText(el.innerText, btn); });
+        el.classList.add('copyable');
+        el.appendChild(btn);
+    });
+
+    /* Knowledge-check quiz */
+    var quiz = document.getElementById('quiz');
+    if (quiz) {
+        var checkBtn = quiz.querySelector('.quiz-check');
+        var scoreEl = quiz.querySelector('.quiz-score');
+        checkBtn.addEventListener('click', function () {
+            var questions = quiz.querySelectorAll('.quiz-q');
+            var correct = 0;
+            questions.forEach(function (q) {
+                var answer = parseInt(q.getAttribute('data-answer'), 10);
+                var why = q.getAttribute('data-why') || '';
+                var picked = q.querySelector('input[type="radio"]:checked');
+                var fb = q.querySelector('.quiz-feedback');
+                q.querySelectorAll('.quiz-opt').forEach(function (l) { l.classList.remove('opt-right'); });
+                var labels = q.querySelectorAll('.quiz-opt');
+                if (labels[answer]) { labels[answer].classList.add('opt-right'); }
+                if (picked && parseInt(picked.value, 10) === answer) {
+                    correct += 1;
+                    fb.textContent = '\u2713 Correct. ' + why;
+                    fb.className = 'quiz-feedback fb-ok';
+                } else {
+                    fb.textContent = '\u2717 Not quite. ' + why;
+                    fb.className = 'quiz-feedback fb-no';
+                }
+                fb.hidden = false;
+            });
+            scoreEl.textContent = 'Score: ' + correct + ' / ' + questions.length;
+        });
+    }
+})();
+</script>
 </main>
 
 <footer class="site-footer"><div class="container footer-content">

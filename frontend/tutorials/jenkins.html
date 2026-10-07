@@ -18,13 +18,42 @@
         .example-box p { margin-bottom:8px; }
         .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
         pre.formula { padding:14px 16px; background:rgba(15,23,42,.7); border-radius:10px; overflow-x:auto; line-height:1.6; }
-    </style>
+    
+        .last-updated { color: var(--text-muted); font-size: 0.8rem; margin: -4px 0 14px; }
+        .toc-box ul { list-style: none; padding: 0; margin: 4px 0 0; columns: 2; column-gap: 28px; }
+        .toc-box li { margin-bottom: 7px; break-inside: avoid; }
+        .toc-box a { color: var(--cyan); text-decoration: none; font-size: 0.88rem; }
+        .toc-box a:hover { text-decoration: underline; }
+        @media (max-width: 700px) { .toc-box ul { columns: 1; } }
+        .takeaways-box h4, .toc-box h4 { color: #7dd3fc; margin-bottom: 10px; }
+        .takeaways-box ul { margin-bottom: 0; }
+        .copyable { position: relative; }
+        .copy-btn { position: absolute; top: 8px; right: 8px; padding: 4px 12px; font-size: 0.72rem; }
+        .quiz-q { margin: 18px 0; padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; }
+        .quiz-q > p:first-child { margin-bottom: 10px; }
+        .quiz-opt { display: block; padding: 8px 10px; margin: 6px 0; border-radius: 8px; cursor: pointer; color: #cbd5e1; }
+        .quiz-opt:hover { background: rgba(125,211,252,0.06); }
+        .quiz-opt input { margin-right: 10px; }
+        .opt-right { outline: 1px solid #4ade80; color: #4ade80; }
+        .quiz-feedback { margin-top: 10px; font-size: 0.9rem; }
+        .fb-ok { color: #4ade80; }
+        .fb-no { color: #fca5a5; }
+        .quiz-score { font-weight: 700; margin-top: 12px; color: #f8fafc; }
+        details.practice { margin: 10px 0; border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; }
+        details.practice summary { cursor: pointer; color: #7dd3fc; font-weight: 600; }
+        details.practice summary + p { margin: 10px 0 4px; }
+        .practice-tier { color: #7dd3fc; font-size: 0.95rem; margin: 22px 0 6px; font-weight: 700; }
+        .author-box { border-left: 3px solid #7dd3fc; }
+</style>
     <meta property="og:title" content="Jenkins | Munir Nweiser">
     <meta property="og:description" content="Jenkins for production support: declarative pipelines, agents, Blue Ocean stages, reading build logs and failed-deployment triage.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://munirnweiser.github.io/munir-portal/tutorials/jenkins.html">
     <meta property="og:site_name" content="Munir Nweiser — Capital Markets Technology">
     <meta name="twitter:card" content="summary">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@type": "Article", "headline": "Jenkins", "author": {"@type": "Person", "name": "Munir Nweiser"}, "datePublished": "2026-10-07"}
+</script>
 </head>
 <body>
 <div id="fairy-layer" aria-hidden="true"></div>
@@ -49,11 +78,36 @@
 
 <div class="section-heading">
 <p class="eyebrow">Tutorials • CI/CD</p>
+<p class="last-updated">Last updated: October 7, 2026</p>
 <h2>Jenkins</h2>
 <p>The build server behind most bank deployments: pipelines, agents, logs — and how support triages a failed release at 2 AM.</p>
 </div>
 
-<div class="resume-card">
+<div class="example-box takeaways-box">
+<h4>Key takeaways</h4>
+<ul>
+<li><strong>Declarative pipeline anatomy:</strong> agent → stages (Checkout, Build, Test, Deploy) → steps — the pipeline stops at the first failing stage.</li>
+<li><strong>Read failed builds bottom-up:</strong> the 2 AM Deploy &#x27;connection refused&#x27; was an SSH step problem, not the application.</li>
+<li><strong>The 401 that isn&#x27;t the code:</strong> after a rotation, check Jenkins credential bindings (folder scope, credential ID) before the app.</li>
+<li><strong>Shared libraries are force multipliers with blast radius</strong> — one untested change can break two hundred pipelines; pin versions.</li>
+<li><strong>Parallel stages cut wall-clock time</strong> but starve executors — size your agent pool for the parallelism you declare.</li>
+</ul>
+</div>
+
+<div class="example-box toc-box">
+<h4>On this page</h4>
+<ul>
+<li><a href="#sec-1">How Jenkins is organized</a></li>
+<li><a href="#sec-2">Reading a failed build</a></li>
+<li><a href="#sec-3">Support actions: restart, abort, roll back</a></li>
+<li><a href="#sec-4">What production support watches</a></li>
+<li><a href="#sec-5">Shared libraries: one pipeline definition, two hundred users</a></li>
+<li><a href="#sec-6">Credential binding: the 401 that is not the code</a></li>
+<li><a href="#sec-7">Parallel stages: cutting pipeline time</a></li>
+</ul>
+</div>
+
+<div class="resume-card"> id="sec-1"
 <h3>How Jenkins is organized</h3>
 <p>Jenkins has a <em>controller</em> (the web UI, job definitions, scheduling) and <em>agents</em> (workers that actually run builds). Work is defined in <em>pipelines</em> — a <span class="formula">Jenkinsfile</span> checked into the repo — split into <em>stages</em> (Checkout → Build → Test → Deploy) made of <em>steps</em>. Blue Ocean renders the pipeline as a visual flow where each stage is green, red, or still running.</p>
 <div class="example-box">
@@ -70,7 +124,7 @@
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-2"
 <h3>Reading a failed build</h3>
 <p>When a deployment fails, open the build → <em>Console Output</em>. Read bottom-up: the last 50 lines hold the actual error; everything above is context. The pattern that matters:</p>
 <ul class="clean-list">
@@ -81,7 +135,7 @@
 </ul>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-3"
 <h3>Support actions: restart, abort, roll back</h3>
 <p><em>Restart from stage</em> re-runs only the failed stage — use it when the failure was environmental (agent hiccup, flaky test), not when the code is broken. <em>Abort</em> stops a hung build, but first verify what it already did: an aborted deploy mid-copy leaves inconsistent binaries. For rollbacks, banks keep the previous artifact — redeploy the last green build's artifact rather than "reverting code and rebuilding," which is slower and riskier.</p>
 <div class="example-box">
@@ -89,7 +143,7 @@
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-4"
 <h3>What production support watches</h3>
 <ul class="clean-list">
 <li><strong>Credential hygiene</strong> — rotated passwords and expired certificates are the #1 cause of "Jenkins is broken" tickets; the fix is in the credentials store, not the pipeline.</li>
@@ -144,8 +198,68 @@
 })();
 </script>
 
+
+
+<div class="resume-card" id="practice">
+<h3>Practice: easy, medium, hard</h3>
+<p>Try these before moving on — click a question to reveal the answer.</p>
+<h4 class="practice-tier">Easy</h4>
+<details class="practice"><summary><strong>1.</strong> Name the four stages in the tutorial&#x27;s declarative pipeline.</summary><p><strong>Answer:</strong> Checkout, Build, Test, Deploy.</p></details>
+<details class="practice"><summary><strong>2.</strong> The build fails at the Test stage. Does the artifact deploy?</summary><p><strong>Answer:</strong> No — a declarative pipeline stops at the first failing stage.</p></details>
+<h4 class="practice-tier">Medium</h4>
+<details class="practice"><summary><strong>3.</strong> Deploy fails with &#x27;connection refused&#x27; to the target; ping works. Next three checks?</summary><p><strong>Answer:</strong> SSH port/firewall rules, the credentials bound to the step, and which user/host the step actually runs as.</p></details>
+<details class="practice"><summary><strong>4.</strong> An agent disconnects mid-build. Recovery steps?</summary><p><strong>Answer:</strong> Read the node log, relaunch the agent, clean the workspace, and replay the pipeline from the failed stage.</p></details>
+<h4 class="practice-tier">Hard</h4>
+<details class="practice"><summary><strong>5.</strong> withCredentials returns 401 the morning after a secret rotation — the application didn&#x27;t change. Diagnose.</summary><p><strong>Answer:</strong> The Jenkins-side binding is stale: wrong credential ID, folder scope mismatch, or the secret wasn&#x27;t updated in the credential store.</p></details>
+<details class="practice"><summary><strong>6.</strong> A shared-library change just broke 200 pipelines. How do you prevent a repeat?</summary><p><strong>Answer:</strong> Pin library versions with @Library, and canary-test library changes on one pipeline before rolling them out.</p></details>
+</div>
+
+<div class="resume-card" id="quiz">
+<h3>Knowledge check</h3>
+<p>Pick the best answer for each question, then check your score.</p>
+<div class="quiz-q" data-answer="0" data-why="Stages are sequential gates; the first failure halts the run.">
+<p><strong>1. A declarative pipeline with a failing Test stage will:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="0"> Stop — nothing downstream runs</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="1"> Continue to Deploy anyway</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="2"> Skip to the last stage</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="3"> Retry forever</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<div class="quiz-q" data-answer="0" data-why="Shared code is leverage in both directions — pin versions and canary changes.">
+<p><strong>2. The biggest risk of Jenkins shared libraries is:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="0"> One change can break hundreds of pipelines</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="1"> Slower build agents</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="2"> Bigger workspaces</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="3"> No risk at all</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<div class="quiz-q" data-answer="0" data-why="The network path is alive; the service, port or identity at the end of it is not.">
+<p><strong>3. &#x27;Connection refused&#x27; at the Deploy stage with ping working points to:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="0"> SSH, firewall or credential issues</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="1"> An application bug</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="2"> Jenkins being down</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="3"> Always DNS</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<button class="btn quiz-check" type="button">Check answers</button>
+<p class="quiz-score" aria-live="polite"></p>
+</div>
+
+<div class="resume-card" id="read-next">
+<h3>What to read next</h3>
+<ul class="clean-list">
+<li><a href="git-essentials.html" style="color:#7dd3fc">Git Essentials</a></li>
+<li><a href="docker.html" style="color:#7dd3fc">Docker for Production Support</a></li>
+<li><a href="ansible.html" style="color:#7dd3fc">Ansible</a></li>
+</ul>
+</div>
+
+<div class="example-box author-box">
+<p style="margin:0;font-size:0.9rem;color:#94a3b8"><strong style="color:#7dd3fc">About the author.</strong> Written by <strong>Munir Nweiser</strong> — 5 years L1–L3 Capital Markets production support (Morgan Stanley, Société Générale, Crédit Agricole CIB).</p>
+</div>
+
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
-<div class="resume-card">
+<div class="resume-card"> id="sec-5"
 <h3>Shared libraries: one pipeline definition, two hundred users</h3>
 <p>Banks do not copy-paste Jenkinsfiles into every repo — they keep a <em>shared library</em> of pipeline steps, and each service calls it in a few lines:</p>
 <div class="example-box">
@@ -158,7 +272,7 @@ standardJavaPipeline {
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-6"
 <h3>Credential binding: the 401 that is not the code</h3>
 <p>Pipelines authenticate to artifactories, registries and servers through the Jenkins credentials store, injected with <span class="formula">withCredentials</span>:</p>
 <div class="example-box">
@@ -171,7 +285,7 @@ standardJavaPipeline {
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-7"
 <h3>Parallel stages: cutting pipeline time</h3>
 <p>Independent verification steps should run concurrently, not in sequence:</p>
 <div class="example-box">
@@ -200,6 +314,69 @@ standardJavaPipeline {
 </div>
 </div>
 
+<script>
+(function () {
+    'use strict';
+
+    /* Copy buttons on code / formula blocks */
+    function copyText(text, btn) {
+        var label = btn.textContent;
+        function done(msg) {
+            btn.textContent = msg;
+            setTimeout(function () { btn.textContent = label; }, 1500);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(
+                function () { done('Copied!'); },
+                function () { done('Failed'); }
+            );
+        } else {
+            done('Select & copy');
+        }
+    }
+    document.querySelectorAll('main pre, main p.formula').forEach(function (el) {
+        if (el.querySelector('.copy-btn')) { return; }
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn copy-btn';
+        btn.textContent = 'Copy';
+        btn.setAttribute('aria-label', 'Copy to clipboard');
+        btn.addEventListener('click', function () { copyText(el.innerText, btn); });
+        el.classList.add('copyable');
+        el.appendChild(btn);
+    });
+
+    /* Knowledge-check quiz */
+    var quiz = document.getElementById('quiz');
+    if (quiz) {
+        var checkBtn = quiz.querySelector('.quiz-check');
+        var scoreEl = quiz.querySelector('.quiz-score');
+        checkBtn.addEventListener('click', function () {
+            var questions = quiz.querySelectorAll('.quiz-q');
+            var correct = 0;
+            questions.forEach(function (q) {
+                var answer = parseInt(q.getAttribute('data-answer'), 10);
+                var why = q.getAttribute('data-why') || '';
+                var picked = q.querySelector('input[type="radio"]:checked');
+                var fb = q.querySelector('.quiz-feedback');
+                q.querySelectorAll('.quiz-opt').forEach(function (l) { l.classList.remove('opt-right'); });
+                var labels = q.querySelectorAll('.quiz-opt');
+                if (labels[answer]) { labels[answer].classList.add('opt-right'); }
+                if (picked && parseInt(picked.value, 10) === answer) {
+                    correct += 1;
+                    fb.textContent = '\u2713 Correct. ' + why;
+                    fb.className = 'quiz-feedback fb-ok';
+                } else {
+                    fb.textContent = '\u2717 Not quite. ' + why;
+                    fb.className = 'quiz-feedback fb-no';
+                }
+                fb.hidden = false;
+            });
+            scoreEl.textContent = 'Score: ' + correct + ' / ' + questions.length;
+        });
+    }
+})();
+</script>
 </main>
 
 <footer class="site-footer"><div class="container footer-content">

@@ -17,13 +17,42 @@
         .example-box { margin:18px 0; padding:18px 20px; border-left:3px solid #7dd3fc; background:rgba(30,41,59,.5); border-radius:10px; }
         .example-box p { margin-bottom:8px; }
         .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
-    </style>
+    
+        .last-updated { color: var(--text-muted); font-size: 0.8rem; margin: -4px 0 14px; }
+        .toc-box ul { list-style: none; padding: 0; margin: 4px 0 0; columns: 2; column-gap: 28px; }
+        .toc-box li { margin-bottom: 7px; break-inside: avoid; }
+        .toc-box a { color: var(--cyan); text-decoration: none; font-size: 0.88rem; }
+        .toc-box a:hover { text-decoration: underline; }
+        @media (max-width: 700px) { .toc-box ul { columns: 1; } }
+        .takeaways-box h4, .toc-box h4 { color: #7dd3fc; margin-bottom: 10px; }
+        .takeaways-box ul { margin-bottom: 0; }
+        .copyable { position: relative; }
+        .copy-btn { position: absolute; top: 8px; right: 8px; padding: 4px 12px; font-size: 0.72rem; }
+        .quiz-q { margin: 18px 0; padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; }
+        .quiz-q > p:first-child { margin-bottom: 10px; }
+        .quiz-opt { display: block; padding: 8px 10px; margin: 6px 0; border-radius: 8px; cursor: pointer; color: #cbd5e1; }
+        .quiz-opt:hover { background: rgba(125,211,252,0.06); }
+        .quiz-opt input { margin-right: 10px; }
+        .opt-right { outline: 1px solid #4ade80; color: #4ade80; }
+        .quiz-feedback { margin-top: 10px; font-size: 0.9rem; }
+        .fb-ok { color: #4ade80; }
+        .fb-no { color: #fca5a5; }
+        .quiz-score { font-weight: 700; margin-top: 12px; color: #f8fafc; }
+        details.practice { margin: 10px 0; border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; }
+        details.practice summary { cursor: pointer; color: #7dd3fc; font-weight: 600; }
+        details.practice summary + p { margin: 10px 0 4px; }
+        .practice-tier { color: #7dd3fc; font-size: 0.95rem; margin: 22px 0 6px; font-weight: 700; }
+        .author-box { border-left: 3px solid #7dd3fc; }
+</style>
     <meta property="og:title" content="Multi-Asset Instruments | Munir Nweiser">
     <meta property="og:description" content="Instruments across asset classes for production support: equities, fixed income, FX, commodities and derivatives, with settlement conventions and what breaks per class.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://munirnweiser.github.io/munir-portal/tutorials/multi-asset-instruments.html">
     <meta property="og:site_name" content="Munir Nweiser — Capital Markets Technology">
     <meta name="twitter:card" content="summary">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@type": "Article", "headline": "Multi-Asset Instruments", "author": {"@type": "Person", "name": "Munir Nweiser"}, "datePublished": "2026-10-07"}
+</script>
 </head>
 <body>
 <div id="fairy-layer" aria-hidden="true"></div>
@@ -48,11 +77,38 @@
 
 <div class="section-heading">
 <p class="eyebrow">Tutorials • Multi-Asset</p>
+<p class="last-updated">Last updated: October 7, 2026</p>
 <h2>Multi-Asset Instruments</h2>
 <p>One desk trades them all: equities, bonds, FX, commodities and derivatives — what each instrument is, how it settles, and where support tickets come from.</p>
 </div>
 
-<div class="resume-card">
+<div class="example-box takeaways-box">
+<h4>Key takeaways</h4>
+<ul>
+<li><strong>Equities settle T+1:</strong> 10,000 shares at $50 on Monday means $500,000 against 10,000 shares on Tuesday — wrong SSI fails the delivery.</li>
+<li><strong>ETF arbitrage keeps price near NAV:</strong> a $5M basket at $100 NAV trading at $100.40 lets the AP create and pocket ≈ $20k.</li>
+<li><strong>ADR dividends leak value:</strong> €1.00 declared becomes ≈ $1,050 per 1,000 ADRs after FX, custody fees and withholding tax.</li>
+<li><strong>Contango bleeds rollers:</strong> rolling 1,000 crude contracts can cost $2M a quarter — negative roll yield is real P&amp;L.</li>
+<li><strong>Rate swaps move real money:</strong> pay 4.00% fixed / receive SOFR on $100M nets ≈ $500k a year when SOFR averages 4.50%.</li>
+</ul>
+</div>
+
+<div class="example-box toc-box">
+<h4>On this page</h4>
+<ul>
+<li><a href="#sec-1">Equities: shares, ETFs and ADRs</a></li>
+<li><a href="#sec-2">Fixed income: bonds, T-bills and repos</a></li>
+<li><a href="#sec-3">FX: spot, forwards, swaps and NDFs</a></li>
+<li><a href="#sec-4">Commodities: futures and physical</a></li>
+<li><a href="#sec-5">Derivatives: options, swaps, CDS and exotics</a></li>
+<li><a href="#sec-6">ETF mechanics: creation and redemption</a></li>
+<li><a href="#sec-7">ADR vs GDR: same idea, different plumbing</a></li>
+<li><a href="#sec-8">Futures curves: contango and backwardation</a></li>
+<li><a href="#sec-9">What production support watches</a></li>
+</ul>
+</div>
+
+<div class="resume-card"> id="sec-1"
 <h3>Equities: shares, ETFs and ADRs</h3>
 <p>An ordinary share is part-ownership of a company. An <em>ETF</em> is a fund that trades like a share and tracks an index or basket. An <em>ADR</em> (American Depositary Receipt) lets a US investor hold a foreign share — the foreign shares sit with a custodian bank, and the ADR trades in USD in New York.</p>
 <p>Cash equities settle T+1 in the US and Canada (T+2 in much of Europe and Asia). Corporate actions — dividends, splits, mergers — are the classic support headache: a stock split changes every open order's price and quantity, and a missed corporate-action feed means positions show the wrong economics.</p>
@@ -61,25 +117,25 @@
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-2"
 <h3>Fixed income: bonds, T-bills and repos</h3>
 <p>Bonds pay coupons and return principal at maturity; T-bills are short-term discount paper with no coupon. A <em>repo</em> (repurchase agreement) is a collateralized loan: sell a bond today, agree to buy it back tomorrow at a slightly higher price — the difference is the repo rate, the market's overnight funding rate.</p>
 <p>Bonds settle T+1 (US Treasuries) or T+2 (many corporates). Accrued interest must be computed exactly — day-count conventions (30/360, ACT/ACT) differ by market, and a wrong convention breaks the settlement amount by the coupon accrual.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-3"
 <h3>FX: spot, forwards, swaps and NDFs</h3>
 <p>FX spot settles T+2 (T+1 for USD/CAD); forwards and swaps settle on their agreed value dates; NDFs cash-settle in USD against an official fixing. FX is the highest-volume asset class in the world, and settlement runs through CLS Bank on hard intraday deadlines.</p>
 <p>Support pain points: missed CLS pay-in deadlines, late fixings for NDF valuation, and value dates falling on currency holidays — each creates fails that cascade into funding costs.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-4"
 <h3>Commodities: futures and physical</h3>
 <p>Commodity futures (oil, gas, metals, agriculture) are exchange-traded contracts for delivery at a future date, margined daily — gains and losses are settled in cash every day. Physical commodities add logistics: storage, delivery location, and quality grades.</p>
 <p>Watch for <em>expiry handling</em>: a future approaching its last trading day must be rolled or closed, and first-notice-day rules differ per exchange. A position left into delivery by mistake becomes an operations incident, not a trading decision.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-5"
 <h3>Derivatives: options, swaps, CDS and exotics</h3>
 <p>Options give the right (not the obligation) to buy or sell; swaps exchange cash flows (fixed-for-floating rates, or currencies); a <em>CDS</em> (credit default swap) is insurance against a borrower defaulting; exotics add path-dependent or barrier features. Listed derivatives are margined daily; OTC derivatives are collateralized bilaterally or cleared.</p>
 <div class="example-box">
@@ -87,7 +143,7 @@
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-6"
 <h3>ETF mechanics: creation and redemption</h3>
 <p>An ETF's market price stays near its net asset value because of <em>authorized participants</em> (APs) — large dealers who can create or redeem ETF shares directly with the fund. When the ETF trades at a premium, the AP buys the underlying basket of stocks, delivers it to the fund, and receives new ETF shares to sell at the premium. When it trades at a discount, the AP does the reverse: buys cheap ETF shares, redeems them for the underlying stocks, and sells the stocks. This arbitrage is what keeps the price glued to NAV.</p>
 <p>Creations and redemptions happen in large blocks called <em>creation units</em> (often 50,000 shares) and are usually <em>in-kind</em> — securities for securities, not cash — which is why ETFs are tax-efficient. Support angle: if creations are halted (a corporate action on a basket constituent, a trading halt), the premium or discount can gap; a desk showing a stale NAV during a halt misprices every quote.</p>
@@ -96,7 +152,7 @@
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-7"
 <h3>ADR vs GDR: same idea, different plumbing</h3>
 <p>Both let investors hold foreign shares locally, but the plumbing differs. An <em>ADR</em> trades in the US in USD — a custodian bank holds the foreign shares and issues receipts; the <em>ratio</em> (e.g., 1 ADR = 2 ordinary shares) keeps the price in a sensible range. A <em>GDR</em> typically lists in London or Luxembourg, often in USD or EUR, and frequently comes in two tranches: Reg S (non-US investors) and 144A (US institutions only).</p>
 <p>The costs investors forget: the depositary charges a <em>custody fee</em> — typically $0.01 to $0.03 per ADR per year, deducted from dividends — and every dividend is converted from the local currency at the depositary's FX rate, not the market rate.</p>
@@ -105,7 +161,7 @@
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-8"
 <h3>Futures curves: contango and backwardation</h3>
 <p>Futures for successive expiries form a <em>curve</em>. In <em>contango</em> the curve slopes upward — later contracts cost more, reflecting storage and financing costs for a storable commodity. In <em>backwardation</em> it slopes downward — near-term contracts command a premium, usually because of immediate scarcity (a supply disruption, low inventories).</p>
 <p>The curve decides the economics of <em>rolling</em>: a long position rolled in contango sells cheap front-month and buys expensive deferred — a steady bleed called negative roll yield. In backwardation the roll earns. Support angle: expiry calendars and roll dates are reference data; a missed roll turns a futures position into a delivery obligation.</p>
@@ -114,7 +170,7 @@
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-9"
 <h3>What production support watches</h3>
 <ul class="clean-list">
 <li><strong>Settlement calendars</strong> — every asset class has its own holiday calendars; a bad calendar breaks value dates across the whole book.</li>
@@ -169,7 +225,130 @@
 })();
 </script>
 
+
+
+<div class="resume-card" id="practice">
+<h3>Practice: easy, medium, hard</h3>
+<p>Try these before moving on — click a question to reveal the answer.</p>
+<h4 class="practice-tier">Easy</h4>
+<details class="practice"><summary><strong>1.</strong> A client buys 10,000 shares at $50.00 on Monday. When does it settle and for how much?</summary><p><strong>Answer:</strong> Tuesday (T+1): $500,000 of cash against 10,000 shares through the clearinghouse.</p></details>
+<details class="practice"><summary><strong>2.</strong> An ETF&#x27;s NAV is $100 but it trades at $100.40. What does the authorized participant do?</summary><p><strong>Answer:</strong> Buys the $5M basket, creates 50,000 shares, sells them at $100.40 — capturing the ≈ $20,000 premium.</p></details>
+<h4 class="practice-tier">Medium</h4>
+<details class="practice"><summary><strong>3.</strong> 1-year interest-rate swap: bank pays fixed 4.00%, receives SOFR on $100M notional; SOFR averages 4.50%. Net result?</summary><p><strong>Answer:</strong> Roughly +$500,000 for the year: (4.50% − 4.00%) × $100M.</p></details>
+<details class="practice"><summary><strong>4.</strong> Explain the $2M/quarter contango bleed on 1,000 crude contracts.</summary><p><strong>Answer:</strong> Each roll sells the cheap front-month future and buys the pricier deferred one — the negative roll yield compounds into real losses.</p></details>
+<h4 class="practice-tier">Hard</h4>
+<details class="practice"><summary><strong>5.</strong> An ADR declares a €1.00 dividend; the holder receives ≈ $1,050 per 1,000 ADRs. Account for the leakage.</summary><p><strong>Answer:</strong> FX conversion at the depositary&#x27;s rate, minus custody fees and dividend withholding tax.</p></details>
+<details class="practice"><summary><strong>6.</strong> A CDS credit event is declared on a name in the book. Walk the support impact.</summary><p><strong>Answer:</strong> Positions terminate via auction/cash settlement; P&amp;L, risk and downstream feeds must book the event the same day or everything downstream is wrong.</p></details>
+</div>
+
+<div class="resume-card" id="quiz">
+<h3>Knowledge check</h3>
+<p>Pick the best answer for each question, then check your score.</p>
+<div class="quiz-q" data-answer="0" data-why="When price drifts from NAV, authorized participants create/redeem for the spread, pulling it back.">
+<p><strong>1. ETF creation/redemption exists to:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="0"> Keep the ETF price near NAV via AP arbitrage</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="1"> Boost trading volume</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="2"> Eliminate fund fees</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="3"> Avoid all taxes</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<div class="quiz-q" data-answer="0" data-why="You sell the cheaper expiring contract and buy the pricier deferred one — negative roll yield.">
+<p><strong>2. In a contango curve, rolling a long futures position:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="0"> Loses money on each roll</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="1"> Profits on each roll</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="2"> Breaks even</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="3"> Becomes impossible</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<div class="quiz-q" data-answer="0" data-why="It keeps paying 4% fixed while receiving more floating — the swap&#x27;s value moves in its favour.">
+<p><strong>3. A bank pays fixed 4% and receives floating on a swap. Rates rise. The bank:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="0"> Gains</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="1"> Loses</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="2"> Stays flat</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="3"> Defaults</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<button class="btn quiz-check" type="button">Check answers</button>
+<p class="quiz-score" aria-live="polite"></p>
+</div>
+
+<div class="resume-card" id="read-next">
+<h3>What to read next</h3>
+<ul class="clean-list">
+<li><a href="futures-options.html" style="color:#7dd3fc">Futures &amp; Options</a></li>
+<li><a href="fixed-income.html" style="color:#7dd3fc">Fixed Income Essentials</a></li>
+<li><a href="fx.html" style="color:#7dd3fc">FX Essentials</a></li>
+</ul>
+</div>
+
+<div class="example-box author-box">
+<p style="margin:0;font-size:0.9rem;color:#94a3b8"><strong style="color:#7dd3fc">About the author.</strong> Written by <strong>Munir Nweiser</strong> — 5 years L1–L3 Capital Markets production support (Morgan Stanley, Société Générale, Crédit Agricole CIB).</p>
+</div>
+
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+<script>
+(function () {
+    'use strict';
+
+    /* Copy buttons on code / formula blocks */
+    function copyText(text, btn) {
+        var label = btn.textContent;
+        function done(msg) {
+            btn.textContent = msg;
+            setTimeout(function () { btn.textContent = label; }, 1500);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(
+                function () { done('Copied!'); },
+                function () { done('Failed'); }
+            );
+        } else {
+            done('Select & copy');
+        }
+    }
+    document.querySelectorAll('main pre, main p.formula').forEach(function (el) {
+        if (el.querySelector('.copy-btn')) { return; }
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn copy-btn';
+        btn.textContent = 'Copy';
+        btn.setAttribute('aria-label', 'Copy to clipboard');
+        btn.addEventListener('click', function () { copyText(el.innerText, btn); });
+        el.classList.add('copyable');
+        el.appendChild(btn);
+    });
+
+    /* Knowledge-check quiz */
+    var quiz = document.getElementById('quiz');
+    if (quiz) {
+        var checkBtn = quiz.querySelector('.quiz-check');
+        var scoreEl = quiz.querySelector('.quiz-score');
+        checkBtn.addEventListener('click', function () {
+            var questions = quiz.querySelectorAll('.quiz-q');
+            var correct = 0;
+            questions.forEach(function (q) {
+                var answer = parseInt(q.getAttribute('data-answer'), 10);
+                var why = q.getAttribute('data-why') || '';
+                var picked = q.querySelector('input[type="radio"]:checked');
+                var fb = q.querySelector('.quiz-feedback');
+                q.querySelectorAll('.quiz-opt').forEach(function (l) { l.classList.remove('opt-right'); });
+                var labels = q.querySelectorAll('.quiz-opt');
+                if (labels[answer]) { labels[answer].classList.add('opt-right'); }
+                if (picked && parseInt(picked.value, 10) === answer) {
+                    correct += 1;
+                    fb.textContent = '\u2713 Correct. ' + why;
+                    fb.className = 'quiz-feedback fb-ok';
+                } else {
+                    fb.textContent = '\u2717 Not quite. ' + why;
+                    fb.className = 'quiz-feedback fb-no';
+                }
+                fb.hidden = false;
+            });
+            scoreEl.textContent = 'Score: ' + correct + ' / ' + questions.length;
+        });
+    }
+})();
+</script>
 </main>
 
 <footer class="site-footer"><div class="container footer-content">

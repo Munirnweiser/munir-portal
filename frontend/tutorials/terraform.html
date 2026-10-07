@@ -18,13 +18,42 @@
         .example-box p { margin-bottom:8px; }
         .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
         pre.formula { padding:14px 16px; background:rgba(15,23,42,.7); border-radius:10px; overflow-x:auto; line-height:1.6; }
-    </style>
+    
+        .last-updated { color: var(--text-muted); font-size: 0.8rem; margin: -4px 0 14px; }
+        .toc-box ul { list-style: none; padding: 0; margin: 4px 0 0; columns: 2; column-gap: 28px; }
+        .toc-box li { margin-bottom: 7px; break-inside: avoid; }
+        .toc-box a { color: var(--cyan); text-decoration: none; font-size: 0.88rem; }
+        .toc-box a:hover { text-decoration: underline; }
+        @media (max-width: 700px) { .toc-box ul { columns: 1; } }
+        .takeaways-box h4, .toc-box h4 { color: #7dd3fc; margin-bottom: 10px; }
+        .takeaways-box ul { margin-bottom: 0; }
+        .copyable { position: relative; }
+        .copy-btn { position: absolute; top: 8px; right: 8px; padding: 4px 12px; font-size: 0.72rem; }
+        .quiz-q { margin: 18px 0; padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; }
+        .quiz-q > p:first-child { margin-bottom: 10px; }
+        .quiz-opt { display: block; padding: 8px 10px; margin: 6px 0; border-radius: 8px; cursor: pointer; color: #cbd5e1; }
+        .quiz-opt:hover { background: rgba(125,211,252,0.06); }
+        .quiz-opt input { margin-right: 10px; }
+        .opt-right { outline: 1px solid #4ade80; color: #4ade80; }
+        .quiz-feedback { margin-top: 10px; font-size: 0.9rem; }
+        .fb-ok { color: #4ade80; }
+        .fb-no { color: #fca5a5; }
+        .quiz-score { font-weight: 700; margin-top: 12px; color: #f8fafc; }
+        details.practice { margin: 10px 0; border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; }
+        details.practice summary { cursor: pointer; color: #7dd3fc; font-weight: 600; }
+        details.practice summary + p { margin: 10px 0 4px; }
+        .practice-tier { color: #7dd3fc; font-size: 0.95rem; margin: 22px 0 6px; font-weight: 700; }
+        .author-box { border-left: 3px solid #7dd3fc; }
+</style>
     <meta property="og:title" content="Terraform | Munir Nweiser">
     <meta property="og:description" content="Terraform for production support: resources, state, plans, state locks, drift detection and safe rollback reading.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://munirnweiser.github.io/munir-portal/tutorials/terraform.html">
     <meta property="og:site_name" content="Munir Nweiser — Capital Markets Technology">
     <meta name="twitter:card" content="summary">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@type": "Article", "headline": "Terraform", "author": {"@type": "Person", "name": "Munir Nweiser"}, "datePublished": "2026-10-07"}
+</script>
 </head>
 <body>
 <div id="fairy-layer" aria-hidden="true"></div>
@@ -49,11 +78,37 @@
 
 <div class="section-heading">
 <p class="eyebrow">Tutorials • Infrastructure as Code</p>
+<p class="last-updated">Last updated: October 7, 2026</p>
 <h2>Terraform</h2>
 <p>Infrastructure as code for support: reading plans, understanding state, and untangling the two classic failures — locks and drift.</p>
 </div>
 
-<div class="resume-card">
+<div class="example-box takeaways-box">
+<h4>Key takeaways</h4>
+<ul>
+<li><strong>Read the plan symbols:</strong> + creates, ~ updates in place, −/+ replaces — read every plan before apply.</li>
+<li><strong>A stuck state lock means a dead apply somewhere</strong> — find it before you force-unlock.</li>
+<li><strong>Drift is reality diverging from code:</strong> the manual console resize gets reverted by the next apply unless you import it.</li>
+<li><strong>Taint and replace a sick VM</strong> — but never replace a database without a verified backup and a window.</li>
+<li><strong>Pin module versions (~&gt;), use remote state with locking,</strong> and estimate cost before apply.</li>
+</ul>
+</div>
+
+<div class="example-box toc-box">
+<h4>On this page</h4>
+<ul>
+<li><a href="#sec-1">Resources, state and plans</a></li>
+<li><a href="#sec-2">State locks: the pipeline is stuck</a></li>
+<li><a href="#sec-3">Drift: reality diverged from code</a></li>
+<li><a href="#sec-4">Import: bringing hand-built infrastructure under management</a></li>
+<li><a href="#sec-5">What production support watches</a></li>
+<li><a href="#sec-6">Module version pinning</a></li>
+<li><a href="#sec-7">Remote state backends: S3 with locking</a></li>
+<li><a href="#sec-8">Taint and replace: the sick VM</a></li>
+</ul>
+</div>
+
+<div class="resume-card"> id="sec-1"
 <h3>Resources, state and plans</h3>
 <p>Terraform manages <em>resources</em> (VMs, databases, networks) declared in <span class="formula">.tf</span> files. The <em>state file</em> records what Terraform believes exists; <span class="formula">terraform plan</span> compares desired configuration against state and reality, then prints the diff; <span class="formula">terraform apply</span> executes it.</p>
 <div class="example-box">
@@ -68,12 +123,12 @@ Plan: 1 to add, 1 to change, 1 to destroy.</pre>
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-2"
 <h3>State locks: the pipeline is stuck</h3>
 <p>State is shared, so Terraform <em>locks</em> it during runs. If a run crashes mid-apply, the lock can stick and every later run fails with "Error acquiring the state lock." First check whether a run is genuinely still active; if the holder is dead, <span class="formula">terraform force-unlock &lt;lock-id&gt;</span> releases it. The support discipline: never force-unlock while another apply might be running — two writers corrupt state, and corrupted state means Terraform no longer knows what exists.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-3"
 <h3>Drift: reality diverged from code</h3>
 <p><em>Drift</em> is when someone changes infrastructure by hand — a bigger VM sized up in the console during an incident, a firewall rule added for debugging. The next plan suddenly wants to "fix" those manual changes back, which can undo the very thing keeping production alive.</p>
 <div class="example-box">
@@ -81,12 +136,12 @@ Plan: 1 to add, 1 to change, 1 to destroy.</pre>
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-4"
 <h3>Import: bringing hand-built infrastructure under management</h3>
 <p>Sometimes infrastructure already exists — built by hand before Terraform was adopted. <span class="formula">terraform import</span> maps an existing real-world resource to a resource block, after which Terraform manages it like any other. The workflow: write the resource block to match reality as closely as you can, run <span class="formula">terraform import aws_instance.pricing_engine i-0abcd1234</span>, then run <span class="formula">terraform plan</span> — it should show no changes. If the plan wants to modify things, adjust the configuration until it is clean; only then is the import safe. Support relevance: after an incident where someone built emergency infrastructure by hand, importing it (rather than leaving it unmanaged) prevents the next plan from trying to delete it.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-5"
 <h3>What production support watches</h3>
 <ul class="clean-list">
 <li><strong>Plan before apply, always</strong> — a plan with unexpected destroys is a stopped deployment, not a puzzle to solve by applying and hoping.</li>
@@ -141,8 +196,68 @@ Plan: 1 to add, 1 to change, 1 to destroy.</pre>
 })();
 </script>
 
+
+
+<div class="resume-card" id="practice">
+<h3>Practice: easy, medium, hard</h3>
+<p>Try these before moving on — click a question to reveal the answer.</p>
+<h4 class="practice-tier">Easy</h4>
+<details class="practice"><summary><strong>1.</strong> In terraform plan output, what do +, ~ and −/+ mean?</summary><p><strong>Answer:</strong> + creates a resource, ~ updates it in place, −/+ destroys and recreates it.</p></details>
+<details class="practice"><summary><strong>2.</strong> The plan wants to shrink an instance an engineer manually enlarged last week. Why?</summary><p><strong>Answer:</strong> Drift: the code still says m5.xlarge while reality is m5.2xlarge — applying would revert the manual change.</p></details>
+<h4 class="practice-tier">Medium</h4>
+<details class="practice"><summary><strong>3.</strong> The pipeline is stuck on a state lock. Your steps?</summary><p><strong>Answer:</strong> Identify the lock holder (a stale CI job?), confirm no apply is actually running, then force-unlock — never unlock blindly.</p></details>
+<details class="practice"><summary><strong>4.</strong> A hand-built database needs to come under Terraform management. Command and follow-up?</summary><p><strong>Answer:</strong> terraform import &lt;resource.address&gt; &lt;id&gt;, then write configuration matching reality so the next plan is empty.</p></details>
+<h4 class="practice-tier">Hard</h4>
+<details class="practice"><summary><strong>5.</strong> You must apply -replace on a database instance. What happens first?</summary><p><strong>Answer:</strong> A verified backup, a maintenance window, and stakeholder sign-off — replacement destroys the old instance.</p></details>
+<details class="practice"><summary><strong>6.</strong> What does an S3 backend with DynamoDB locking give you?</summary><p><strong>Answer:</strong> Shared, encrypted remote state with exclusive locking — no two applies racing on a local statefile.</p></details>
+</div>
+
+<div class="resume-card" id="quiz">
+<h3>Knowledge check</h3>
+<p>Pick the best answer for each question, then check your score.</p>
+<div class="quiz-q" data-answer="0" data-why="Minus-plus destroys and recreates — the most dangerous symbol in the plan.">
+<p><strong>1. In a plan, −/+ means the resource will be:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="0"> Replaced</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="1"> Updated in place</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="2"> Deleted only</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="3"> Left alone</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<div class="quiz-q" data-answer="0" data-why="Someone changed the console by hand; the next apply will fight it.">
+<p><strong>2. Configuration drift is:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="0"> Reality diverging from the code</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="1"> A plan syntax error</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="2"> Network latency</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="3"> A provider bug</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<div class="quiz-q" data-answer="0" data-why="Two writers on one statefile corrupt it — verify the lock is stale first.">
+<p><strong>3. Force-unlocking state is acceptable when:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="0"> No apply is actually running</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="1"> It is always safe</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="2"> It is never acceptable</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="3"> Only on Fridays</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<button class="btn quiz-check" type="button">Check answers</button>
+<p class="quiz-score" aria-live="polite"></p>
+</div>
+
+<div class="resume-card" id="read-next">
+<h3>What to read next</h3>
+<ul class="clean-list">
+<li><a href="ansible.html" style="color:#7dd3fc">Ansible</a></li>
+<li><a href="kubernetes.html" style="color:#7dd3fc">Kubernetes for Production Support</a></li>
+<li><a href="jenkins.html" style="color:#7dd3fc">Jenkins</a></li>
+</ul>
+</div>
+
+<div class="example-box author-box">
+<p style="margin:0;font-size:0.9rem;color:#94a3b8"><strong style="color:#7dd3fc">About the author.</strong> Written by <strong>Munir Nweiser</strong> — 5 years L1–L3 Capital Markets production support (Morgan Stanley, Société Générale, Crédit Agricole CIB).</p>
+</div>
+
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
-<div class="resume-card">
+<div class="resume-card"> id="sec-6"
 <h3>Module version pinning</h3>
 <p>Calling a module without a version means "whatever is newest" — and newest can be a breaking major release:</p>
 <div class="example-box">
@@ -154,7 +269,7 @@ Plan: 1 to add, 1 to change, 1 to destroy.</pre>
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-7"
 <h3>Remote state backends: S3 with locking</h3>
 <p>State in git is corruption waiting to happen (plus secrets in plaintext). Production Terraform keeps state in remote storage with locking so two applies can never write at once:</p>
 <div class="example-box">
@@ -171,7 +286,7 @@ Plan: 1 to add, 1 to change, 1 to destroy.</pre>
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-8"
 <h3>Taint and replace: the sick VM</h3>
 <p>Sometimes a resource is unhealthy but the configuration is correct — a VM with a corrupted disk, a node that will not come back. Editing config will not help; the resource itself must be recreated. The old command was <span class="formula">terraform taint</span>; the modern form is a flag on apply:</p>
 <div class="example-box">
@@ -194,6 +309,69 @@ Plan: 1 to add, 1 to change, 1 to destroy.</pre>
 </div>
 </div>
 
+<script>
+(function () {
+    'use strict';
+
+    /* Copy buttons on code / formula blocks */
+    function copyText(text, btn) {
+        var label = btn.textContent;
+        function done(msg) {
+            btn.textContent = msg;
+            setTimeout(function () { btn.textContent = label; }, 1500);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(
+                function () { done('Copied!'); },
+                function () { done('Failed'); }
+            );
+        } else {
+            done('Select & copy');
+        }
+    }
+    document.querySelectorAll('main pre, main p.formula').forEach(function (el) {
+        if (el.querySelector('.copy-btn')) { return; }
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn copy-btn';
+        btn.textContent = 'Copy';
+        btn.setAttribute('aria-label', 'Copy to clipboard');
+        btn.addEventListener('click', function () { copyText(el.innerText, btn); });
+        el.classList.add('copyable');
+        el.appendChild(btn);
+    });
+
+    /* Knowledge-check quiz */
+    var quiz = document.getElementById('quiz');
+    if (quiz) {
+        var checkBtn = quiz.querySelector('.quiz-check');
+        var scoreEl = quiz.querySelector('.quiz-score');
+        checkBtn.addEventListener('click', function () {
+            var questions = quiz.querySelectorAll('.quiz-q');
+            var correct = 0;
+            questions.forEach(function (q) {
+                var answer = parseInt(q.getAttribute('data-answer'), 10);
+                var why = q.getAttribute('data-why') || '';
+                var picked = q.querySelector('input[type="radio"]:checked');
+                var fb = q.querySelector('.quiz-feedback');
+                q.querySelectorAll('.quiz-opt').forEach(function (l) { l.classList.remove('opt-right'); });
+                var labels = q.querySelectorAll('.quiz-opt');
+                if (labels[answer]) { labels[answer].classList.add('opt-right'); }
+                if (picked && parseInt(picked.value, 10) === answer) {
+                    correct += 1;
+                    fb.textContent = '\u2713 Correct. ' + why;
+                    fb.className = 'quiz-feedback fb-ok';
+                } else {
+                    fb.textContent = '\u2717 Not quite. ' + why;
+                    fb.className = 'quiz-feedback fb-no';
+                }
+                fb.hidden = false;
+            });
+            scoreEl.textContent = 'Score: ' + correct + ' / ' + questions.length;
+        });
+    }
+})();
+</script>
 </main>
 
 <footer class="site-footer"><div class="container footer-content">

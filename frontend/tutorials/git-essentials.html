@@ -18,13 +18,42 @@
         .example-box p { margin-bottom:8px; }
         .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
         pre.formula { padding:14px 16px; background:rgba(15,23,42,.7); border-radius:10px; overflow-x:auto; line-height:1.6; }
-    </style>
+    
+        .last-updated { color: var(--text-muted); font-size: 0.8rem; margin: -4px 0 14px; }
+        .toc-box ul { list-style: none; padding: 0; margin: 4px 0 0; columns: 2; column-gap: 28px; }
+        .toc-box li { margin-bottom: 7px; break-inside: avoid; }
+        .toc-box a { color: var(--cyan); text-decoration: none; font-size: 0.88rem; }
+        .toc-box a:hover { text-decoration: underline; }
+        @media (max-width: 700px) { .toc-box ul { columns: 1; } }
+        .takeaways-box h4, .toc-box h4 { color: #7dd3fc; margin-bottom: 10px; }
+        .takeaways-box ul { margin-bottom: 0; }
+        .copyable { position: relative; }
+        .copy-btn { position: absolute; top: 8px; right: 8px; padding: 4px 12px; font-size: 0.72rem; }
+        .quiz-q { margin: 18px 0; padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; }
+        .quiz-q > p:first-child { margin-bottom: 10px; }
+        .quiz-opt { display: block; padding: 8px 10px; margin: 6px 0; border-radius: 8px; cursor: pointer; color: #cbd5e1; }
+        .quiz-opt:hover { background: rgba(125,211,252,0.06); }
+        .quiz-opt input { margin-right: 10px; }
+        .opt-right { outline: 1px solid #4ade80; color: #4ade80; }
+        .quiz-feedback { margin-top: 10px; font-size: 0.9rem; }
+        .fb-ok { color: #4ade80; }
+        .fb-no { color: #fca5a5; }
+        .quiz-score { font-weight: 700; margin-top: 12px; color: #f8fafc; }
+        details.practice { margin: 10px 0; border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; }
+        details.practice summary { cursor: pointer; color: #7dd3fc; font-weight: 600; }
+        details.practice summary + p { margin: 10px 0 4px; }
+        .practice-tier { color: #7dd3fc; font-size: 0.95rem; margin: 22px 0 6px; font-weight: 700; }
+        .author-box { border-left: 3px solid #7dd3fc; }
+</style>
     <meta property="og:title" content="Git Essentials | Munir Nweiser">
     <meta property="og:description" content="Git for production support: branching, merging, rebasing, conflict resolution, cherry-pick, stash, reflog recovery and the hotfix workflow.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://munirnweiser.github.io/munir-portal/tutorials/git-essentials.html">
     <meta property="og:site_name" content="Munir Nweiser — Capital Markets Technology">
     <meta name="twitter:card" content="summary">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@type": "Article", "headline": "Git Essentials", "author": {"@type": "Person", "name": "Munir Nweiser"}, "datePublished": "2026-10-07"}
+</script>
 </head>
 <body>
 <div id="fairy-layer" aria-hidden="true"></div>
@@ -49,11 +78,36 @@
 
 <div class="section-heading">
 <p class="eyebrow">Tutorials • Version Control</p>
+<p class="last-updated">Last updated: October 7, 2026</p>
 <h2>Git Essentials</h2>
 <p>The commands support actually uses: branching, hotfixes, conflict resolution, and recovering from mistakes without panic.</p>
 </div>
 
-<div class="resume-card">
+<div class="example-box takeaways-box">
+<h4>Key takeaways</h4>
+<ul>
+<li><strong>Hotfix from the production tag, not from main</strong> — main may already contain unreleased work.</li>
+<li><strong>Merge conflicts are resolved, not feared:</strong> the file shows both sides; you choose, remove the markers, commit.</li>
+<li><strong>The recovery toolkit:</strong> reflog resurrects lost commits, stash parks work, cherry-pick moves single commits, bisect finds the bad deploy.</li>
+<li><strong>Interactive rebase (pick/fixup/squash)</strong> turns a messy hotfix branch into a reviewable story.</li>
+<li><strong>git bisect finds a bad deploy in ~8 runs</strong> across 200 commits — with a hermetic pass/fail script.</li>
+</ul>
+</div>
+
+<div class="example-box toc-box">
+<h4>On this page</h4>
+<ul>
+<li><a href="#sec-1">The model in one minute</a></li>
+<li><a href="#sec-2">Merge conflicts: resolve, don&#x27;t fear</a></li>
+<li><a href="#sec-3">The recovery toolkit</a></li>
+<li><a href="#sec-4">What production support watches</a></li>
+<li><a href="#sec-5">Interactive rebase: cleaning a hotfix branch</a></li>
+<li><a href="#sec-6">git bisect: finding the bad deploy</a></li>
+<li><a href="#sec-7">Submodule pitfalls</a></li>
+</ul>
+</div>
+
+<div class="resume-card"> id="sec-1"
 <h3>The model in one minute</h3>
 <p>Git tracks snapshots, not files. Work happens on <em>branches</em> — movable pointers to a commit. <span class="formula">main</span> is the production line; feature branches diverge and come back via <em>merge</em> (keeps history) or <em>rebase</em> (rewrites history into a straight line). The golden rule: never rebase a branch someone else is using — rewriting shared history breaks everyone's clone.</p>
 <div class="example-box">
@@ -64,12 +118,12 @@ git push -u origin hotfix/fix-margin-calc  # open the PR / merge request</pre>
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-2"
 <h3>Merge conflicts: resolve, don't fear</h3>
 <p>A conflict means two branches edited the same lines. Git marks the file with <span class="formula">&lt;&lt;&lt;&lt;&lt;&lt;&lt;</span> / <span class="formula">=======</span> / <span class="formula">&gt;&gt;&gt;&gt;&gt;&gt;&gt;</span> sections — your change on top, theirs below. Edit the file to the correct final state, remove the markers, then <span class="formula">git add</span> the file and <span class="formula">git commit</span> to finish the merge. The dangerous move is picking "mine" or "theirs" wholesale without reading both sides; in a pricing config, that silently ships the wrong parameters.</p>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-3"
 <h3>The recovery toolkit</h3>
 <ul class="clean-list">
 <li><strong>Stash</strong> — <span class="formula">git stash</span> shelves uncommitted work so you can switch branches for an urgent fix; <span class="formula">git stash pop</span> brings it back.</li>
@@ -82,7 +136,7 @@ git push -u origin hotfix/fix-margin-calc  # open the PR / merge request</pre>
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-4"
 <h3>What production support watches</h3>
 <ul class="clean-list">
 <li><strong>What exactly is deployed</strong> — <span class="formula">git log --oneline -5</span> and <span class="formula">git describe --tags</span> on the release repo answer "which commit is running in prod?" in seconds.</li>
@@ -137,8 +191,68 @@ git push -u origin hotfix/fix-margin-calc  # open the PR / merge request</pre>
 })();
 </script>
 
+
+
+<div class="resume-card" id="practice">
+<h3>Practice: easy, medium, hard</h3>
+<p>Try these before moving on — click a question to reveal the answer.</p>
+<h4 class="practice-tier">Easy</h4>
+<details class="practice"><summary><strong>1.</strong> Production pricing is wrong. What is your very first git command?</summary><p><strong>Answer:</strong> git checkout -b hotfix/fix-margin-calc &lt;production-tag&gt; — branch from the tag, never from main.</p></details>
+<details class="practice"><summary><strong>2.</strong> After the one-line fix, how do you commit and publish the branch?</summary><p><strong>Answer:</strong> git add -A &amp;&amp; git commit -m &quot;Fix margin calc for cleared swaps&quot; &amp;&amp; git push -u origin hotfix/fix-margin-calc</p></details>
+<h4 class="practice-tier">Medium</h4>
+<details class="practice"><summary><strong>3.</strong> A merge conflict in margin.py — resolve it step by step.</summary><p><strong>Answer:</strong> Open the file, choose one side (or combine both), delete the conflict markers, git add the file, git commit.</p></details>
+<details class="practice"><summary><strong>4.</strong> You committed to the wrong branch. Move the work without losing it.</summary><p><strong>Answer:</strong> Cherry-pick the commit onto the right branch (or stash it there), then reset the wrong branch back.</p></details>
+<h4 class="practice-tier">Hard</h4>
+<details class="practice"><summary><strong>5.</strong> Use git bisect across 200 commits. How many runs, and what makes it work?</summary><p><strong>Answer:</strong> About 8 (log₂200) — it needs a hermetic pass/fail test script so each step is trustworthy.</p></details>
+<details class="practice"><summary><strong>6.</strong> After a pull, a submodule still builds the old code. Why?</summary><p><strong>Answer:</strong> Submodules don&#x27;t auto-update on pull — run git submodule update; the parent repo pins the submodule pointer.</p></details>
+</div>
+
+<div class="resume-card" id="quiz">
+<h3>Knowledge check</h3>
+<p>Pick the best answer for each question, then check your score.</p>
+<div class="quiz-q" data-answer="0" data-why="main can contain unreleased work; the tag is exactly what is running.">
+<p><strong>1. A production hotfix branch should start from:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="0"> The production tag</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="1"> main, always</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="2"> Any random branch</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q1" value="3"> No branch is needed</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<div class="quiz-q" data-answer="0" data-why="Binary search only works if every step can be judged good or bad automatically.">
+<p><strong>2. git bisect requires:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="0"> A pass/fail test script</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="1"> An internet connection</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="2"> A graphical client</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q2" value="3"> Root access</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<div class="quiz-q" data-answer="0" data-why="It records where HEAD has been — deleted branches and bad resets are recoverable from it.">
+<p><strong>3. The reflog is used to:</strong></p>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="0"> Recover lost commits</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="1"> Write logs to a file</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="2"> Sync with remotes</label>
+<label class="quiz-opt"><input type="radio" name="quiz-q3" value="3"> Blame lines of code</label>
+<p class="quiz-feedback" hidden></p>
+</div>
+<button class="btn quiz-check" type="button">Check answers</button>
+<p class="quiz-score" aria-live="polite"></p>
+</div>
+
+<div class="resume-card" id="read-next">
+<h3>What to read next</h3>
+<ul class="clean-list">
+<li><a href="jenkins.html" style="color:#7dd3fc">Jenkins</a></li>
+<li><a href="yaml-dockerfiles.html" style="color:#7dd3fc">YAML &amp; Dockerfiles</a></li>
+<li><a href="ansible.html" style="color:#7dd3fc">Ansible</a></li>
+</ul>
+</div>
+
+<div class="example-box author-box">
+<p style="margin:0;font-size:0.9rem;color:#94a3b8"><strong style="color:#7dd3fc">About the author.</strong> Written by <strong>Munir Nweiser</strong> — 5 years L1–L3 Capital Markets production support (Morgan Stanley, Société Générale, Crédit Agricole CIB).</p>
+</div>
+
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
-<div class="resume-card">
+<div class="resume-card"> id="sec-5"
 <h3>Interactive rebase: cleaning a hotfix branch</h3>
 <p>A hotfix branch with seven "wip" and "fix typo" commits is embarrassing to merge and hard to review. Interactive rebase rewrites them into a clean story <em>before</em> the merge — only ever on your own unshared branch:</p>
 <div class="example-box">
@@ -151,7 +265,7 @@ reword 4d6b2a1 adjust threshold</pre>
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-6"
 <h3>git bisect: finding the bad deploy</h3>
 <p>"It worked in v2.13.0 and broke in v2.14.0" with 200 commits between is a binary search problem, and git automates it:</p>
 <div class="example-box">
@@ -167,7 +281,7 @@ $ git bisect reset</pre>
 </div>
 </div>
 
-<div class="resume-card">
+<div class="resume-card"> id="sec-7"
 <h3>Submodule pitfalls</h3>
 <p>Submodules embed one repo inside another at a pinned commit — common for shared libraries and config repos. Three traps:</p>
 <ul class="clean-list">
@@ -195,6 +309,69 @@ $ git add .gitattributes   # the tracking rules ARE versioned</pre>
 </div>
 </div>
 
+<script>
+(function () {
+    'use strict';
+
+    /* Copy buttons on code / formula blocks */
+    function copyText(text, btn) {
+        var label = btn.textContent;
+        function done(msg) {
+            btn.textContent = msg;
+            setTimeout(function () { btn.textContent = label; }, 1500);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(
+                function () { done('Copied!'); },
+                function () { done('Failed'); }
+            );
+        } else {
+            done('Select & copy');
+        }
+    }
+    document.querySelectorAll('main pre, main p.formula').forEach(function (el) {
+        if (el.querySelector('.copy-btn')) { return; }
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn copy-btn';
+        btn.textContent = 'Copy';
+        btn.setAttribute('aria-label', 'Copy to clipboard');
+        btn.addEventListener('click', function () { copyText(el.innerText, btn); });
+        el.classList.add('copyable');
+        el.appendChild(btn);
+    });
+
+    /* Knowledge-check quiz */
+    var quiz = document.getElementById('quiz');
+    if (quiz) {
+        var checkBtn = quiz.querySelector('.quiz-check');
+        var scoreEl = quiz.querySelector('.quiz-score');
+        checkBtn.addEventListener('click', function () {
+            var questions = quiz.querySelectorAll('.quiz-q');
+            var correct = 0;
+            questions.forEach(function (q) {
+                var answer = parseInt(q.getAttribute('data-answer'), 10);
+                var why = q.getAttribute('data-why') || '';
+                var picked = q.querySelector('input[type="radio"]:checked');
+                var fb = q.querySelector('.quiz-feedback');
+                q.querySelectorAll('.quiz-opt').forEach(function (l) { l.classList.remove('opt-right'); });
+                var labels = q.querySelectorAll('.quiz-opt');
+                if (labels[answer]) { labels[answer].classList.add('opt-right'); }
+                if (picked && parseInt(picked.value, 10) === answer) {
+                    correct += 1;
+                    fb.textContent = '\u2713 Correct. ' + why;
+                    fb.className = 'quiz-feedback fb-ok';
+                } else {
+                    fb.textContent = '\u2717 Not quite. ' + why;
+                    fb.className = 'quiz-feedback fb-no';
+                }
+                fb.hidden = false;
+            });
+            scoreEl.textContent = 'Score: ' + correct + ' / ' + questions.length;
+        });
+    }
+})();
+</script>
 </main>
 
 <footer class="site-footer"><div class="container footer-content">
