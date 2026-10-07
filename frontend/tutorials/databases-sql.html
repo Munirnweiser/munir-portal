@@ -187,6 +187,28 @@
 <p>The queries that actually get run during incidents: filtering trade data, joining it to reference data, and spotting the anomaly before the trader does.</p>
 </div>
 
+<nav class="path-bar" aria-label="Learning path">
+  <div class="path-info">
+    <span class="eyebrow">Learning path</span>
+    <strong>Databases Track</strong>
+    <span class="path-pos">1 of 3</span>
+  </div>
+  <div class="path-links">
+    <a class="btn" href="index.html">All tracks</a>
+    <a class="btn" href="databases-oracle.html">Next →</a>
+  </div>
+</nav>
+<style>
+.path-bar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;background:rgba(13,20,36,.65);border:1px solid rgba(103,232,249,.22);border-radius:14px;padding:14px 18px;margin:0 0 26px}
+.path-info{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.path-info .eyebrow{margin:0}
+.path-info strong{color:#e2e8f0}
+.path-pos{color:var(--text-muted,#94a3b8);font-size:.85rem}
+.path-links{display:flex;gap:10px}
+.path-links .btn{padding:8px 16px;font-size:.9rem;text-decoration:none}
+</style>
+
+
 <div class="example-box takeaways-box">
 <h4>Key takeaways</h4>
 <ul>
@@ -214,7 +236,7 @@
 </ul>
 </div>
 
-<div class="resume-card"> id="sec-1"
+<div class="resume-card" id="sec-1">
 <h3>SELECT with intent: filter first, join second</h3>
 <p>In support you rarely query whole tables. You start from a symptom — a trade ID, a book, a time window — and you filter hard before you join anything. A typical first query during a booking incident:</p>
 <div class="sql">SELECT trade_id, book, status, ccy_pair, notional, created_ts
@@ -226,7 +248,7 @@ FETCH FIRST 50 ROWS ONLY;</div>
 <p>Only after the suspect rows are isolated do you join to reference data (counterparties, books, static data). Joining first and filtering later is how a "quick check" becomes a full table scan that pages the DBA.</p>
 </div>
 
-<div class="resume-card"> id="sec-2"
+<div class="resume-card" id="sec-2">
 <h3>JOINs: the three you use daily</h3>
 <ul>
 <li><strong>INNER JOIN</strong> — trades to their static data. Rows without a match are dropped, which is exactly what you want when hunting orphaned records.</li>
@@ -238,7 +260,7 @@ FETCH FIRST 50 ROWS ONLY;</div>
 </div>
 </div>
 
-<div class="resume-card"> id="sec-3"
+<div class="resume-card" id="sec-3">
 <h3>Aggregations: counting what is broken</h3>
 <p>GROUP BY turns a million-row mess into a five-line answer:</p>
 <div class="sql">SELECT status, COUNT(*) AS n, SUM(notional) AS total_notional
@@ -250,7 +272,7 @@ ORDER BY n DESC;</div>
 <p>Run this on settlement-date trades and you instantly see how many are stuck in each state — the same shape as an STP-rate dashboard, built ad hoc in thirty seconds.</p>
 </div>
 
-<div class="resume-card"> id="sec-4"
+<div class="resume-card" id="sec-4">
 <h3>Window functions: queue and spike analysis</h3>
 <p>When a feed slows down, you need row-by-row context, not just totals. <span class="formula">LAG()</span> compares each event to the previous one:</p>
 <div class="sql">SELECT event_ts,
@@ -262,7 +284,7 @@ WHERE symbol = 'EURUSD'
 <p>Sort by <span class="formula">gap_sec</span> descending and the feed gaps jump out. <span class="formula">ROW_NUMBER() OVER (PARTITION BY trade_id ORDER BY version DESC)</span> is the standard trick for keeping only the latest version of an amended trade.</p>
 </div>
 
-<div class="resume-card"> id="sec-5"
+<div class="resume-card" id="sec-5">
 <h3>Reading an execution plan</h3>
 <p>A slow query is a plan problem. The two things to read first:</p>
 <ul>
@@ -274,7 +296,7 @@ WHERE symbol = 'EURUSD'
 </div>
 </div>
 
-<div class="resume-card"> id="sec-6"
+<div class="resume-card" id="sec-6">
 <h3>Sessionization: turning events into sessions</h3>
 <p>Traders log in and out all day; support questions are about <em>sessions</em>, not raw logins. The gap-and-island pattern groups events into sessions whenever the gap exceeds a threshold — here 30 minutes:</p>
 <div class="sql">WITH ordered AS (
@@ -297,7 +319,7 @@ ORDER BY trader_id, login_ts;</div>
 <p><span class="formula">LAG()</span> finds the previous login; the CASE flags session starts; the running <span class="formula">SUM()</span> turns flags into session numbers. Logins at 09:00, 09:12 and 09:55 become sessions 1, 1, 2. This is the same technique used to sessionize FIX connections when a client reconnects repeatedly — each reconnect cluster is one "session" for the incident timeline.</p>
 </div>
 
-<div class="resume-card"> id="sec-7"
+<div class="resume-card" id="sec-7">
 <h3>Hierarchical queries: following amendment chains</h3>
 <p>A trade amended five times is a chain, not five independent rows. Oracle's <span class="formula">CONNECT BY</span> walks the chain in one query:</p>
 <div class="sql">SELECT trade_id, amends_trade_id, LEVEL AS depth
@@ -310,7 +332,7 @@ CONNECT BY PRIOR amends_trade_id = trade_id;</div>
 </div>
 </div>
 
-<div class="resume-card"> id="sec-8"
+<div class="resume-card" id="sec-8">
 <h3>Index design for trade tables</h3>
 <p>Trade tables are huge and queried by the same few patterns, so index column order matters. Rules of thumb:</p>
 <ul>
@@ -321,7 +343,7 @@ CONNECT BY PRIOR amends_trade_id = trade_id;</div>
 <p>Support rarely creates indexes — that is a DBA change — but identifying the missing index in the incident report ("filter on book+trade_date does a full scan; composite index would fix it") is exactly what gets the change approved fast.</p>
 </div>
 
-<div class="resume-card"> id="sec-9"
+<div class="resume-card" id="sec-9">
 <h3>Reading deadlocks in the logs</h3>
 <p>When Oracle detects a deadlock it writes <span class="formula">ORA-00060: deadlock detected</span> to the alert log and dumps a deadlock graph to a trace file. The graph lists the two sessions, the SQL each was running, and the exact rows (by rowid) they fought over. Support's job:</p>
 <ul>
@@ -335,7 +357,7 @@ CONNECT BY PRIOR amends_trade_id = trade_id;</div>
 </div>
 
 
-<div class="resume-card"> id="sec-10"
+<div class="resume-card" id="sec-10">
 <h3>Reading an execution plan</h3>
 <p>When a query is slow, read its plan before touching anything. The plan is the optimizer telling you what it decided. The two join strategies that matter most:</p>
 <div class="sql">-- trade blotter: 40 rows from ORDERS, 2M rows in TRADES

@@ -187,6 +187,28 @@
 <p>The DMVs and checks behind SQL Server incidents: what is running now, what is blocked, which job failed, and where the server is spending its time.</p>
 </div>
 
+<nav class="path-bar" aria-label="Learning path">
+  <div class="path-info">
+    <span class="eyebrow">Learning path</span>
+    <strong>Databases Track</strong>
+    <span class="path-pos">3 of 3</span>
+  </div>
+  <div class="path-links">
+    <a class="btn" href="databases-oracle.html">← Previous</a>
+    <a class="btn" href="index.html">All tracks</a>
+  </div>
+</nav>
+<style>
+.path-bar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;background:rgba(13,20,36,.65);border:1px solid rgba(103,232,249,.22);border-radius:14px;padding:14px 18px;margin:0 0 26px}
+.path-info{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.path-info .eyebrow{margin:0}
+.path-info strong{color:#e2e8f0}
+.path-pos{color:var(--text-muted,#94a3b8);font-size:.85rem}
+.path-links{display:flex;gap:10px}
+.path-links .btn{padding:8px 16px;font-size:.9rem;text-decoration:none}
+</style>
+
+
 <div class="example-box takeaways-box">
 <h4>Key takeaways</h4>
 <ul>
@@ -212,7 +234,7 @@
 </ul>
 </div>
 
-<div class="resume-card"> id="sec-1"
+<div class="resume-card" id="sec-1">
 <h3>DMVs: asking the server what it is doing</h3>
 <p>Dynamic Management Views are SQL Server's live telemetry — the equivalent of Oracle's v$ views. The essential triage query shows every executing request with its wait:</p>
 <div class="sql">SELECT r.session_id, s.login_name, s.program_name,
@@ -227,7 +249,7 @@ ORDER BY r.wait_time DESC;</div>
 <p>The <span class="formula">wait_type</span> column is the diagnosis: <span class="formula">LCK_M_X</span> means blocked on a lock, <span class="formula">PAGEIOLATCH_SH</span> means waiting on disk I/O, <span class="formula">CXPACKET</span> points at parallelism. Read the wait type before anything else.</p>
 </div>
 
-<div class="resume-card"> id="sec-2"
+<div class="resume-card" id="sec-2">
 <h3>Blocking chains: finding the head blocker</h3>
 <p><span class="formula">sys.dm_exec_requests.blocking_session_id</span> tells you who each session waits on. The head blocker is the session with a non-zero value in others' rows but zero in its own — it is not waiting, everyone else waits on it:</p>
 <div class="sql">SELECT session_id, blocking_session_id,
@@ -242,12 +264,12 @@ WHERE blocking_session_id &lt;&gt; 0
 </div>
 </div>
 
-<div class="resume-card"> id="sec-3"
+<div class="resume-card" id="sec-3">
 <h3>Deadlocks: the error 1205</h3>
 <p>A deadlock is two sessions each holding a lock the other wants; SQL Server picks a victim and kills it with error 1205. Unlike blocking, you cannot wait it out. The deadlock graph in the SQL Server error log (or Extended Events) shows the two statements and their lock order. Support's role: capture the victim's query and timestamp, identify the pattern (two processes updating the same tables in opposite order is the classic), and hand it to development — the fix is consistent lock ordering or shorter transactions, not a server setting.</p>
 </div>
 
-<div class="resume-card"> id="sec-4"
+<div class="resume-card" id="sec-4">
 <h3>SQL Agent jobs: the batch that did not run</h3>
 <p>End-of-day pricing, reconciliations and report loads usually run as SQL Agent jobs. When downstream data is missing, check job history before assuming a database problem:</p>
 <div class="sql">SELECT j.name AS job_name, h.step_name, h.run_status,
@@ -261,7 +283,7 @@ ORDER BY run_ts DESC;</div>
 <p><span class="formula">run_status</span> 0 = failed, 2 = retry, 3 = cancelled. The <span class="formula">message</span> column usually names the failing step. Also verify the SQL Server Agent service itself is running — a stopped Agent means <em>no</em> jobs ran, and every downstream alert fires at once.</p>
 </div>
 
-<div class="resume-card"> id="sec-5"
+<div class="resume-card" id="sec-5">
 <h3>Wait stats and backups: the two health checks</h3>
 <p><span class="formula">sys.dm_os_wait_stats</span> aggregated since the last restart shows where the server spends its waiting time. A sudden spike in <span class="formula">PAGEIOLATCH_*</span> means the storage layer is struggling; <span class="formula">LCK_*</span> spikes mean concurrency pain. Compare against a known-good baseline, not against zero.</p>
 <p>And the check nobody runs until it is too late — when was the last successful backup?</p>
@@ -274,7 +296,7 @@ ORDER BY last_backup;</div>
 <p>A production database with no recent backup turns every incident into a potential data-loss incident. Verify this <em>before</em> the crisis.</p>
 </div>
 
-<div class="resume-card"> id="sec-6"
+<div class="resume-card" id="sec-6">
 <h3>Query Store: catching plan regressions</h3>
 <p>A query that ran fine for months suddenly takes ten times longer after a statistics update or a data growth spurt — the plan changed. Query Store keeps the history of plans per query, so you can prove the regression and revert it:</p>
 <div class="sql">SELECT q.query_id, qt.query_sql_text,
@@ -293,7 +315,7 @@ ORDER BY rs.avg_duration DESC;</div>
 </div>
 </div>
 
-<div class="resume-card"> id="sec-7"
+<div class="resume-card" id="sec-7">
 <h3>Always On: failover readiness checks</h3>
 <p>Trading databases usually run in an Always On availability group. When the primary has a problem, you need to know <em>before</em> the failover whether the secondary can actually take over:</p>
 <div class="sql">SELECT ag.name AS ag_name, ar.replica_server_name,
@@ -311,7 +333,7 @@ JOIN sys.dm_hadr_availability_replica_states rs
 </ul>
 </div>
 
-<div class="resume-card"> id="sec-8"
+<div class="resume-card" id="sec-8">
 <h3>Tempdb contention: the PAGELATCH storm</h3>
 <p>Tempdb is shared by every query doing sorts, hashes, and temp tables. When allocation pages become a hotspot, waits show up as <span class="formula">PAGELATCH_UP</span> on pages 2:1:1, 2:1:2, 2:1:3 (the PFS, GAM and SGAM pages of tempdb):</p>
 <div class="sql">SELECT wait_type, waiting_tasks_count,

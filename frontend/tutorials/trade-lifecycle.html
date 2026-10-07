@@ -82,6 +82,28 @@
 <p>From order entry to reconciliation — every stage of a trade's life, and what production support watches at each one.</p>
 </div>
 
+<nav class="path-bar" aria-label="Learning path">
+  <div class="path-info">
+    <span class="eyebrow">Learning path</span>
+    <strong>Markets &amp; Trading Track</strong>
+    <span class="path-pos">4 of 9</span>
+  </div>
+  <div class="path-links">
+    <a class="btn" href="futures-options.html">← Previous</a>
+    <a class="btn" href="stp.html">Next →</a>
+  </div>
+</nav>
+<style>
+.path-bar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;background:rgba(13,20,36,.65);border:1px solid rgba(103,232,249,.22);border-radius:14px;padding:14px 18px;margin:0 0 26px}
+.path-info{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.path-info .eyebrow{margin:0}
+.path-info strong{color:#e2e8f0}
+.path-pos{color:var(--text-muted,#94a3b8);font-size:.85rem}
+.path-links{display:flex;gap:10px}
+.path-links .btn{padding:8px 16px;font-size:.9rem;text-decoration:none}
+</style>
+
+
 <div class="example-box takeaways-box">
 <h4>Key takeaways</h4>
 <ul>
@@ -115,67 +137,67 @@
 </ul>
 </div>
 
-<div class="resume-card"> id="sec-1"
+<div class="resume-card" id="sec-1">
 <h3>1. Order entry</h3>
 <p>It starts with intent: a trader (or an algorithm) stages an order in the execution management system — instrument, side, quantity, price, order type. Pre-trade risk checks run here: credit limits, fat-finger checks (is this quantity sane?), and short-sale validations.</p>
 <p class="watch"><strong>Support watches:</strong> order-entry latency, pre-trade risk engine health, and rejected-order rates — a spike usually means a limit or reference-data problem, not a trader problem.</p>
 </div>
 
-<div class="resume-card"> id="sec-2"
+<div class="resume-card" id="sec-2">
 <h3>2. Routing</h3>
 <p>The order is routed to the chosen venue — exchange, MTF, dark pool, or a dealer — often via FIX. Smart order routers split large orders across venues to minimize market impact.</p>
 <p class="watch"><strong>Support watches:</strong> FIX session health to each venue, drop-copy feeds, and routing-rule configuration after venue maintenance.</p>
 </div>
 
-<div class="resume-card"> id="sec-3"
+<div class="resume-card" id="sec-3">
 <h3>3. Execution</h3>
 <p>The venue matches the order and reports fills back, usually as FIX ExecutionReports. Partial fills are normal; the order stays "working" until filled, cancelled, or expired.</p>
 <p class="watch"><strong>Support watches:</strong> execution-report flow and sequencing — a missing ExecutionReport means the booking system and reality disagree, which is the most dangerous state in the chain.</p>
 </div>
 
-<div class="resume-card"> id="sec-4"
+<div class="resume-card" id="sec-4">
 <h3>4. Trade capture &amp; booking</h3>
 <p>Executions are captured into the booking system (the position-keeping "book of record") with economics: price, quantity, value date, counterparty, trader, book. This is where the trade becomes official internally.</p>
 <p class="watch"><strong>Support watches:</strong> booking queues and reject queues — unbooked executions age fast and corrupt intraday P&amp;L.</p>
 </div>
 
-<div class="resume-card"> id="sec-5"
+<div class="resume-card" id="sec-5">
 <h3>5. Matching</h3>
 <p>Both sides compare their versions of the trade on affirmation/matching platforms. Economics must agree exactly — price, quantity, value date.</p>
 <p class="watch"><strong>Support watches:</strong> match rates and the break queue; systematic mismatches point to a feed or mapping defect, not fifty individual errors.</p>
 </div>
 
-<div class="resume-card"> id="sec-6"
+<div class="resume-card" id="sec-6">
 <h3>6. Enrichment</h3>
 <p>The bare trade is enriched with everything downstream needs: settlement instructions (SSI), custodian details, fees, taxes, account mappings. Most enrichment is automatic reference-data lookup.</p>
 <p class="watch"><strong>Support watches:</strong> the overnight reference-data batch — a failed static-data load guarantees a morning full of enrichment breaks.</p>
 </div>
 
-<div class="resume-card"> id="sec-7"
+<div class="resume-card" id="sec-7">
 <h3>7. Allocation</h3>
 <p>Block trades are split across the underlying client accounts or funds, each with its own economics. Allocations must net back to the block exactly.</p>
 <p class="watch"><strong>Support watches:</strong> allocation mismatches and late allocations — a block that does not fully allocate cannot settle.</p>
 </div>
 
-<div class="resume-card"> id="sec-8"
+<div class="resume-card" id="sec-8">
 <h3>8. Confirmation</h3>
 <p>Formal confirmations (SWIFT MT5xx, electronic platforms) are exchanged with the counterparty. For derivatives, this is a legal event under ISDA documentation.</p>
 <p class="watch"><strong>Support watches:</strong> confirmation aging — unconfirmed trades past T+1 escalate, because unconfirmed means undisputed-nothing.</p>
 </div>
 
-<div class="resume-card"> id="sec-9"
+<div class="resume-card" id="sec-9">
 <h3>9. Clearing</h3>
 <p>Eligible trades are novated to a central counterparty (CCP), which becomes buyer to every seller and seller to every buyer. Margin is calculated and called — initial margin upfront, variation margin daily.</p>
 <p class="watch"><strong>Support watches:</strong> CCP margin-call feeds and clearing-eligibility flags; a misflagged trade bypasses clearing and breaches mandate.</p>
 </div>
 
-<div class="resume-card"> id="sec-10"
+<div class="resume-card" id="sec-10">
 <h3>10. Settlement</h3>
 <p>On value date, cash and securities actually move — via CSDs for securities, CLS for FX, correspondent banks for cash. Delivery-versus-payment (DvP) ensures neither leg moves without the other.</p>
 <p class="watch"><strong>Support watches:</strong> cutoff times and fail queues; every fail has a funding cost and, under CSDR, a potential buy-in.</p>
 </div>
 
-<div class="resume-card"> id="sec-11"
+<div class="resume-card" id="sec-11">
 <h3>11. Reconciliation</h3>
 <p>The day closes by reconciling everything against everything: front-office vs back-office positions, custodian statements vs internal records, cash vs expected. Breaks here are found money or found risk.</p>
 <p class="watch"><strong>Support watches:</strong> recon break counts by category and the auto-match rate — the morning recon meeting runs on these numbers.</p>
@@ -185,7 +207,7 @@
 </div>
 
 
-<div class="resume-card"> id="sec-12"
+<div class="resume-card" id="sec-12">
 <h3>T+1 settlement: a timeline with teeth</h3>
 <p>The US and Canada moved equities and most bonds to <strong>T+1 settlement</strong> in May 2024 — one business day after trade date. The compression removed a day of counterparty risk but left zero slack in operations. A typical T+1 timeline:</p>
 <ul>
@@ -198,14 +220,14 @@
 <p class="watch"><strong>Support watches:</strong> the affirmation rate by mid-afternoon T (anything unmatched by 21:00 ET is tomorrow's fail), custodian cutoff countdowns per market, and the fail queue at T+1 open — every item on it needs an owner before the next cutoff.</p>
 </div>
 
-<div class="resume-card"> id="sec-13"
+<div class="resume-card" id="sec-13">
 <h3>When settlement fails: fails and buy-ins</h3>
 <p>A <strong>fail</strong> is a trade that does not settle on value date — usually because securities were not delivered (a "short" fail) or cash was not paid. Fails age, accrue funding costs, and attract regulatory attention. Under Europe's <strong>CSDR</strong> regime, fails also trigger <strong>cash penalties</strong> (daily, calculated by the CSD) and, after an extension period (generally 4 business days, 7 for SME growth markets), a <strong>mandatory buy-in</strong>: an agent is appointed to buy the missing securities in the market <em>at the failing party's expense</em>, whatever the price.</p>
 <p>A buy-in is the market's way of saying "we are done waiting" — the failing seller pays any price difference plus fees, and the buy-in execution itself can move the price against them. This is why fails are chased hardest in the first 48 hours, while they are still cheap to cure by borrowing the securities (a securities-lending "borrow to cover").</p>
 <p class="watch"><strong>Support watches:</strong> fail aging buckets, borrow availability and cost for hard-to-borrow names, CSD penalty reports, and any fail approaching the buy-in extension deadline — those need the trading desk involved, not just operations.</p>
 </div>
 
-<div class="resume-card"> id="sec-14"
+<div class="resume-card" id="sec-14">
 <h3>Corporate actions crash into the lifecycle</h3>
 <p>Dividends, splits, mergers and spin-offs do not politely wait for settlement — they strike <em>pending</em> trades mid-flight. A stock split between trade date and settlement date changes the quantity and price of what must deliver; a merger can replace the security entirely. Every pending trade in the affected security must be <strong>transformed</strong>: cancelled and rebooked with adjusted economics.</p>
 <ul>
@@ -217,7 +239,7 @@
 </div>
 
 
-<div class="resume-card"> id="sec-15"
+<div class="resume-card" id="sec-15">
 <h3>Fail-management playbook</h3>
 <p>When a trade does not settle on value date, it becomes a fail. The playbook, in order:</p>
 <ul class="clean-list">
@@ -232,7 +254,7 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-16"
+<div class="resume-card" id="sec-16">
 <h3>T+1 vs T+2 settlement</h3>
 <table class="tag-table">
 <tr><th></th><th>T+2 (legacy)</th><th>T+1 (US/Canada since May 2024)</th></tr>

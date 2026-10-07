@@ -82,6 +82,28 @@
 <p>Spot, forwards, swaps and NDFs — the four instruments behind almost every FX support ticket.</p>
 </div>
 
+<nav class="path-bar" aria-label="Learning path">
+  <div class="path-info">
+    <span class="eyebrow">Learning path</span>
+    <strong>Markets &amp; Trading Track</strong>
+    <span class="path-pos">1 of 9</span>
+  </div>
+  <div class="path-links">
+    <a class="btn" href="index.html">All tracks</a>
+    <a class="btn" href="fixed-income.html">Next →</a>
+  </div>
+</nav>
+<style>
+.path-bar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;background:rgba(13,20,36,.65);border:1px solid rgba(103,232,249,.22);border-radius:14px;padding:14px 18px;margin:0 0 26px}
+.path-info{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.path-info .eyebrow{margin:0}
+.path-info strong{color:#e2e8f0}
+.path-pos{color:var(--text-muted,#94a3b8);font-size:.85rem}
+.path-links{display:flex;gap:10px}
+.path-links .btn{padding:8px 16px;font-size:.9rem;text-decoration:none}
+</style>
+
+
 <div class="example-box takeaways-box">
 <h4>Key takeaways</h4>
 <ul>
@@ -107,7 +129,7 @@
 </ul>
 </div>
 
-<div class="resume-card"> id="sec-1"
+<div class="resume-card" id="sec-1">
 <h3>Spot: buying currency for immediate delivery</h3>
 <p>A spot trade exchanges two currencies with settlement two business days later (T+2; T+1 for USD/CAD and some pairs). Prices are quoted as pairs: <strong>EUR/USD 1.0850 / 1.0852</strong>. The first currency (EUR) is the base, the second (USD) is the quote. The bank buys at the bid (1.0850) and sells at the ask (1.0852); the 2-pip spread is its margin.</p>
 <div class="example-box">
@@ -116,7 +138,7 @@
 <p>A <em>pip</em> is the smallest quoted move — 0.0001 for most pairs, 0.01 for JPY pairs. A 50-pip move on a EUR 10M position is roughly USD 5,000 of P&amp;L, which is why traders watch spot ladders tick by tick.</p>
 </div>
 
-<div class="resume-card"> id="sec-2"
+<div class="resume-card" id="sec-2">
 <h3>Forwards: locking in a rate for a future date</h3>
 <p>An FX forward agrees today on an exchange rate for settlement on a future date — 1 month, 3 months, 1 year out. The forward rate is not a forecast; it is mechanically derived from the spot rate and the interest-rate differential between the two currencies (covered interest parity):</p>
 <p class="formula">F = S × (1 + r<sub>d</sub> × t) / (1 + r<sub>f</sub> × t)</p>
@@ -128,13 +150,13 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-3"
+<div class="resume-card" id="sec-3">
 <h3>Swaps: rolling positions forward</h3>
 <p>An FX swap is two trades in one ticket: a spot (or near-dated) leg and a forward leg in the opposite direction. The classic use is <em>rolling</em> a position — a trader long EUR/USD spot who wants to keep the position sells spot and buys the 1-week forward simultaneously. The price difference between the legs is the <em>swap points</em>, and the P&amp;L on the roll reflects the interest differential earned or paid.</p>
 <p>Support teams see swaps constantly around month-ends and IMM dates, when the whole street rolls positions at once and volumes spike.</p>
 </div>
 
-<div class="resume-card"> id="sec-4"
+<div class="resume-card" id="sec-4">
 <h3>NDFs: when the currency cannot leave the country</h3>
 <p>Some currencies (BRL, INR, KRW, CNY onshore restrictions) are not freely convertible, so forwards cannot physically settle. A <em>non-deliverable forward</em> settles in a convertible currency — usually USD — for the cash difference between the agreed rate and the official fixing rate on maturity.</p>
 <div class="example-box">
@@ -142,7 +164,7 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-5"
+<div class="resume-card" id="sec-5">
 <h3>What production support watches</h3>
 <ul class="clean-list">
 <li><strong>Fixing failures</strong> — NDF and corporate hedging flows depend on official fixings publishing on time; a late fixing delays valuation and settlement.</li>
@@ -156,13 +178,13 @@
 </div>
 
 
-<div class="resume-card"> id="sec-6"
+<div class="resume-card" id="sec-6">
 <h3>Herstatt risk: when settlement itself is the risk</h3>
 <p>FX settlement has a unique danger: the two currency legs settle in <em>different</em> payment systems, hours apart. If your counterparty collapses after you have paid your leg but before they pay theirs, you lose the full principal — not just a market move. This is <strong>Herstatt risk</strong>, named after Bankhaus Herstatt, which German regulators closed on 26 June 1974 <em>after</em> it had received Deutsche Marks from counterparties but <em>before</em> its US-dollar legs settled in New York. Counterparties never saw their dollars.</p>
 <p>The industry answer is <strong>payment-versus-payment (PvP)</strong>: CLS Bank settles both legs simultaneously, so principal risk disappears — you either get both currencies or neither. That is why CLS-eligible trades are the safe path, and why non-CLS settlement (many emerging-market pairs) still carries genuine principal risk that support teams must monitor trade by trade.</p>
 </div>
 
-<div class="resume-card"> id="sec-7"
+<div class="resume-card" id="sec-7">
 <h3>CLS pay-in schedule: a worked funding example</h3>
 <p>CLS nets each member's trades per currency, then issues a <strong>pay-in schedule</strong>: the net amount you must deliver, in each currency, by its deadline (roughly 07:00–12:00 CET depending on the currency — JPY early, USD later in the morning). Miss a pay-in and your trades do not settle; you also pay funding costs on the shortfall.</p>
 <div class="example-box">
@@ -171,7 +193,7 @@
 <p><strong>Support watches:</strong> the pay-in monitor dashboard on value date, SWIFT confirmation of each pay-in (MT202/MT103 flows), and any currency where the funding desk has not confirmed cover 30 minutes before deadline.</p>
 </div>
 
-<div class="resume-card"> id="sec-8"
+<div class="resume-card" id="sec-8">
 <h3>FX swap points: a worked calculation</h3>
 <p>Swap points are just the forward premium expressed in pips. From covered interest parity, with spot S, domestic (quote-currency) rate r<sub>d</sub>, foreign (base-currency) rate r<sub>f</sub>, and t in years:</p>
 <p class="formula">Swap points = (F − S) × 10,000 &nbsp; where &nbsp; F = S × (1 + r<sub>d</sub>×t) / (1 + r<sub>f</sub>×t)</p>

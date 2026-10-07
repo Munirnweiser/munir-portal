@@ -82,6 +82,28 @@
 <p>One desk trades them all: equities, bonds, FX, commodities and derivatives — what each instrument is, how it settles, and where support tickets come from.</p>
 </div>
 
+<nav class="path-bar" aria-label="Learning path">
+  <div class="path-info">
+    <span class="eyebrow">Learning path</span>
+    <strong>Markets &amp; Trading Track</strong>
+    <span class="path-pos">9 of 9</span>
+  </div>
+  <div class="path-links">
+    <a class="btn" href="risk.html">← Previous</a>
+    <a class="btn" href="index.html">All tracks</a>
+  </div>
+</nav>
+<style>
+.path-bar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;background:rgba(13,20,36,.65);border:1px solid rgba(103,232,249,.22);border-radius:14px;padding:14px 18px;margin:0 0 26px}
+.path-info{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.path-info .eyebrow{margin:0}
+.path-info strong{color:#e2e8f0}
+.path-pos{color:var(--text-muted,#94a3b8);font-size:.85rem}
+.path-links{display:flex;gap:10px}
+.path-links .btn{padding:8px 16px;font-size:.9rem;text-decoration:none}
+</style>
+
+
 <div class="example-box takeaways-box">
 <h4>Key takeaways</h4>
 <ul>
@@ -108,7 +130,7 @@
 </ul>
 </div>
 
-<div class="resume-card"> id="sec-1"
+<div class="resume-card" id="sec-1">
 <h3>Equities: shares, ETFs and ADRs</h3>
 <p>An ordinary share is part-ownership of a company. An <em>ETF</em> is a fund that trades like a share and tracks an index or basket. An <em>ADR</em> (American Depositary Receipt) lets a US investor hold a foreign share — the foreign shares sit with a custodian bank, and the ADR trades in USD in New York.</p>
 <p>Cash equities settle T+1 in the US and Canada (T+2 in much of Europe and Asia). Corporate actions — dividends, splits, mergers — are the classic support headache: a stock split changes every open order's price and quantity, and a missed corporate-action feed means positions show the wrong economics.</p>
@@ -117,25 +139,25 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-2"
+<div class="resume-card" id="sec-2">
 <h3>Fixed income: bonds, T-bills and repos</h3>
 <p>Bonds pay coupons and return principal at maturity; T-bills are short-term discount paper with no coupon. A <em>repo</em> (repurchase agreement) is a collateralized loan: sell a bond today, agree to buy it back tomorrow at a slightly higher price — the difference is the repo rate, the market's overnight funding rate.</p>
 <p>Bonds settle T+1 (US Treasuries) or T+2 (many corporates). Accrued interest must be computed exactly — day-count conventions (30/360, ACT/ACT) differ by market, and a wrong convention breaks the settlement amount by the coupon accrual.</p>
 </div>
 
-<div class="resume-card"> id="sec-3"
+<div class="resume-card" id="sec-3">
 <h3>FX: spot, forwards, swaps and NDFs</h3>
 <p>FX spot settles T+2 (T+1 for USD/CAD); forwards and swaps settle on their agreed value dates; NDFs cash-settle in USD against an official fixing. FX is the highest-volume asset class in the world, and settlement runs through CLS Bank on hard intraday deadlines.</p>
 <p>Support pain points: missed CLS pay-in deadlines, late fixings for NDF valuation, and value dates falling on currency holidays — each creates fails that cascade into funding costs.</p>
 </div>
 
-<div class="resume-card"> id="sec-4"
+<div class="resume-card" id="sec-4">
 <h3>Commodities: futures and physical</h3>
 <p>Commodity futures (oil, gas, metals, agriculture) are exchange-traded contracts for delivery at a future date, margined daily — gains and losses are settled in cash every day. Physical commodities add logistics: storage, delivery location, and quality grades.</p>
 <p>Watch for <em>expiry handling</em>: a future approaching its last trading day must be rolled or closed, and first-notice-day rules differ per exchange. A position left into delivery by mistake becomes an operations incident, not a trading decision.</p>
 </div>
 
-<div class="resume-card"> id="sec-5"
+<div class="resume-card" id="sec-5">
 <h3>Derivatives: options, swaps, CDS and exotics</h3>
 <p>Options give the right (not the obligation) to buy or sell; swaps exchange cash flows (fixed-for-floating rates, or currencies); a <em>CDS</em> (credit default swap) is insurance against a borrower defaulting; exotics add path-dependent or barrier features. Listed derivatives are margined daily; OTC derivatives are collateralized bilaterally or cleared.</p>
 <div class="example-box">
@@ -143,7 +165,7 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-6"
+<div class="resume-card" id="sec-6">
 <h3>ETF mechanics: creation and redemption</h3>
 <p>An ETF's market price stays near its net asset value because of <em>authorized participants</em> (APs) — large dealers who can create or redeem ETF shares directly with the fund. When the ETF trades at a premium, the AP buys the underlying basket of stocks, delivers it to the fund, and receives new ETF shares to sell at the premium. When it trades at a discount, the AP does the reverse: buys cheap ETF shares, redeems them for the underlying stocks, and sells the stocks. This arbitrage is what keeps the price glued to NAV.</p>
 <p>Creations and redemptions happen in large blocks called <em>creation units</em> (often 50,000 shares) and are usually <em>in-kind</em> — securities for securities, not cash — which is why ETFs are tax-efficient. Support angle: if creations are halted (a corporate action on a basket constituent, a trading halt), the premium or discount can gap; a desk showing a stale NAV during a halt misprices every quote.</p>
@@ -152,7 +174,7 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-7"
+<div class="resume-card" id="sec-7">
 <h3>ADR vs GDR: same idea, different plumbing</h3>
 <p>Both let investors hold foreign shares locally, but the plumbing differs. An <em>ADR</em> trades in the US in USD — a custodian bank holds the foreign shares and issues receipts; the <em>ratio</em> (e.g., 1 ADR = 2 ordinary shares) keeps the price in a sensible range. A <em>GDR</em> typically lists in London or Luxembourg, often in USD or EUR, and frequently comes in two tranches: Reg S (non-US investors) and 144A (US institutions only).</p>
 <p>The costs investors forget: the depositary charges a <em>custody fee</em> — typically $0.01 to $0.03 per ADR per year, deducted from dividends — and every dividend is converted from the local currency at the depositary's FX rate, not the market rate.</p>
@@ -161,7 +183,7 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-8"
+<div class="resume-card" id="sec-8">
 <h3>Futures curves: contango and backwardation</h3>
 <p>Futures for successive expiries form a <em>curve</em>. In <em>contango</em> the curve slopes upward — later contracts cost more, reflecting storage and financing costs for a storable commodity. In <em>backwardation</em> it slopes downward — near-term contracts command a premium, usually because of immediate scarcity (a supply disruption, low inventories).</p>
 <p>The curve decides the economics of <em>rolling</em>: a long position rolled in contango sells cheap front-month and buys expensive deferred — a steady bleed called negative roll yield. In backwardation the roll earns. Support angle: expiry calendars and roll dates are reference data; a missed roll turns a futures position into a delivery obligation.</p>
@@ -170,7 +192,7 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-9"
+<div class="resume-card" id="sec-9">
 <h3>What production support watches</h3>
 <ul class="clean-list">
 <li><strong>Settlement calendars</strong> — every asset class has its own holiday calendars; a bad calendar breaks value dates across the whole book.</li>

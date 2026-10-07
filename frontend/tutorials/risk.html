@@ -82,6 +82,28 @@
 <p>Delta, Gamma, Vega and VaR — the numbers risk engines compute all day, with worked examples.</p>
 </div>
 
+<nav class="path-bar" aria-label="Learning path">
+  <div class="path-info">
+    <span class="eyebrow">Learning path</span>
+    <strong>Markets &amp; Trading Track</strong>
+    <span class="path-pos">8 of 9</span>
+  </div>
+  <div class="path-links">
+    <a class="btn" href="risk-measures.html">← Previous</a>
+    <a class="btn" href="multi-asset-instruments.html">Next →</a>
+  </div>
+</nav>
+<style>
+.path-bar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;background:rgba(13,20,36,.65);border:1px solid rgba(103,232,249,.22);border-radius:14px;padding:14px 18px;margin:0 0 26px}
+.path-info{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.path-info .eyebrow{margin:0}
+.path-info strong{color:#e2e8f0}
+.path-pos{color:var(--text-muted,#94a3b8);font-size:.85rem}
+.path-links{display:flex;gap:10px}
+.path-links .btn{padding:8px 16px;font-size:.9rem;text-decoration:none}
+</style>
+
+
 <div class="example-box takeaways-box">
 <h4>Key takeaways</h4>
 <ul>
@@ -107,7 +129,7 @@
 </ul>
 </div>
 
-<div class="resume-card"> id="sec-1"
+<div class="resume-card" id="sec-1">
 <h3>Delta: directional exposure</h3>
 <p><strong>Delta</strong> is how much a position's value moves when the underlying moves by 1 unit. A long call with delta 0.60 gains about $0.60 per $1 rise in the stock. Portfolio delta is additive, which makes it the first number every risk report shows.</p>
 <div class="example-box">
@@ -115,7 +137,7 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-2"
+<div class="resume-card" id="sec-2">
 <h3>Gamma: how delta itself moves</h3>
 <p><strong>Gamma</strong> is the rate of change of delta — the curvature. High gamma means delta changes fast, so a "delta neutral" book does not stay neutral for long. Gamma is highest for at-the-money options near expiry, which is why expiry days see frantic hedging: market makers chase deltas as the underlying whipsaws.</p>
 <div class="example-box">
@@ -123,12 +145,12 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-3"
+<div class="resume-card" id="sec-3">
 <h3>Vega: sensitivity to volatility</h3>
 <p><strong>Vega</strong> measures value change per 1-point move in implied volatility. Long options are long vega — they gain when volatility rises. A book with vega of $50,000 makes roughly $50,000 if implied vol rises one point across the board. Vega is why option desks care as much about the <em>vol surface feed</em> as the price feed: a stale surface misprices every option on the book.</p>
 </div>
 
-<div class="resume-card"> id="sec-4"
+<div class="resume-card" id="sec-4">
 <h3>Value at Risk: "how bad could tomorrow be?"</h3>
 <p><strong>VaR</strong> answers: the maximum expected loss over a horizon at a given confidence. "1-day 95% VaR of $200k" means losses should exceed $200k only about 1 day in 20. Two ways to compute it:</p>
 <ul>
@@ -141,7 +163,7 @@
 <p>VaR's blind spot: it says nothing about <em>how bad</em> the worst 5% gets — that is what <strong>Expected Shortfall</strong> (average loss beyond VaR) addresses, and why stress scenarios exist alongside it.</p>
 </div>
 
-<div class="resume-card"> id="sec-5"
+<div class="resume-card" id="sec-5">
 <h3>What production support watches</h3>
 <ul class="clean-list">
 <li><strong>Risk batch windows</strong> — overnight VaR and sensitivity batches must finish before traders arrive; a delayed batch means trading blind.</li>
@@ -154,7 +176,7 @@
 </div>
 
 
-<div class="resume-card"> id="sec-6"
+<div class="resume-card" id="sec-6">
 <h3>Historical VaR, computed by hand</h3>
 <p>Historical VaR makes no normality assumption — it replays real history. Take 10 days of a desk's P&amp;L in $k, sorted worst to best:</p>
 <p class="formula">−45, −30, −18, −12, −5, +3, +8, +15, +22, +40</p>
@@ -164,7 +186,7 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-7"
+<div class="resume-card" id="sec-7">
 <h3>Designing stress scenarios that actually stress</h3>
 <p>VaR describes the ordinary bad days; <strong>stress tests</strong> describe the extraordinary ones. A serious program runs three families:</p>
 <ul>
@@ -177,7 +199,7 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-8"
+<div class="resume-card" id="sec-8">
 <h3>Anatomy of a limit-monitoring dashboard</h3>
 <p>What does the risk team actually stare at all day? A limit dashboard is typically organized as:</p>
 <ul>

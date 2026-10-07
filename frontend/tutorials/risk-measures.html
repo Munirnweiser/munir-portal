@@ -82,6 +82,28 @@
 <p>VaR, Stressed VaR, stress tests and Expected Shortfall — the numbers risk engines produce every night, and what support does when they look wrong.</p>
 </div>
 
+<nav class="path-bar" aria-label="Learning path">
+  <div class="path-info">
+    <span class="eyebrow">Learning path</span>
+    <strong>Markets &amp; Trading Track</strong>
+    <span class="path-pos">7 of 9</span>
+  </div>
+  <div class="path-links">
+    <a class="btn" href="valuation.html">← Previous</a>
+    <a class="btn" href="risk.html">Next →</a>
+  </div>
+</nav>
+<style>
+.path-bar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;background:rgba(13,20,36,.65);border:1px solid rgba(103,232,249,.22);border-radius:14px;padding:14px 18px;margin:0 0 26px}
+.path-info{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.path-info .eyebrow{margin:0}
+.path-info strong{color:#e2e8f0}
+.path-pos{color:var(--text-muted,#94a3b8);font-size:.85rem}
+.path-links{display:flex;gap:10px}
+.path-links .btn{padding:8px 16px;font-size:.9rem;text-decoration:none}
+</style>
+
+
 <div class="example-box takeaways-box">
 <h4>Key takeaways</h4>
 <ul>
@@ -111,7 +133,7 @@
 </ul>
 </div>
 
-<div class="resume-card"> id="sec-1"
+<div class="resume-card" id="sec-1">
 <h3>Parametric VaR: the formula approach</h3>
 <p><em>Value at Risk</em> answers: "what is the most we can lose over a horizon, with a given confidence?" Parametric VaR assumes returns are normally distributed:</p>
 <p class="formula">VaR = z × σ × √t × portfolio value</p>
@@ -122,13 +144,13 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-2"
+<div class="resume-card" id="sec-2">
 <h3>Historical VaR: let the data speak</h3>
 <p>Historical VaR makes no normality assumption. Take the last 250 daily P&amp;L observations, sort worst to best, and read off the loss at the 5% tail — the 13th worst day (5% of 250 = 12.5). That loss is the 1-day 95% historical VaR.</p>
 <p>It captures fat tails and real market behavior, but it is only as good as its window: a calm year produces a VaR that understates risk the moment volatility returns. That weakness is exactly why regulators added Stressed VaR.</p>
 </div>
 
-<div class="resume-card"> id="sec-3"
+<div class="resume-card" id="sec-3">
 <h3>Stressed VaR (SVaR): VaR in a crisis</h3>
 <p>SVaR runs the same VaR calculation but calibrated on a continuous 12-month period of significant market stress (2008, March 2020). Because stressed volatility is far higher, SVaR is typically 2–4× normal VaR — it answers "what would our risk look like if 2008 happened to today's book?"</p>
 <div class="example-box">
@@ -136,7 +158,7 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-4"
+<div class="resume-card" id="sec-4">
 <h3>Stress testing and scenario analysis</h3>
 <p>Stress tests skip probability entirely and ask "what if?": apply a defined shock to every position and revalue. Typical scenarios: +200bp parallel rate shift, −30% global equities, oil +50%, credit spreads ×3. Unlike VaR, a stress test shows the actual dollar loss under each named scenario — no confidence level, no distribution, just the number.</p>
 <div class="example-box">
@@ -144,12 +166,12 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-5"
+<div class="resume-card" id="sec-5">
 <h3>Expected Shortfall and backtesting</h3>
 <p><em>Expected Shortfall</em> (ES) fixes VaR's blind spot: it is the average loss on the days VaR is breached — the tail beyond the line. <em>Backtesting</em> checks the model against reality: count how many times the actual loss exceeded 1-day 99% VaR over 250 days. Regulators use traffic lights: 0–4 exceptions = green, 5–9 = yellow (capital add-on), 10+ = red (model rejected).</p>
 </div>
 
-<div class="resume-card"> id="sec-6"
+<div class="resume-card" id="sec-6">
 <h3>Backtesting traffic lights, in detail</h3>
 <p>Regulators backtest 1-day 99% VaR over 250 trading days. With 99% confidence, about 2.5 exceptions are expected even from a perfect model — exceptions follow a binomial distribution, and the chance of 5 or more exceptions from a correct model is roughly 10%. That is why the zones scale instead of failing outright.</p>
 <ul class="clean-list">
@@ -162,13 +184,13 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-7"
+<div class="resume-card" id="sec-7">
 <h3>Choosing the stressed period: the rationale</h3>
 <p>SVaR must be calibrated on a continuous 12-month window of significant stress that is <em>relevant to the current portfolio</em> — and the choice must be reviewed at least annually. The rationale is anti-procyclicality: capital set only on calm-period VaR collapses exactly when it is most needed, then spikes in a crisis. A fixed stress window keeps a crisis-sized charge on the books through the good years.</p>
 <p>The subtlety is relevance: a rates-heavy book calibrated on the 2008 credit crisis may understate its risk, while an equities book calibrated on March 2020 is well covered. Supervisors expect documented justification, and the re-selection is a scheduled annual job — miss it and it becomes a regulatory finding, not a modeling debate.</p>
 </div>
 
-<div class="resume-card"> id="sec-8"
+<div class="resume-card" id="sec-8">
 <h3>Expected Shortfall, worked</h3>
 <p>Expected Shortfall at 99% is the average loss over the worst 1% of outcomes — the tail VaR ignores. It is always at least as large as VaR, and unlike VaR it is <em>coherent</em>: it aggregates properly across books, while VaR can claim two risky books are safer combined than apart.</p>
 <div class="example-box">
@@ -176,12 +198,12 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-9"
+<div class="resume-card" id="sec-9">
 <h3>FRTB in one paragraph: internal models vs standardized</h3>
 <p>The Fundamental Review of the Trading Book replaced 99% VaR with 97.5% Expected Shortfall as the regulatory standard and gave banks two ways to compute capital. The <em>internal models approach (IMA)</em> lets a bank use its own ES models — but each trading desk must pass P&amp;L attribution tests and backtesting, and failing desks fall back. The <em>standardized approach (SA)</em> is the regulator's prescribed sensitivities-based calculation: always available, no approval needed, usually more punitive capital. Desks can be split across the two, and support teams feel it the same way: SA and IMA numbers both come from overnight batches, and a feed break corrupts both.</p>
 </div>
 
-<div class="resume-card"> id="sec-10"
+<div class="resume-card" id="sec-10">
 <h3>What production support watches</h3>
 <ul class="clean-list">
 <li><strong>Risk-feed breaks</strong> — VaR engines consume positions, market data and curves; a missing feed means stale or missing risk numbers, and traders notice before risk managers do.</li>
@@ -195,7 +217,7 @@
 </div>
 
 
-<div class="resume-card"> id="sec-11"
+<div class="resume-card" id="sec-11">
 <h3>VaR model comparison</h3>
 <table class="tag-table">
 <tr><th></th><th>Parametric</th><th>Historical</th><th>Monte Carlo</th></tr>
@@ -208,7 +230,7 @@
 <p>Support angle: when the desk says "VaR looks wrong", the first question is always <em>which model, and what changed in its inputs</em> - a stale volatility feed breaks parametric VaR exactly the way a bad market-data feed breaks pricing.</p>
 </div>
 
-<div class="resume-card"> id="sec-12"
+<div class="resume-card" id="sec-12">
 <h3>A note on backtesting Expected Shortfall</h3>
 <p>VaR is backtested by counting exceptions - clean and simple. Expected Shortfall is harder: ES is not <em>elicitable</em>, meaning no scoring function is minimized only by the true ES. In practice, desks backtest the VaR that ES is conditioned on, then apply the Acerbi-Szekely test statistic, which checks whether realized tail losses are consistent with the reported ES.</p>
 <p>What this means for support: risk reports carry both numbers, and the validation jobs that check them are different jobs with different failure modes. When the ES validation feed breaks but VaR is fine, the report still goes out - flagged. Know which downstream consumers read the flag and which ignore it.</p>

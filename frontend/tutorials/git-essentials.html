@@ -83,6 +83,28 @@
 <p>The commands support actually uses: branching, hotfixes, conflict resolution, and recovering from mistakes without panic.</p>
 </div>
 
+<nav class="path-bar" aria-label="Learning path">
+  <div class="path-info">
+    <span class="eyebrow">Learning path</span>
+    <strong>DevOps &amp; CI/CD Track</strong>
+    <span class="path-pos">4 of 7</span>
+  </div>
+  <div class="path-links">
+    <a class="btn" href="jenkins.html">← Previous</a>
+    <a class="btn" href="terraform.html">Next →</a>
+  </div>
+</nav>
+<style>
+.path-bar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;background:rgba(13,20,36,.65);border:1px solid rgba(103,232,249,.22);border-radius:14px;padding:14px 18px;margin:0 0 26px}
+.path-info{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.path-info .eyebrow{margin:0}
+.path-info strong{color:#e2e8f0}
+.path-pos{color:var(--text-muted,#94a3b8);font-size:.85rem}
+.path-links{display:flex;gap:10px}
+.path-links .btn{padding:8px 16px;font-size:.9rem;text-decoration:none}
+</style>
+
+
 <div class="example-box takeaways-box">
 <h4>Key takeaways</h4>
 <ul>
@@ -107,7 +129,7 @@
 </ul>
 </div>
 
-<div class="resume-card"> id="sec-1"
+<div class="resume-card" id="sec-1">
 <h3>The model in one minute</h3>
 <p>Git tracks snapshots, not files. Work happens on <em>branches</em> — movable pointers to a commit. <span class="formula">main</span> is the production line; feature branches diverge and come back via <em>merge</em> (keeps history) or <em>rebase</em> (rewrites history into a straight line). The golden rule: never rebase a branch someone else is using — rewriting shared history breaks everyone's clone.</p>
 <div class="example-box">
@@ -118,12 +140,12 @@ git push -u origin hotfix/fix-margin-calc  # open the PR / merge request</pre>
 </div>
 </div>
 
-<div class="resume-card"> id="sec-2"
+<div class="resume-card" id="sec-2">
 <h3>Merge conflicts: resolve, don't fear</h3>
 <p>A conflict means two branches edited the same lines. Git marks the file with <span class="formula">&lt;&lt;&lt;&lt;&lt;&lt;&lt;</span> / <span class="formula">=======</span> / <span class="formula">&gt;&gt;&gt;&gt;&gt;&gt;&gt;</span> sections — your change on top, theirs below. Edit the file to the correct final state, remove the markers, then <span class="formula">git add</span> the file and <span class="formula">git commit</span> to finish the merge. The dangerous move is picking "mine" or "theirs" wholesale without reading both sides; in a pricing config, that silently ships the wrong parameters.</p>
 </div>
 
-<div class="resume-card"> id="sec-3"
+<div class="resume-card" id="sec-3">
 <h3>The recovery toolkit</h3>
 <ul class="clean-list">
 <li><strong>Stash</strong> — <span class="formula">git stash</span> shelves uncommitted work so you can switch branches for an urgent fix; <span class="formula">git stash pop</span> brings it back.</li>
@@ -136,7 +158,7 @@ git push -u origin hotfix/fix-margin-calc  # open the PR / merge request</pre>
 </div>
 </div>
 
-<div class="resume-card"> id="sec-4"
+<div class="resume-card" id="sec-4">
 <h3>What production support watches</h3>
 <ul class="clean-list">
 <li><strong>What exactly is deployed</strong> — <span class="formula">git log --oneline -5</span> and <span class="formula">git describe --tags</span> on the release repo answer "which commit is running in prod?" in seconds.</li>
@@ -252,7 +274,7 @@ git push -u origin hotfix/fix-margin-calc  # open the PR / merge request</pre>
 </div>
 
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
-<div class="resume-card"> id="sec-5"
+<div class="resume-card" id="sec-5">
 <h3>Interactive rebase: cleaning a hotfix branch</h3>
 <p>A hotfix branch with seven "wip" and "fix typo" commits is embarrassing to merge and hard to review. Interactive rebase rewrites them into a clean story <em>before</em> the merge — only ever on your own unshared branch:</p>
 <div class="example-box">
@@ -265,7 +287,7 @@ reword 4d6b2a1 adjust threshold</pre>
 </div>
 </div>
 
-<div class="resume-card"> id="sec-6"
+<div class="resume-card" id="sec-6">
 <h3>git bisect: finding the bad deploy</h3>
 <p>"It worked in v2.13.0 and broke in v2.14.0" with 200 commits between is a binary search problem, and git automates it:</p>
 <div class="example-box">
@@ -281,7 +303,7 @@ $ git bisect reset</pre>
 </div>
 </div>
 
-<div class="resume-card"> id="sec-7"
+<div class="resume-card" id="sec-7">
 <h3>Submodule pitfalls</h3>
 <p>Submodules embed one repo inside another at a pinned commit — common for shared libraries and config repos. Three traps:</p>
 <ul class="clean-list">

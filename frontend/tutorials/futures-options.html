@@ -82,6 +82,28 @@
 <p>Obligation versus right — the single distinction that explains both instruments.</p>
 </div>
 
+<nav class="path-bar" aria-label="Learning path">
+  <div class="path-info">
+    <span class="eyebrow">Learning path</span>
+    <strong>Markets &amp; Trading Track</strong>
+    <span class="path-pos">3 of 9</span>
+  </div>
+  <div class="path-links">
+    <a class="btn" href="fixed-income.html">← Previous</a>
+    <a class="btn" href="trade-lifecycle.html">Next →</a>
+  </div>
+</nav>
+<style>
+.path-bar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;background:rgba(13,20,36,.65);border:1px solid rgba(103,232,249,.22);border-radius:14px;padding:14px 18px;margin:0 0 26px}
+.path-info{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.path-info .eyebrow{margin:0}
+.path-info strong{color:#e2e8f0}
+.path-pos{color:var(--text-muted,#94a3b8);font-size:.85rem}
+.path-links{display:flex;gap:10px}
+.path-links .btn{padding:8px 16px;font-size:.9rem;text-decoration:none}
+</style>
+
+
 <div class="example-box takeaways-box">
 <h4>Key takeaways</h4>
 <ul>
@@ -106,7 +128,7 @@
 </ul>
 </div>
 
-<div class="resume-card"> id="sec-1"
+<div class="resume-card" id="sec-1">
 <h3>Futures: a binding obligation</h3>
 <p>A futures contract <em>obliges</em> both sides to transact at a set price on a set date. Buy one crude-oil future at $80 and you must take delivery (or cash-settle) at $80 — no backing out. Because the obligation is symmetric, no premium changes hands upfront; instead both sides post <strong>margin</strong>, and gains and losses are settled <strong>daily</strong> (mark-to-market).</p>
 <div class="example-box">
@@ -115,7 +137,7 @@
 <p>Futures exist on indices, commodities, bonds and currencies. Expiries follow quarterly cycles (March, June, September, December — the "IMM dates"), when the entire market rolls positions forward and volumes explode.</p>
 </div>
 
-<div class="resume-card"> id="sec-2"
+<div class="resume-card" id="sec-2">
 <h3>Options: a right, not an obligation</h3>
 <p>An option gives the buyer the <em>right</em> — never the obligation — to buy or sell at a set <strong>strike price</strong> before <strong>expiry</strong>. That asymmetry is why the buyer pays a <strong>premium</strong> upfront, and why the buyer's loss is capped at the premium while the upside can be large.</p>
 <ul>
@@ -129,12 +151,12 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-3"
+<div class="resume-card" id="sec-3">
 <h3>Payoff intuition in one picture</h3>
 <p>A long future's P&amp;L is a straight diagonal line through the entry price — symmetric. A long call's P&amp;L is flat (at −premium) below the strike, then rises diagonally above it — the "hockey stick". A long put is the mirror image. Every exotic option payoff is just these sticks combined and repackaged.</p>
 </div>
 
-<div class="resume-card"> id="sec-4"
+<div class="resume-card" id="sec-4">
 <h3>What production support watches</h3>
 <ul class="clean-list">
 <li><strong>Expiry processing</strong> — exercise, assignment and expiry jobs run on tight schedules; a stuck job leaves wrong positions overnight.</li>
@@ -148,7 +170,7 @@
 </div>
 
 
-<div class="resume-card"> id="sec-5"
+<div class="resume-card" id="sec-5">
 <h3>The Greeks, with numbers</h3>
 <p>Greeks translate option-speak into risk-speak. Take an illustrative 1-month call, strike 100, stock at 100, implied vol 25%:</p>
 <table class="tag-table" style="width:100%; border-collapse:collapse; margin:14px 0;">
@@ -163,7 +185,7 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-6"
+<div class="resume-card" id="sec-6">
 <h3>Futures margin call: a worked example</h3>
 <p>Futures margin is a <em>good-faith deposit</em>, not a down payment. The exchange sets <strong>initial margin</strong> (to open) and a lower <strong>maintenance margin</strong>; fall below maintenance and you get a <strong>variation margin call</strong> — pay up immediately or be liquidated.</p>
 <div class="example-box">
@@ -173,7 +195,7 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-7"
+<div class="resume-card" id="sec-7">
 <h3>Expiration and assignment: where support earns its pay</h3>
 <p>Expiry is the most operationally intense day in derivatives. Key mechanics support teams must know cold:</p>
 <ul>

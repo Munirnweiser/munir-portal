@@ -82,6 +82,28 @@
 <p>Bonds, the price-yield seesaw, and yield curves — the math behind the biggest asset class on earth.</p>
 </div>
 
+<nav class="path-bar" aria-label="Learning path">
+  <div class="path-info">
+    <span class="eyebrow">Learning path</span>
+    <strong>Markets &amp; Trading Track</strong>
+    <span class="path-pos">2 of 9</span>
+  </div>
+  <div class="path-links">
+    <a class="btn" href="fx.html">← Previous</a>
+    <a class="btn" href="futures-options.html">Next →</a>
+  </div>
+</nav>
+<style>
+.path-bar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;background:rgba(13,20,36,.65);border:1px solid rgba(103,232,249,.22);border-radius:14px;padding:14px 18px;margin:0 0 26px}
+.path-info{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.path-info .eyebrow{margin:0}
+.path-info strong{color:#e2e8f0}
+.path-pos{color:var(--text-muted,#94a3b8);font-size:.85rem}
+.path-links{display:flex;gap:10px}
+.path-links .btn{padding:8px 16px;font-size:.9rem;text-decoration:none}
+</style>
+
+
 <div class="example-box takeaways-box">
 <h4>Key takeaways</h4>
 <ul>
@@ -107,12 +129,12 @@
 </ul>
 </div>
 
-<div class="resume-card"> id="sec-1"
+<div class="resume-card" id="sec-1">
 <h3>Anatomy of a bond</h3>
 <p>A bond is a loan from the investor to the issuer. Four terms define it: <strong>face value</strong> (usually 100 or 1,000, repaid at maturity), <strong>coupon</strong> (the annual interest rate, paid semi-annually or annually), <strong>maturity</strong> (when principal is repaid), and <strong>yield</strong> (the market's required return, which moves every day). The coupon is fixed at issuance; the yield is set by the market — and the market price adjusts so that the two reconcile.</p>
 </div>
 
-<div class="resume-card"> id="sec-2"
+<div class="resume-card" id="sec-2">
 <h3>Price vs yield: the seesaw</h3>
 <p>A bond's price is the present value of all its future cash flows, discounted at the yield:</p>
 <p class="formula">Price = Σ Coupon<sub>t</sub> / (1 + y)<sup>t</sup> + Face / (1 + y)<sup>n</sup></p>
@@ -124,7 +146,7 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-3"
+<div class="resume-card" id="sec-3">
 <h3>Yield curves: the market's forecast</h3>
 <p>Plotting yields against maturities gives the <strong>yield curve</strong>. Its shape matters:</p>
 <ul>
@@ -135,12 +157,12 @@
 <p>Support teams watch curve feeds closely: a missing or stale curve breaks pricing for <em>every</em> bond on the desk, since yields are interpolated from it.</p>
 </div>
 
-<div class="resume-card"> id="sec-4"
+<div class="resume-card" id="sec-4">
 <h3>Duration and convexity in one paragraph each</h3>
 <p><strong>Duration</strong> measures price sensitivity: a duration of 7 means a 1% rise in yield drops the price roughly 7%. Longer maturities and lower coupons both increase duration. <strong>Convexity</strong> is the curvature — the correction term because the price-yield relationship is curved, not straight; it matters most for large yield moves and long-dated bonds.</p>
 </div>
 
-<div class="resume-card"> id="sec-5"
+<div class="resume-card" id="sec-5">
 <h3>Credit spreads</h3>
 <p>Corporate bonds yield more than government bonds of the same maturity. The difference is the <strong>credit spread</strong> — compensation for default risk. A bond yielding 6% against a 4% government benchmark trades at a 200bp spread. When spreads widen, corporate bond prices fall even if government yields do not move — a frequent source of "why did my bond drop?" tickets.</p>
 <div class="tag-list" style="margin-top:16px">
@@ -149,7 +171,7 @@
 </div>
 
 
-<div class="resume-card"> id="sec-6"
+<div class="resume-card" id="sec-6">
 <h3>Accrued interest: who owns the coupon between payments</h3>
 <p>A bond's coupon accrues every day, but it is only <em>paid</em> on coupon dates. When a bond changes hands between dates, the buyer compensates the seller for the interest earned since the last coupon — this is <strong>accrued interest</strong>, and the buyer pays the <strong>dirty price</strong> (clean price + accrued). The day-count convention defines how days are counted; <strong>30/360</strong> (every month = 30 days) is the classic corporate-bond convention.</p>
 <div class="example-box">
@@ -159,7 +181,7 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-7"
+<div class="resume-card" id="sec-7">
 <h3>Repo: the plumbing that funds bond desks</h3>
 <p>A <strong>repo</strong> (repurchase agreement) is a collateralized short-term loan: the dealer <em>sells</em> bonds today and agrees to <em>buy them back</em> tomorrow (overnight repo) at a slightly higher price. The price difference is the <strong>repo rate</strong> — the interest on the loan. <strong>General collateral (GC)</strong> repo accepts any bond from a basket; <strong>specials</strong> are repos against one specific scarce bond, and their rates can go deeply negative when short-sellers are desperate to borrow it.</p>
 <div class="example-box">
@@ -169,7 +191,7 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-8"
+<div class="resume-card" id="sec-8">
 <h3>Bond futures and the conversion factor</h3>
 <p>Bond futures do not deliver one specific bond — the short can deliver <em>any</em> bond from an eligible basket. To make unlike bonds comparable, each carries a <strong>conversion factor (CF)</strong> that normalizes it to the contract's 6%-coupon notional bond. The invoice price the long pays is:</p>
 <p class="formula">Invoice = Futures price × CF + accrued interest</p>

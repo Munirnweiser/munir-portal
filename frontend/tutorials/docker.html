@@ -187,6 +187,28 @@
 <p>The Docker knowledge that actually gets used on shift: what is running, why it died, where its logs are, and how to clean up safely.</p>
 </div>
 
+<nav class="path-bar" aria-label="Learning path">
+  <div class="path-info">
+    <span class="eyebrow">Learning path</span>
+    <strong>DevOps &amp; CI/CD Track</strong>
+    <span class="path-pos">1 of 7</span>
+  </div>
+  <div class="path-links">
+    <a class="btn" href="index.html">All tracks</a>
+    <a class="btn" href="kubernetes.html">Next →</a>
+  </div>
+</nav>
+<style>
+.path-bar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;background:rgba(13,20,36,.65);border:1px solid rgba(103,232,249,.22);border-radius:14px;padding:14px 18px;margin:0 0 26px}
+.path-info{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.path-info .eyebrow{margin:0}
+.path-info strong{color:#e2e8f0}
+.path-pos{color:var(--text-muted,#94a3b8);font-size:.85rem}
+.path-links{display:flex;gap:10px}
+.path-links .btn{padding:8px 16px;font-size:.9rem;text-decoration:none}
+</style>
+
+
 <div class="example-box takeaways-box">
 <h4>Key takeaways</h4>
 <ul>
@@ -212,7 +234,7 @@
 </ul>
 </div>
 
-<div class="resume-card"> id="sec-1"
+<div class="resume-card" id="sec-1">
 <h3>Images vs containers: the one distinction</h3>
 <p>An <em>image</em> is the read-only blueprint (your application plus its runtime, built from a Dockerfile). A <em>container</em> is a running instance of that image. Deleting a container does not delete the image; deleting the image does not stop running containers — but you cannot delete an image while a container still references it. That dependency order is the source of half of all Docker cleanup confusion:</p>
 <div class="cmd">docker ps                  # running containers
@@ -221,7 +243,7 @@ docker images               # local images
 docker inspect &lt;name&gt;     # full JSON: mounts, env, network, health</div>
 </div>
 
-<div class="resume-card"> id="sec-2"
+<div class="resume-card" id="sec-2">
 <h3>The triage sequence for a dead container</h3>
 <p>When a service container is down, run these in order before touching anything:</p>
 <div class="cmd">docker ps -a --filter "name=trade-api"   # what state is it in? Exited (1)? OOMKilled?
@@ -234,7 +256,7 @@ docker stats --no-stream                     # CPU/mem per container right now</
 </div>
 </div>
 
-<div class="resume-card"> id="sec-3"
+<div class="resume-card" id="sec-3">
 <h3>Getting inside: exec and copying files</h3>
 <div class="cmd">docker exec -it trade-api sh             # shell inside the running container
 docker exec trade-api env | sort          # environment variables it actually sees
@@ -242,13 +264,13 @@ docker cp trade-api:/app/logs/app.log ./ # pull a log file out for analysis</div
 <p>Note the environment check: most "it works on my machine" container bugs are a missing or wrong environment variable inside the container, not a code bug. Compare <span class="formula">docker exec ... env</span> against the deployment manifest.</p>
 </div>
 
-<div class="resume-card"> id="sec-4"
+<div class="resume-card" id="sec-4">
 <h3>Volumes and networks: where data and traffic live</h3>
 <p>Containers are ephemeral — anything written to the container filesystem disappears when it is removed. Persistent data lives in <em>volumes</em> or bind mounts. If a database container lost its data after a recreate, the volume was not mounted: <span class="formula">docker inspect</span> shows the mounts, and an empty mounts list on a stateful service is the finding.</p>
 <p>On networking: containers on the default bridge network reach each other by IP but not by name; user-defined networks give DNS by container name. "Connection refused between services" is very often two containers on different networks, or the target listening on <span class="formula">localhost</span> inside its own container instead of <span class="formula">0.0.0.0</span>.</p>
 </div>
 
-<div class="resume-card"> id="sec-5"
+<div class="resume-card" id="sec-5">
 <h3>Cleanup without tears</h3>
 <div class="cmd">docker container prune              # remove STOPPED containers only
 docker image prune                  # remove dangling (untagged) images only
@@ -258,7 +280,7 @@ docker system df                    # what is actually consuming disk</div>
 <p>"No space left on device" on a Docker host is almost always old images and stopped containers. Run <span class="formula">docker system df</span> first so you clean what is actually big, and never prune volumes on a host carrying a database you have not backed up.</p>
 </div>
 
-<div class="resume-card"> id="sec-6"
+<div class="resume-card" id="sec-6">
 <h3>Multi-stage builds: small, safe images</h3>
 <p>A Dockerfile that builds <em>and</em> runs in one stage ships the compiler, the source code and every build dependency to production. Multi-stage builds keep only the artifact:</p>
 <div class="cmd">FROM maven:3.9-eclipse-temurin-17 AS build
@@ -276,7 +298,7 @@ ENTRYPOINT ["java", "-jar", "app.jar"]</div>
 <p>The first stage compiles; the second copies only the jar into a minimal JRE image and runs as a non-root user. Typical result: 800 MB down to 180 MB, and no compiler or source code in production for an attacker to use. When support sees a "works locally, fails in prod" ticket, the first question is whether prod actually runs this Dockerfile's output — <span class="formula">docker inspect</span> shows the image digest; compare it with what CI built.</p>
 </div>
 
-<div class="resume-card"> id="sec-7"
+<div class="resume-card" id="sec-7">
 <h3>Compose dependencies: why "connection refused" happens</h3>
 <p><span class="formula">depends_on</span> only controls <em>start order</em> — it does not wait for the database to accept connections. The API container starts, tries to connect to a DB that is still initializing, and crashes:</p>
 <div class="cmd">services:
@@ -296,7 +318,7 @@ ENTRYPOINT ["java", "-jar", "app.jar"]</div>
 </div>
 </div>
 
-<div class="resume-card"> id="sec-8"
+<div class="resume-card" id="sec-8">
 <h3>Image scanning: CVEs block releases</h3>
 <p>Security pipelines scan images for known vulnerabilities (CVEs). A critical CVE in the base image fails the build gate and the release stops — support gets the ticket "deployment blocked":</p>
 <div class="cmd">docker scout cves trade-api:1.4.2

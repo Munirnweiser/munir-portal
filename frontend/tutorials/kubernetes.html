@@ -187,6 +187,28 @@
 <p>The kubectl commands and mental models for triaging Kubernetes incidents: what is unhealthy, why a pod will not start, and how to read the story the cluster is telling.</p>
 </div>
 
+<nav class="path-bar" aria-label="Learning path">
+  <div class="path-info">
+    <span class="eyebrow">Learning path</span>
+    <strong>DevOps &amp; CI/CD Track</strong>
+    <span class="path-pos">2 of 7</span>
+  </div>
+  <div class="path-links">
+    <a class="btn" href="docker.html">← Previous</a>
+    <a class="btn" href="jenkins.html">Next →</a>
+  </div>
+</nav>
+<style>
+.path-bar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;background:rgba(13,20,36,.65);border:1px solid rgba(103,232,249,.22);border-radius:14px;padding:14px 18px;margin:0 0 26px}
+.path-info{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.path-info .eyebrow{margin:0}
+.path-info strong{color:#e2e8f0}
+.path-pos{color:var(--text-muted,#94a3b8);font-size:.85rem}
+.path-links{display:flex;gap:10px}
+.path-links .btn{padding:8px 16px;font-size:.9rem;text-decoration:none}
+</style>
+
+
 <div class="example-box takeaways-box">
 <h4>Key takeaways</h4>
 <ul>
@@ -215,7 +237,7 @@
 </ul>
 </div>
 
-<div class="resume-card"> id="sec-1"
+<div class="resume-card" id="sec-1">
 <h3>Pods, Deployments, Services: the three layers</h3>
 <p>A <em>Pod</em> is the smallest unit — one or more containers that live and die together. You almost never manage pods directly: a <em>Deployment</em> owns a set of identical pods (a ReplicaSet) and keeps the desired count running. A <em>Service</em> is the stable network endpoint in front of those pods, because pod IPs change on every restart. When support hears "the app is down", the check order is: Service → Deployment → Pods → container logs. Skipping straight to logs wastes the first ten minutes.</p>
 <div class="cmd">kubectl get pods -n trading             # pod states: Running? CrashLoopBackOff? Pending?
@@ -224,7 +246,7 @@ kubectl get services -n trading        # cluster IPs and ports
 kubectl top pods -n trading            # live CPU/memory per pod</div>
 </div>
 
-<div class="resume-card"> id="sec-2"
+<div class="resume-card" id="sec-2">
 <h3>The triage pair: describe and logs</h3>
 <p><span class="formula">kubectl describe pod</span> shows the pod's recent history — restarts, the last termination reason, and the Events section at the bottom, which is the cluster's own incident log. <span class="formula">kubectl logs</span> shows what the application said:</p>
 <div class="cmd">kubectl describe pod trade-api-7d9f8c6b5-x2k4p -n trading
@@ -233,7 +255,7 @@ kubectl logs trade-api-7d9f8c6b5-x2k4p -n trading --previous   # logs of the LAS
 <p>The <span class="formula">--previous</span> flag is the one people forget: without it you read the fresh container's logs, which say nothing, while the crash evidence died with the previous instance.</p>
 </div>
 
-<div class="resume-card"> id="sec-3"
+<div class="resume-card" id="sec-3">
 <h3>CrashLoopBackOff: reading the loop</h3>
 <p>CrashLoopBackOff means the container starts, dies, and Kubernetes retries with increasing backoff. The diagnosis is in the <em>previous</em> logs plus the last termination state in describe output:</p>
 <ul>
@@ -246,19 +268,19 @@ kubectl logs trade-api-7d9f8c6b5-x2k4p -n trading --previous   # logs of the LAS
 </div>
 </div>
 
-<div class="resume-card"> id="sec-4"
+<div class="resume-card" id="sec-4">
 <h3>ImagePullBackOff and Pending: the other two states</h3>
 <p><em>ImagePullBackOff</em> — the node cannot fetch the image. Causes in order of likelihood: typo in the image tag, missing imagePullSecret for a private registry, or the registry itself being down. <span class="formula">kubectl describe pod</span> names the exact failure.</p>
 <p><em>Pending</em> — the pod was never scheduled. Usually insufficient CPU/memory on the nodes, or a PersistentVolumeClaim that cannot be satisfied. <span class="formula">kubectl describe pod</span> events say plainly: "0/3 nodes are available: 3 Insufficient memory."</p>
 </div>
 
-<div class="resume-card"> id="sec-5"
+<div class="resume-card" id="sec-5">
 <h3>Probes and HPA: the guardrails</h3>
 <p><em>Liveness probes</em> decide whether to restart a stuck container; <em>readiness probes</em> decide whether it receives traffic. A readiness probe failing across all pods means the Service has no endpoints — the app looks "up" in pod listings while serving nothing. Check with <span class="formula">kubectl get endpoints</span>.</p>
 <p>The <em>HorizontalPodAutoscaler</em> scales replicas on CPU or custom metrics. During a traffic spike, verify the HPA is actually scaling (<span class="formula">kubectl get hpa</span>) and that the deployment's max replicas and the nodes' capacity can absorb the load — autoscaling into an unschedulable state just creates Pending pods faster.</p>
 </div>
 
-<div class="resume-card"> id="sec-6"
+<div class="resume-card" id="sec-6">
 <h3>Incident walkthrough: pricing service down</h3>
 <p>Alert: pricing API returning 503s. The sequence:</p>
 <ul>
@@ -271,7 +293,7 @@ kubectl logs trade-api-7d9f8c6b5-x2k4p -n trading --previous   # logs of the LAS
 <p>Total time with this sequence: minutes. The pattern is always the same — states, previous logs, describe events, recent changes — and it works for nearly every Kubernetes incident.</p>
 </div>
 
-<div class="resume-card"> id="sec-7"
+<div class="resume-card" id="sec-7">
 <h3>Helm: releases, history and rollback</h3>
 <p>Most bank workloads deploy via Helm charts, not raw YAML. A Helm <em>release</em> is a versioned deployment of a chart; every upgrade increments the revision and keeps the history:</p>
 <div class="cmd">helm list -n trading                  # releases and their status
@@ -283,7 +305,7 @@ helm rollback trade-api 4 -n trading  # back to revision 4</div>
 </div>
 </div>
 
-<div class="resume-card"> id="sec-8"
+<div class="resume-card" id="sec-8">
 <h3>Quotas and limits: "Forbidden: exceeded quota"</h3>
 <p>A deployment that fails instantly with <span class="formula">Forbidden: exceeded quota</span> is not an application problem — the namespace hit its <em>ResourceQuota</em> (max pods, CPU, memory for the whole namespace) or a <em>LimitRange</em> rejected the pod's resource requests:</p>
 <div class="cmd">kubectl describe resourcequota -n trading   # used vs hard limits
@@ -292,7 +314,7 @@ kubectl get events -n trading --sort-by=.lastTimestamp | tail -20</div>
 <p>Classic scenario: the quota allows 50 pods, the HPA just scaled to 51 during a traffic spike, and the 51st pod is rejected. The events stream says so plainly. Support's escalation is precise: "namespace trading is at 50/50 pods against quota; request a quota increase or scale something down" — not "Kubernetes is broken."</p>
 </div>
 
-<div class="resume-card"> id="sec-9"
+<div class="resume-card" id="sec-9">
 <h3>Ingress debugging: 404 vs 503</h3>
 <p>The ingress is the front door; its errors have distinct meanings:</p>
 <ul>
@@ -303,7 +325,7 @@ kubectl get events -n trading --sort-by=.lastTimestamp | tail -20</div>
 <p>Debug order: ingress rules → service → endpoints → pod readiness. Each layer has exactly one command, and skipping layers is how 404s get "fixed" by restarting pods that were never the problem.</p>
 </div>
 
-<div class="resume-card"> id="sec-10"
+<div class="resume-card" id="sec-10">
 <h3>Node pressure and evictions</h3>
 <p>When a node runs out of disk or memory, the kubelet starts <em>evicting</em> pods to protect the node. <span class="formula">kubectl describe node</span> shows the Conditions section:</p>
 <div class="cmd">kubectl describe node node-3 | grep -A 3 Conditions
@@ -316,7 +338,7 @@ kubectl top node</div>
 </div>
 
 
-<div class="resume-card"> id="sec-11"
+<div class="resume-card" id="sec-11">
 <h3>Production readiness checklist</h3>
 <p>Before any workload enters the prod cluster, it passes this gate. Every item is a past incident:</p>
 <table class="tag-table">

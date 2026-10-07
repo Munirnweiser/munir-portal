@@ -83,6 +83,28 @@
 <p>What an AI agent actually is, how it uses tools and memory, and how to design one that triages production alerts.</p>
 </div>
 
+<nav class="path-bar" aria-label="Learning path">
+  <div class="path-info">
+    <span class="eyebrow">Learning path</span>
+    <strong>AI Track</strong>
+    <span class="path-pos">1 of 1</span>
+  </div>
+  <div class="path-links">
+    <a class="btn" href="index.html">All tracks</a>
+    <a class="btn" href="index.html">All tracks</a>
+  </div>
+</nav>
+<style>
+.path-bar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;background:rgba(13,20,36,.65);border:1px solid rgba(103,232,249,.22);border-radius:14px;padding:14px 18px;margin:0 0 26px}
+.path-info{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.path-info .eyebrow{margin:0}
+.path-info strong{color:#e2e8f0}
+.path-pos{color:var(--text-muted,#94a3b8);font-size:.85rem}
+.path-links{display:flex;gap:10px}
+.path-links .btn{padding:8px 16px;font-size:.9rem;text-decoration:none}
+</style>
+
+
 <div class="example-box takeaways-box">
 <h4>Key takeaways</h4>
 <ul>
@@ -112,12 +134,12 @@
 </ul>
 </div>
 
-<div class="resume-card"> id="sec-1"
+<div class="resume-card" id="sec-1">
 <h3>The agent loop: perceive → reason → act</h3>
 <p>A chatbot answers a prompt. An <em>agent</em> works a loop: it <strong>perceives</strong> (reads the alert, the logs, the dashboard), <strong>reasons</strong> (decides what the evidence means and what to check next), and <strong>acts</strong> (queries a tool, runs a command, escalates) — then perceives the result and loops again until the task is done. The loop is what turns a language model into something that can resolve an incident rather than just describe one.</p>
 </div>
 
-<div class="resume-card"> id="sec-2"
+<div class="resume-card" id="sec-2">
 <h3>Tools: function calling</h3>
 <p>An agent can't SSH into a server by thinking about it — it needs <em>tools</em>: declared functions the model can invoke, like <span class="formula">query_logs(service, time_range)</span> or <span class="formula">get_metric(host, metric)</span>. The model outputs a structured tool call, the harness executes it, and the result feeds back into the next reasoning step. Tool design is the real engineering: narrow, well-described tools with safe defaults beat a giant toolbox the model misuses.</p>
 <div class="example-box">
@@ -133,12 +155,12 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-3"
+<div class="resume-card" id="sec-3">
 <h3>Memory and the ReAct pattern</h3>
 <p><em>Short-term memory</em> is the conversation and tool results within one incident — what the agent has already checked. <em>Long-term memory</em> persists across incidents: past resolutions, runbooks, known issues. The <em>ReAct</em> pattern structures each loop iteration explicitly as <strong>Reasoning</strong> (what do I know, what's the next best check) then <strong>Acting</strong> (call the tool) then <strong>Observation</strong> (what did the tool return) — written out, so the agent's thinking is auditable later.</p>
 </div>
 
-<div class="resume-card"> id="sec-4"
+<div class="resume-card" id="sec-4">
 <h3>Guardrails: what the agent may never do</h3>
 <ul class="clean-list">
 <li><strong>Read-only by default</strong> — diagnostics tools need no approval; anything that changes state (restarts, config edits, trade cancellations) requires explicit human confirmation.</li>
@@ -148,7 +170,7 @@
 </ul>
 </div>
 
-<div class="resume-card"> id="sec-5"
+<div class="resume-card" id="sec-5">
 <h3>Worked example: an alert-triage agent</h3>
 <div class="example-box">
 <p><strong>Design.</strong> Input: a PagerDuty-style alert — "pricing-engine CPU &gt; 90% for 5 min." Tools: <span class="formula">get_metric</span>, <span class="formula">query_logs</span>, <span class="formula">list_recent_deploys</span>, <span class="formula">check_runbook</span>, <span class="formula">page_human</span>.</p>
@@ -157,7 +179,7 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-6"
+<div class="resume-card" id="sec-6">
 <h3>Tool-calling failure modes</h3>
 <p>Function calling looks robust until the model starts improvising. The failure modes, from most to least common:</p>
 <ul class="clean-list">
@@ -171,7 +193,7 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-7"
+<div class="resume-card" id="sec-7">
 <h3>An evaluation harness for a support agent</h3>
 <p>Evals are the agent's unit tests: a golden set of 20–30 past incidents, each with the triage a senior engineer actually performed. Score every agent change against the set before it nears production:</p>
 <ul class="clean-list">
@@ -183,7 +205,7 @@
 <p>Run the harness on every prompt, tool, or model change, and gate deployment on it like a CI pipeline. An agent that passes evals 95% of the time still gets guardrails — evals measure the average case, guardrails cover the tail.</p>
 </div>
 
-<div class="resume-card"> id="sec-8"
+<div class="resume-card" id="sec-8">
 <h3>Human-in-the-loop approval patterns</h3>
 <p>Approvals should be tiered by blast radius, not one-size-fits-all:</p>
 <ul class="clean-list">
@@ -197,7 +219,7 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-9"
+<div class="resume-card" id="sec-9">
 <h3>Cost and latency budgeting for agent loops</h3>
 <p>Every loop iteration is at least one model call, so an uncapped agent is a billing incident waiting for a weekend. Set the budget up front: max 12 iterations, 90 seconds wall-clock, $0.50 per incident — and enforce it in the harness, not in the prompt. Exit early when confidence is high instead of running out the clock.</p>
 <div class="example-box">
@@ -206,7 +228,7 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-10"
+<div class="resume-card" id="sec-10">
 <h3>What production support watches</h3>
 <ul class="clean-list">
 <li><strong>Agent actions are changes</strong> — every agent with write tools needs the same change-control discipline as a human operator, including rollback plans.</li>
@@ -220,7 +242,7 @@
 </div>
 
 
-<div class="resume-card"> id="sec-11"
+<div class="resume-card" id="sec-11">
 <h3>Agent architecture, in one diagram</h3>
 <p>Every production agent - from alert triage to deployment approval - has the same skeleton:</p>
 <div class="example-box"><pre class="formula" style="white-space:pre;overflow-x:auto;margin:0;">+--------+     +------------------+     +--------------+
@@ -240,7 +262,7 @@
 <p>The loop is the whole game: the model never touches production directly - it only <em>reasons</em> and calls tools. Everything dangerous lives behind the tool layer and the guardrails, which is exactly where support's controls (approvals, audit logs, read-only defaults) plug in.</p>
 </div>
 
-<div class="resume-card"> id="sec-12"
+<div class="resume-card" id="sec-12">
 <h3>Tool schema design example</h3>
 <p>A tool is a contract. This is the schema for the read-only database tool our alert-triage agent uses - note how narrow it is on purpose:</p>
 <div class="example-box"><pre class="formula" style="white-space:pre;overflow-x:auto;margin:0;">{

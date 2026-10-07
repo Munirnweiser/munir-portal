@@ -83,6 +83,28 @@
 <p>Infrastructure as code for support: reading plans, understanding state, and untangling the two classic failures — locks and drift.</p>
 </div>
 
+<nav class="path-bar" aria-label="Learning path">
+  <div class="path-info">
+    <span class="eyebrow">Learning path</span>
+    <strong>DevOps &amp; CI/CD Track</strong>
+    <span class="path-pos">5 of 7</span>
+  </div>
+  <div class="path-links">
+    <a class="btn" href="git-essentials.html">← Previous</a>
+    <a class="btn" href="ansible.html">Next →</a>
+  </div>
+</nav>
+<style>
+.path-bar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;background:rgba(13,20,36,.65);border:1px solid rgba(103,232,249,.22);border-radius:14px;padding:14px 18px;margin:0 0 26px}
+.path-info{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.path-info .eyebrow{margin:0}
+.path-info strong{color:#e2e8f0}
+.path-pos{color:var(--text-muted,#94a3b8);font-size:.85rem}
+.path-links{display:flex;gap:10px}
+.path-links .btn{padding:8px 16px;font-size:.9rem;text-decoration:none}
+</style>
+
+
 <div class="example-box takeaways-box">
 <h4>Key takeaways</h4>
 <ul>
@@ -108,7 +130,7 @@
 </ul>
 </div>
 
-<div class="resume-card"> id="sec-1"
+<div class="resume-card" id="sec-1">
 <h3>Resources, state and plans</h3>
 <p>Terraform manages <em>resources</em> (VMs, databases, networks) declared in <span class="formula">.tf</span> files. The <em>state file</em> records what Terraform believes exists; <span class="formula">terraform plan</span> compares desired configuration against state and reality, then prints the diff; <span class="formula">terraform apply</span> executes it.</p>
 <div class="example-box">
@@ -123,12 +145,12 @@ Plan: 1 to add, 1 to change, 1 to destroy.</pre>
 </div>
 </div>
 
-<div class="resume-card"> id="sec-2"
+<div class="resume-card" id="sec-2">
 <h3>State locks: the pipeline is stuck</h3>
 <p>State is shared, so Terraform <em>locks</em> it during runs. If a run crashes mid-apply, the lock can stick and every later run fails with "Error acquiring the state lock." First check whether a run is genuinely still active; if the holder is dead, <span class="formula">terraform force-unlock &lt;lock-id&gt;</span> releases it. The support discipline: never force-unlock while another apply might be running — two writers corrupt state, and corrupted state means Terraform no longer knows what exists.</p>
 </div>
 
-<div class="resume-card"> id="sec-3"
+<div class="resume-card" id="sec-3">
 <h3>Drift: reality diverged from code</h3>
 <p><em>Drift</em> is when someone changes infrastructure by hand — a bigger VM sized up in the console during an incident, a firewall rule added for debugging. The next plan suddenly wants to "fix" those manual changes back, which can undo the very thing keeping production alive.</p>
 <div class="example-box">
@@ -136,12 +158,12 @@ Plan: 1 to add, 1 to change, 1 to destroy.</pre>
 </div>
 </div>
 
-<div class="resume-card"> id="sec-4"
+<div class="resume-card" id="sec-4">
 <h3>Import: bringing hand-built infrastructure under management</h3>
 <p>Sometimes infrastructure already exists — built by hand before Terraform was adopted. <span class="formula">terraform import</span> maps an existing real-world resource to a resource block, after which Terraform manages it like any other. The workflow: write the resource block to match reality as closely as you can, run <span class="formula">terraform import aws_instance.pricing_engine i-0abcd1234</span>, then run <span class="formula">terraform plan</span> — it should show no changes. If the plan wants to modify things, adjust the configuration until it is clean; only then is the import safe. Support relevance: after an incident where someone built emergency infrastructure by hand, importing it (rather than leaving it unmanaged) prevents the next plan from trying to delete it.</p>
 </div>
 
-<div class="resume-card"> id="sec-5"
+<div class="resume-card" id="sec-5">
 <h3>What production support watches</h3>
 <ul class="clean-list">
 <li><strong>Plan before apply, always</strong> — a plan with unexpected destroys is a stopped deployment, not a puzzle to solve by applying and hoping.</li>
@@ -257,7 +279,7 @@ Plan: 1 to add, 1 to change, 1 to destroy.</pre>
 </div>
 
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
-<div class="resume-card"> id="sec-6"
+<div class="resume-card" id="sec-6">
 <h3>Module version pinning</h3>
 <p>Calling a module without a version means "whatever is newest" — and newest can be a breaking major release:</p>
 <div class="example-box">
@@ -269,7 +291,7 @@ Plan: 1 to add, 1 to change, 1 to destroy.</pre>
 </div>
 </div>
 
-<div class="resume-card"> id="sec-7"
+<div class="resume-card" id="sec-7">
 <h3>Remote state backends: S3 with locking</h3>
 <p>State in git is corruption waiting to happen (plus secrets in plaintext). Production Terraform keeps state in remote storage with locking so two applies can never write at once:</p>
 <div class="example-box">
@@ -286,7 +308,7 @@ Plan: 1 to add, 1 to change, 1 to destroy.</pre>
 </div>
 </div>
 
-<div class="resume-card"> id="sec-8"
+<div class="resume-card" id="sec-8">
 <h3>Taint and replace: the sick VM</h3>
 <p>Sometimes a resource is unhealthy but the configuration is correct — a VM with a corrupted disk, a node that will not come back. Editing config will not help; the resource itself must be recreated. The old command was <span class="formula">terraform taint</span>; the modern form is a flag on apply:</p>
 <div class="example-box">

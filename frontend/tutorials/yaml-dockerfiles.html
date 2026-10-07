@@ -83,6 +83,28 @@
 <p>Two files that break deployments silently: YAML's indentation traps and Dockerfiles that build slow, fat, insecure images.</p>
 </div>
 
+<nav class="path-bar" aria-label="Learning path">
+  <div class="path-info">
+    <span class="eyebrow">Learning path</span>
+    <strong>DevOps &amp; CI/CD Track</strong>
+    <span class="path-pos">7 of 7</span>
+  </div>
+  <div class="path-links">
+    <a class="btn" href="ansible.html">← Previous</a>
+    <a class="btn" href="index.html">All tracks</a>
+  </div>
+</nav>
+<style>
+.path-bar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;background:rgba(13,20,36,.65);border:1px solid rgba(103,232,249,.22);border-radius:14px;padding:14px 18px;margin:0 0 26px}
+.path-info{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.path-info .eyebrow{margin:0}
+.path-info strong{color:#e2e8f0}
+.path-pos{color:var(--text-muted,#94a3b8);font-size:.85rem}
+.path-links{display:flex;gap:10px}
+.path-links .btn{padding:8px 16px;font-size:.9rem;text-decoration:none}
+</style>
+
+
 <div class="example-box takeaways-box">
 <h4>Key takeaways</h4>
 <ul>
@@ -108,7 +130,7 @@
 </ul>
 </div>
 
-<div class="resume-card"> id="sec-1"
+<div class="resume-card" id="sec-1">
 <h3>YAML gotchas that page support</h3>
 <p>YAML is whitespace-significant: two spaces per level, never tabs. The classic traps:</p>
 <ul class="clean-list">
@@ -134,7 +156,7 @@ ports:                      # wrong indent: belongs to the pod spec level
 </div>
 </div>
 
-<div class="resume-card"> id="sec-2"
+<div class="resume-card" id="sec-2">
 <h3>Dockerfile best practices</h3>
 <p>Each instruction creates a cached <em>layer</em>. Order instructions from least-frequently-changed to most: dependencies first, application code last — so a code change rebuilds only the final layers instead of reinstalling the world.</p>
 <div class="example-box">
@@ -155,7 +177,7 @@ ENTRYPOINT ["java","-jar","/app.jar"]</pre>
 </div>
 </div>
 
-<div class="resume-card"> id="sec-3"
+<div class="resume-card" id="sec-3">
 <h3>HEALTHCHECK: let the orchestrator know you're alive</h3>
 <p>A <span class="formula">HEALTHCHECK</span> instruction tells Docker how to probe the container — and Kubernetes and load balancers rely on the same idea with liveness/readiness probes. Without one, the orchestrator considers a container healthy as long as its main process hasn't exited — even if the application inside is wedged and rejecting every request.</p>
 <div class="example-box">
@@ -165,7 +187,7 @@ ENTRYPOINT ["java","-jar","/app.jar"]</pre>
 </div>
 </div>
 
-<div class="resume-card"> id="sec-4"
+<div class="resume-card" id="sec-4">
 <h3>Multi-line strings: | keeps lines, &gt; folds them</h3>
 <p>YAML has two block scalars and they are not interchangeable. <span class="formula">|</span> (literal) preserves newlines — for scripts and config files where line breaks matter. <span class="formula">&gt;</span> (folded) turns newlines into spaces — for long human-readable text. The chomping indicator controls the trailing newline: <span class="formula">|-</span> strips it, <span class="formula">|+</span> keeps every blank line.</p>
 <div class="example-box">
@@ -187,7 +209,7 @@ command: |-
 </div>
 </div>
 
-<div class="resume-card"> id="sec-5"
+<div class="resume-card" id="sec-5">
 <h3>Anchors and aliases, worked</h3>
 <p>Define once with <span class="formula">&amp;name</span>, reuse with <span class="formula">*name</span>, and merge maps with <span class="formula">&lt;&lt;: *name</span>. The merge key is the workhorse for repeated environment blocks.</p>
 <div class="example-box">
@@ -208,7 +230,7 @@ services:
 </div>
 </div>
 
-<div class="resume-card"> id="sec-6"
+<div class="resume-card" id="sec-6">
 <h3>BuildKit cache mounts: fast builds without fat images</h3>
 <p>Dependency downloads dominate build time, and the naive fix — copying the package cache into the image — bloats every layer forever. BuildKit cache mounts persist a cache <em>outside</em> the image: the build reuses it, the image never contains it.</p>
 <div class="example-box">
@@ -221,13 +243,13 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 </div>
 </div>
 
-<div class="resume-card"> id="sec-7"
+<div class="resume-card" id="sec-7">
 <h3>Distroless images: smaller, safer, harder to debug</h3>
 <p><em>Distroless</em> images ship only the application and its runtime — no shell, no package manager, no utilities. The payoff is real: a dramatically smaller attack surface and far fewer CVE findings in image scans. The price is paid at 3 AM: the runbook step "exec into the container and check" fails because there is no shell to exec into.</p>
 <p>The workarounds, in order of preference: <span class="formula">kubectl debug</span> with an ephemeral debug container attached to the pod's namespaces; the <span class="formula">:debug</span> variant tags most distroless images publish (busybox shell included); and structured logging done well enough that you rarely need the shell at all. Support angle: know <em>before</em> the incident which images are distroless — discovering it mid-bridge-call wastes the first ten minutes.</p>
 </div>
 
-<div class="resume-card"> id="sec-8"
+<div class="resume-card" id="sec-8">
 <h3>What production support watches</h3>
 <ul class="clean-list">
 <li><strong>Image pull failures</strong> — ImagePullBackOff usually means a wrong tag, a deleted image, or expired registry credentials; the Dockerfile is fine, the reference is not.</li>

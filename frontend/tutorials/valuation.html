@@ -82,6 +82,28 @@
 <p>DCF, multiples, bond and option valuation — how the market decides what something is worth, with the math kept honest.</p>
 </div>
 
+<nav class="path-bar" aria-label="Learning path">
+  <div class="path-info">
+    <span class="eyebrow">Learning path</span>
+    <strong>Markets &amp; Trading Track</strong>
+    <span class="path-pos">6 of 9</span>
+  </div>
+  <div class="path-links">
+    <a class="btn" href="stp.html">← Previous</a>
+    <a class="btn" href="risk-measures.html">Next →</a>
+  </div>
+</nav>
+<style>
+.path-bar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;background:rgba(13,20,36,.65);border:1px solid rgba(103,232,249,.22);border-radius:14px;padding:14px 18px;margin:0 0 26px}
+.path-info{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.path-info .eyebrow{margin:0}
+.path-info strong{color:#e2e8f0}
+.path-pos{color:var(--text-muted,#94a3b8);font-size:.85rem}
+.path-links{display:flex;gap:10px}
+.path-links .btn{padding:8px 16px;font-size:.9rem;text-decoration:none}
+</style>
+
+
 <div class="example-box takeaways-box">
 <h4>Key takeaways</h4>
 <ul>
@@ -106,7 +128,7 @@
 </ul>
 </div>
 
-<div class="resume-card"> id="sec-1"
+<div class="resume-card" id="sec-1">
 <h3>DCF: value is future cash, discounted</h3>
 <p>Discounted cash flow values an asset as the present value of the cash it will generate. The simplest form — a perpetuity growing at rate g, discounted at r — is the Gordon growth formula:</p>
 <p class="formula">Value = CF₁ / (r − g)</p>
@@ -117,18 +139,18 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-2"
+<div class="resume-card" id="sec-2">
 <h3>Multiples: value by comparison</h3>
 <p>Instead of forecasting cash flows, multiples price an asset relative to peers: <strong>P/E</strong> (price per dollar of earnings), <strong>EV/EBITDA</strong> (enterprise value per dollar of operating profit). If comparable banks trade at 12× earnings and yours earns $5/share, the multiple implies $60/share.</p>
 <p>Multiples are fast and market-grounded, but they inherit the market's mood — in a bubble, every multiple says "fair value" right up until it doesn't. Good analysts use multiples to <em>check</em> a DCF, never to replace one.</p>
 </div>
 
-<div class="resume-card"> id="sec-3"
+<div class="resume-card" id="sec-3">
 <h3>Bond valuation: discount the coupons</h3>
 <p>A bond is worth the present value of its coupons plus principal, discounted at the market yield — the same seesaw from the fixed-income tutorial. The practical wrinkle is <em>which</em> yield: each cash flow is really discounted at its own point on the curve (bootstrapped spot rates), though a single yield-to-maturity is the market's shorthand quote.</p>
 </div>
 
-<div class="resume-card"> id="sec-4"
+<div class="resume-card" id="sec-4">
 <h3>Option valuation: Black-Scholes intuition, no heavy math</h3>
 <p>The Black-Scholes model prices an option from five inputs — and the intuition for each is straightforward:</p>
 <ul>
@@ -148,7 +170,7 @@
 </div>
 
 
-<div class="resume-card"> id="sec-5"
+<div class="resume-card" id="sec-5">
 <h3>Black-Scholes, worked end to end</h3>
 <p>Time to run the actual formula. Price a 6-month European call: stock S = 100, strike K = 100, risk-free rate r = 5%, volatility σ = 25%, time T = 0.5 years.</p>
 <p class="formula">d1 = [ln(S/K) + (r + σ²/2)·T] / (σ√T)<br>d2 = d1 − σ√T<br>Call = S·N(d1) − K·e<sup>−rT</sup>·N(d2)</p>
@@ -159,7 +181,7 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-6"
+<div class="resume-card" id="sec-6">
 <h3>Binomial trees: Black-Scholes without calculus</h3>
 <p>A <strong>binomial tree</strong> prices options by brute force: the stock can go up or down each step; work backwards from expiry, discounting expected payoffs at the risk-free rate using <strong>risk-neutral probabilities</strong>. As the steps multiply, the tree converges to the Black-Scholes price — same answer, no calculus.</p>
 <div class="example-box">
@@ -169,7 +191,7 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-7"
+<div class="resume-card" id="sec-7">
 <h3>Dirty vs clean price: a worked settlement example</h3>
 <p>Bonds are <em>quoted</em> clean but <em>settle</em> dirty — clean price plus accrued interest. From the fixed-income tutorial's 30/360 example: 5% annual coupon, last coupon 15 January, settlement 15 May (120 days), clean price 98.00.</p>
 <div class="example-box">

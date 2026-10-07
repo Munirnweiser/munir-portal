@@ -83,6 +83,28 @@
 <p>Agentless automation for support: run one command on fifty servers, and know exactly what a failed playbook did and didn't do.</p>
 </div>
 
+<nav class="path-bar" aria-label="Learning path">
+  <div class="path-info">
+    <span class="eyebrow">Learning path</span>
+    <strong>DevOps &amp; CI/CD Track</strong>
+    <span class="path-pos">6 of 7</span>
+  </div>
+  <div class="path-links">
+    <a class="btn" href="terraform.html">← Previous</a>
+    <a class="btn" href="yaml-dockerfiles.html">Next →</a>
+  </div>
+</nav>
+<style>
+.path-bar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;background:rgba(13,20,36,.65);border:1px solid rgba(103,232,249,.22);border-radius:14px;padding:14px 18px;margin:0 0 26px}
+.path-info{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.path-info .eyebrow{margin:0}
+.path-info strong{color:#e2e8f0}
+.path-pos{color:var(--text-muted,#94a3b8);font-size:.85rem}
+.path-links{display:flex;gap:10px}
+.path-links .btn{padding:8px 16px;font-size:.9rem;text-decoration:none}
+</style>
+
+
 <div class="example-box takeaways-box">
 <h4>Key takeaways</h4>
 <ul>
@@ -108,7 +130,7 @@
 </ul>
 </div>
 
-<div class="resume-card"> id="sec-1"
+<div class="resume-card" id="sec-1">
 <h3>Playbooks, inventory and ad-hoc commands</h3>
 <p>Ansible connects over SSH — no agent to install. <em>Inventory</em> lists the target hosts (grouped: <span class="formula">[pricing]</span>, <span class="formula">[databases]</span>); <em>playbooks</em> are YAML files declaring the desired state in <em>tasks</em>; <em>ad-hoc commands</em> run a single module without a playbook.</p>
 <div class="example-box">
@@ -126,12 +148,12 @@ ansible appservers -m shell -a "df -h /opt | tail -1"
 </div>
 </div>
 
-<div class="resume-card"> id="sec-2"
+<div class="resume-card" id="sec-2">
 <h3>Idempotency: safe to re-run</h3>
 <p>Good Ansible tasks are <em>idempotent</em> — running them twice changes nothing the second time. Modules like <span class="formula">copy</span>, <span class="formula">service</span> and <span class="formula">user</span> check state first; raw <span class="formula">shell</span>/<span class="formula">command</span> tasks do not. That distinction decides whether re-running a half-failed playbook is safe: re-running idempotent tasks converges; re-running raw shell tasks can double-apply — two restarts, two config appends, two database migrations.</p>
 </div>
 
-<div class="resume-card"> id="sec-3"
+<div class="resume-card" id="sec-3">
 <h3>Triaging a failed playbook</h3>
 <p>Ansible stops at the first failed task by default and reports per host: <span class="formula">ok</span>, <span class="formula">changed</span>, <span class="formula">failed</span>, <span class="formula">unreachable</span>. Read the recap at the bottom first — it tells you which hosts failed and which never got that far.</p>
 <ul class="clean-list">
@@ -144,7 +166,7 @@ ansible appservers -m shell -a "df -h /opt | tail -1"
 </div>
 </div>
 
-<div class="resume-card"> id="sec-4"
+<div class="resume-card" id="sec-4">
 <h3>Roles: the directory layout that scales</h3>
 <p>Past a handful of playbooks, teams organize automation into <em>roles</em> — reusable units with a fixed directory structure. Ansible auto-loads each subdirectory by name, so the layout is the documentation.</p>
 <div class="example-box">
@@ -160,7 +182,7 @@ ansible appservers -m shell -a "df -h /opt | tail -1"
 </div>
 </div>
 
-<div class="resume-card"> id="sec-5"
+<div class="resume-card" id="sec-5">
 <h3>Handlers and notify: restart once, not twelve times</h3>
 <p>A <em>handler</em> is a task that runs only when <em>notified</em> — and only once per play, even if twelve tasks notify it. The pattern: configuration tasks notify "restart feed service"; Ansible applies all changes, then restarts the service a single time at the end.</p>
 <div class="example-box">
@@ -180,7 +202,7 @@ handlers:
 </div>
 </div>
 
-<div class="resume-card"> id="sec-6"
+<div class="resume-card" id="sec-6">
 <h3>Dynamic inventory: the AWS EC2 plugin</h3>
 <p>Static inventory files rot — servers are replaced and nobody updates the list. The <span class="formula">aws_ec2</span> inventory plugin queries the AWS API at run time and builds groups from instance tags, so new hosts appear automatically.</p>
 <div class="example-box">
@@ -197,7 +219,7 @@ keyed_groups:
 </div>
 </div>
 
-<div class="resume-card"> id="sec-7"
+<div class="resume-card" id="sec-7">
 <h3>Debugging become: privilege escalation failures</h3>
 <p>Tasks needing root use <span class="formula">become: yes</span> (default method: sudo). When escalation breaks, the error is usually one of four things:</p>
 <ul class="clean-list">
@@ -211,7 +233,7 @@ keyed_groups:
 </div>
 </div>
 
-<div class="resume-card"> id="sec-8"
+<div class="resume-card" id="sec-8">
 <h3>What production support watches</h3>
 <ul class="clean-list">
 <li><strong>Vault for secrets</strong> — Ansible Vault encrypts passwords and keys in playbooks; plaintext secrets in a repo are an incident waiting for an audit.</li>

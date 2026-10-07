@@ -86,6 +86,28 @@
 <p>Session management, message anatomy, and a NewOrderSingle dissected tag by tag — from years of onboarding clients and chasing session drops.</p>
 </div>
 
+<nav class="path-bar" aria-label="Learning path">
+  <div class="path-info">
+    <span class="eyebrow">Learning path</span>
+    <strong>FIX &amp; Integration Track</strong>
+    <span class="path-pos">1 of 3</span>
+  </div>
+  <div class="path-links">
+    <a class="btn" href="index.html">All tracks</a>
+    <a class="btn" href="frontend-backend-middleware.html">Next →</a>
+  </div>
+</nav>
+<style>
+.path-bar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;background:rgba(13,20,36,.65);border:1px solid rgba(103,232,249,.22);border-radius:14px;padding:14px 18px;margin:0 0 26px}
+.path-info{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.path-info .eyebrow{margin:0}
+.path-info strong{color:#e2e8f0}
+.path-pos{color:var(--text-muted,#94a3b8);font-size:.85rem}
+.path-links{display:flex;gap:10px}
+.path-links .btn{padding:8px 16px;font-size:.9rem;text-decoration:none}
+</style>
+
+
 <div class="example-box takeaways-box">
 <h4>Key takeaways</h4>
 <ul>
@@ -113,12 +135,12 @@
 </ul>
 </div>
 
-<div class="resume-card"> id="sec-1"
+<div class="resume-card" id="sec-1">
 <h3>What FIX is</h3>
 <p>The <strong>Financial Information eXchange</strong> protocol is the messaging standard for electronic trading — orders, executions, market data and allocations all travel as FIX messages over TCP. The common dialects are <strong>FIX 4.2</strong> (still everywhere in equities), <strong>FIX 4.4</strong> (adds more asset classes), and <strong>FIX 5.0 / 5.0 SP2</strong>, which splits the session layer out into <strong>FIXT</strong> so the application version can evolve independently. Every production support analyst in trading eventually learns to read raw FIX the way a mechanic reads an engine.</p>
 </div>
 
-<div class="resume-card"> id="sec-2"
+<div class="resume-card" id="sec-2">
 <h3>Session management: the heartbeat of connectivity</h3>
 <p>Before any order flows, the two sides establish a <strong>FIX session</strong> — a persistent, sequenced, acknowledged conversation. The session messages (all identified by tag 35):</p>
 <ul>
@@ -132,7 +154,7 @@
 <p>Every message carries <strong>34=MsgSeqNum</strong>, incrementing per sender. If you receive 34=105 right after 34=103, message 104 is missing — you issue a ResendRequest for 104–104. This gap detection is the entire reliability model of FIX, and most session incidents are sequence-number incidents.</p>
 </div>
 
-<div class="resume-card"> id="sec-3"
+<div class="resume-card" id="sec-3">
 <h3>Message anatomy</h3>
 <p>A FIX message is tag=value pairs separated by a delimiter (shown here as |, really 0x01 SOH). Three tags form the envelope of <em>every</em> message:</p>
 <table class="tag-table">
@@ -148,7 +170,7 @@
 </table>
 </div>
 
-<div class="resume-card"> id="sec-4"
+<div class="resume-card" id="sec-4">
 <h3>NewOrderSingle (35=D), dissected</h3>
 <p>Here is a buy-side limit order for 500 AAPL at 150.50, walked through tag by tag:</p>
 <p class="formula">8=FIX.4.2|9=176|35=D|49=BUYSIDE|56=BROKER|34=2|52=20261006-14:30:00|11=ORDER123|21=1|40=2|44=150.50|54=1|55=AAPL|59=0|10=128|</p>
@@ -165,7 +187,7 @@
 <p>The broker answers with an <strong>ExecutionReport (35=8)</strong>: first 39=0 (New), then 39=1 (Partial fill) / 39=2 (Filled) as the order works, each carrying 14=CumQty, 6=AvgPx and 150=ExecType. The order's full state machine lives in tag 39 — support analysts trace "where is my order?" by grepping 11=ORDER123 and reading the 39s.</p>
 </div>
 
-<div class="resume-card"> id="sec-5"
+<div class="resume-card" id="sec-5">
 <h3>What production support watches</h3>
 <ul class="clean-list">
 <li><strong>Session drops</strong> — heartbeat timeouts at 108-second multiples; first check is always network, second is the counterparty's engine.</li>
@@ -180,7 +202,7 @@
 </div>
 
 
-<div class="resume-card"> id="sec-6"
+<div class="resume-card" id="sec-6">
 <h3>Logon (35=A), walked through tag by tag</h3>
 <p>The Logon message opens every FIX session. Here is a typical one, dissected:</p>
 <p class="formula">8=FIX.4.4|9=95|35=A|49=CLIENT1|56=VENUE|34=1|52=20261006-14:29:55|98=0|108=30|141=Y|10=042|</p>
@@ -195,7 +217,7 @@
 <p>Some venues also require <strong>553=username / 554=password</strong> on the Logon for authentication. The number-one Logon failure in support: one side sends 141=Y and the other does not expect a reset — sequence numbers disagree from message one, and the session never stabilizes. Always confirm the reset convention during certification.</p>
 </div>
 
-<div class="resume-card"> id="sec-7"
+<div class="resume-card" id="sec-7">
 <h3>Sequence gap recovery, step by step</h3>
 <p>When you receive 34=105 immediately after 34=103, message 104 never arrived. The recovery procedure is mechanical:</p>
 <ul>
@@ -208,7 +230,7 @@
 <p><strong>Support watches:</strong> ResendRequest <em>storms</em> — after a counterparty failover, hundreds of sessions can request retransmission simultaneously, flooding the engine. Throttle, watch queue depth, and confirm PossDupFlag handling is correct before the storm, not during it.</p>
 </div>
 
-<div class="resume-card"> id="sec-8"
+<div class="resume-card" id="sec-8">
 <h3>Common rejects and what tag 58 tells you</h3>
 <p>When FIX says no, it says it in tag 58 (Text). Learn to read these — they are the fastest diagnosis in connectivity support:</p>
 <table class="tag-table">
@@ -224,7 +246,7 @@
 </div>
 
 
-<div class="resume-card"> id="sec-9"
+<div class="resume-card" id="sec-9">
 <h3>Session recovery decision tree</h3>
 <p>When a FIX session misbehaves, support walks the same triage every time, top to bottom:</p>
 <ul class="clean-list">
@@ -239,7 +261,7 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-10"
+<div class="resume-card" id="sec-10">
 <h3>FIX certification checklist</h3>
 <p>Before a venue lets you trade, you certify. Support usually owns the checklist:</p>
 <table class="tag-table">

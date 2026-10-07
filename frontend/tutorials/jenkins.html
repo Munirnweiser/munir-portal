@@ -83,6 +83,28 @@
 <p>The build server behind most bank deployments: pipelines, agents, logs — and how support triages a failed release at 2 AM.</p>
 </div>
 
+<nav class="path-bar" aria-label="Learning path">
+  <div class="path-info">
+    <span class="eyebrow">Learning path</span>
+    <strong>DevOps &amp; CI/CD Track</strong>
+    <span class="path-pos">3 of 7</span>
+  </div>
+  <div class="path-links">
+    <a class="btn" href="kubernetes.html">← Previous</a>
+    <a class="btn" href="git-essentials.html">Next →</a>
+  </div>
+</nav>
+<style>
+.path-bar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;background:rgba(13,20,36,.65);border:1px solid rgba(103,232,249,.22);border-radius:14px;padding:14px 18px;margin:0 0 26px}
+.path-info{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.path-info .eyebrow{margin:0}
+.path-info strong{color:#e2e8f0}
+.path-pos{color:var(--text-muted,#94a3b8);font-size:.85rem}
+.path-links{display:flex;gap:10px}
+.path-links .btn{padding:8px 16px;font-size:.9rem;text-decoration:none}
+</style>
+
+
 <div class="example-box takeaways-box">
 <h4>Key takeaways</h4>
 <ul>
@@ -107,7 +129,7 @@
 </ul>
 </div>
 
-<div class="resume-card"> id="sec-1"
+<div class="resume-card" id="sec-1">
 <h3>How Jenkins is organized</h3>
 <p>Jenkins has a <em>controller</em> (the web UI, job definitions, scheduling) and <em>agents</em> (workers that actually run builds). Work is defined in <em>pipelines</em> — a <span class="formula">Jenkinsfile</span> checked into the repo — split into <em>stages</em> (Checkout → Build → Test → Deploy) made of <em>steps</em>. Blue Ocean renders the pipeline as a visual flow where each stage is green, red, or still running.</p>
 <div class="example-box">
@@ -124,7 +146,7 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-2"
+<div class="resume-card" id="sec-2">
 <h3>Reading a failed build</h3>
 <p>When a deployment fails, open the build → <em>Console Output</em>. Read bottom-up: the last 50 lines hold the actual error; everything above is context. The pattern that matters:</p>
 <ul class="clean-list">
@@ -135,7 +157,7 @@
 </ul>
 </div>
 
-<div class="resume-card"> id="sec-3"
+<div class="resume-card" id="sec-3">
 <h3>Support actions: restart, abort, roll back</h3>
 <p><em>Restart from stage</em> re-runs only the failed stage — use it when the failure was environmental (agent hiccup, flaky test), not when the code is broken. <em>Abort</em> stops a hung build, but first verify what it already did: an aborted deploy mid-copy leaves inconsistent binaries. For rollbacks, banks keep the previous artifact — redeploy the last green build's artifact rather than "reverting code and rebuilding," which is slower and riskier.</p>
 <div class="example-box">
@@ -143,7 +165,7 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-4"
+<div class="resume-card" id="sec-4">
 <h3>What production support watches</h3>
 <ul class="clean-list">
 <li><strong>Credential hygiene</strong> — rotated passwords and expired certificates are the #1 cause of "Jenkins is broken" tickets; the fix is in the credentials store, not the pipeline.</li>
@@ -259,7 +281,7 @@
 </div>
 
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
-<div class="resume-card"> id="sec-5"
+<div class="resume-card" id="sec-5">
 <h3>Shared libraries: one pipeline definition, two hundred users</h3>
 <p>Banks do not copy-paste Jenkinsfiles into every repo — they keep a <em>shared library</em> of pipeline steps, and each service calls it in a few lines:</p>
 <div class="example-box">
@@ -272,7 +294,7 @@ standardJavaPipeline {
 </div>
 </div>
 
-<div class="resume-card"> id="sec-6"
+<div class="resume-card" id="sec-6">
 <h3>Credential binding: the 401 that is not the code</h3>
 <p>Pipelines authenticate to artifactories, registries and servers through the Jenkins credentials store, injected with <span class="formula">withCredentials</span>:</p>
 <div class="example-box">
@@ -285,7 +307,7 @@ standardJavaPipeline {
 </div>
 </div>
 
-<div class="resume-card"> id="sec-7"
+<div class="resume-card" id="sec-7">
 <h3>Parallel stages: cutting pipeline time</h3>
 <p>Independent verification steps should run concurrently, not in sequence:</p>
 <div class="example-box">

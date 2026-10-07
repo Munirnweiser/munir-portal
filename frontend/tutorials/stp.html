@@ -82,6 +82,28 @@
 <p>What STP really means, why trades break, and where support teams spend their mornings.</p>
 </div>
 
+<nav class="path-bar" aria-label="Learning path">
+  <div class="path-info">
+    <span class="eyebrow">Learning path</span>
+    <strong>Markets &amp; Trading Track</strong>
+    <span class="path-pos">5 of 9</span>
+  </div>
+  <div class="path-links">
+    <a class="btn" href="trade-lifecycle.html">← Previous</a>
+    <a class="btn" href="valuation.html">Next →</a>
+  </div>
+</nav>
+<style>
+.path-bar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;background:rgba(13,20,36,.65);border:1px solid rgba(103,232,249,.22);border-radius:14px;padding:14px 18px;margin:0 0 26px}
+.path-info{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.path-info .eyebrow{margin:0}
+.path-info strong{color:#e2e8f0}
+.path-pos{color:var(--text-muted,#94a3b8);font-size:.85rem}
+.path-links{display:flex;gap:10px}
+.path-links .btn{padding:8px 16px;font-size:.9rem;text-decoration:none}
+</style>
+
+
 <div class="example-box takeaways-box">
 <h4>Key takeaways</h4>
 <ul>
@@ -106,13 +128,13 @@
 </ul>
 </div>
 
-<div class="resume-card"> id="sec-1"
+<div class="resume-card" id="sec-1">
 <h3>What STP means</h3>
 <p><strong>Straight-through processing</strong> means a trade flows from order entry to settlement with <em>zero manual intervention</em> — no retyping, no spreadsheets, no phone calls. Every system in the chain reads the same electronic message and acts on it. A high STP rate (95%+ is the industry target) means lower cost, fewer errors, and faster settlement. A low one means an operations team doing by hand what machines should do.</p>
 <p>STP is not one system; it is a property of the whole chain: execution → booking → confirmation → clearing → settlement → reconciliation. One weak link breaks the chain for that trade.</p>
 </div>
 
-<div class="resume-card"> id="sec-2"
+<div class="resume-card" id="sec-2">
 <h3>Why breaks happen</h3>
 <p>Almost every STP break is a <strong>data mismatch</strong> between two systems that each believe they are right. The usual suspects:</p>
 <ul>
@@ -127,12 +149,12 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-3"
+<div class="resume-card" id="sec-3">
 <h3>The break lifecycle</h3>
 <p>Breaks age in buckets — T+0, T+1, T+2, older — and each bucket has an owner and an escalation path. <strong>Affirmation platforms</strong> (and matching utilities) auto-match what they can; the residue lands in break queues. Support's job is triage: is this a one-off data issue, a systematic feed problem, or a counterparty outage? A single systematic cause can hide behind fifty individual breaks.</p>
 </div>
 
-<div class="resume-card"> id="sec-4"
+<div class="resume-card" id="sec-4">
 <h3>What production support watches</h3>
 <ul class="clean-list">
 <li><strong>STP rate dashboards</strong> — a sudden dip is the earliest signal of a feed, reference-data or counterparty problem.</li>
@@ -146,7 +168,7 @@
 </div>
 
 
-<div class="resume-card"> id="sec-5"
+<div class="resume-card" id="sec-5">
 <h3>SSI enrichment: the unglamorous king of settlement</h3>
 <p><strong>Standing Settlement Instructions</strong> tell the world <em>where</em> to deliver your cash and securities: custodian, agent bank, account number, BIC, place of settlement (PSET). Every trade must be enriched with the right SSI before it can settle — and "right" depends on currency, instrument, counterparty, and sometimes the trading desk. The industry SSI utility is <strong>ALERT</strong> (part of DTCC), where the street publishes and consumes SSIs electronically instead of faxing them.</p>
 <ul>
@@ -156,7 +178,7 @@
 </ul>
 </div>
 
-<div class="resume-card"> id="sec-6"
+<div class="resume-card" id="sec-6">
 <h3>Affirmation platforms: CTM and the matching machine</h3>
 <p>For cross-border institutional trades, affirmation runs on <strong>CTM</strong> (DTCC's Central Trade Manager, successor to Omgeo Oasys/Alert). The workflow:</p>
 <ul>
@@ -170,7 +192,7 @@
 </div>
 </div>
 
-<div class="resume-card"> id="sec-7"
+<div class="resume-card" id="sec-7">
 <h3>Break-resolution SLA workflow</h3>
 <p>Mature operations teams run breaks like an incident queue, with <strong>SLAs by age and type</strong>:</p>
 <ul>
