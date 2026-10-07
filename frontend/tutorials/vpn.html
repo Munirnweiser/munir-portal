@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="VPN for production support: site-to-site vs client VPN, tunnel diagnostics, phase 1/2 failures, DPD, MTU issues and a trader-connectivity incident walkthrough.">
+    <title>VPN | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .back-link { display:inline-block; margin-bottom:30px; color:#7dd3fc; text-decoration:none; }
+        .back-link:hover { text-decoration:underline; }
+        .tutorial-body p { color:#cbd5e1; line-height:1.75; margin-bottom:16px; }
+        .tutorial-body ul { color:#cbd5e1; padding-left:22px; margin-bottom:16px; }
+        .tutorial-body li { line-height:1.65; margin-bottom:8px; }
+        .tutorial-body h3 { color:#f8fafc; margin:28px 0 12px; font-size:1.3rem; }
+        .tutorial-body h4 { color:#7dd3fc; margin:20px 0 10px; font-size:1.05rem; }
+        .example-box { margin:18px 0; padding:18px 20px; border-left:3px solid #7dd3fc; background:rgba(30,41,59,.5); border-radius:10px; }
+        .example-box p { margin-bottom:8px; }
+        .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
+        pre.formula { padding:14px 16px; background:rgba(15,23,42,.7); border-radius:10px; overflow-x:auto; line-height:1.6; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container tutorial-body" style="padding:120px 0 80px">
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+
+<div class="section-heading">
+<p class="eyebrow">Tutorials • Networking</p>
+<h2>VPN</h2>
+<p>The tunnel every remote trader depends on: how VPNs work, how they fail, and the diagnostics that find it in minutes.</p>
+</div>
+
+<div class="resume-card">
+<h3>Site-to-site vs client VPN</h3>
+<p>A <em>site-to-site</em> VPN permanently connects two networks — bank data center to exchange colocation, head office to disaster-recovery site. It is always on and carries production traffic. A <em>client</em> (remote-access) VPN connects one laptop to the corporate network — the work-from-home trader's lifeline to the trading systems. Support cares about both, but the triage differs: a site-to-site failure hits a whole location at once; a client VPN failure hits one person and is usually their machine, their ISP, or their credentials.</p>
+</div>
+
+<div class="resume-card">
+<h3>How the tunnel is built: phase 1 and phase 2</h3>
+<p>IPsec VPNs negotiate in two phases. <strong>Phase 1</strong> (IKE) establishes a secure channel between the two gateways — authenticating each side and agreeing on encryption. <strong>Phase 2</strong> negotiates the actual data tunnel (the security associations carrying traffic). The diagnostic rule: if phase 1 fails, the gateways can't talk securely at all — check pre-shared keys, certificates, and reachability on UDP 500/4500. If phase 1 is up but phase 2 fails, check the interesting-traffic definitions (proxy IDs / traffic selectors) — the two sides disagree about what traffic the tunnel should carry.</p>
+<div class="example-box">
+<pre class="formula"># typical tunnel diagnostics (gateway CLI)
+show crypto ikev1 sa        # phase 1 up? look for MM_ACTIVE
+show crypto ipsec sa       # phase 2 up? check encaps/decaps counters
+# encaps rising, decaps stuck at 0 → the far side isn't
+# returning traffic: routing or selector mismatch there</pre>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>The usual suspects: DPD, MTU and credentials</h3>
+<ul class="clean-list">
+<li><strong>DPD (Dead Peer Detection)</strong> — heartbeats that detect a dead tunnel and rebuild it. A tunnel that "drops every 30 minutes" with no config change is often DPD misfiring across NAT, or lifetimes mismatched between sides.</li>
+<li><strong>MTU</strong> — encryption adds overhead, shrinking the effective packet size. Symptoms are maddeningly specific: small packets (chat, pings) work, large transfers (file drops, screen sharing) stall. Fix: clamp MSS or lower the tunnel MTU.</li>
+<li><strong>Credentials</strong> — expired certificates and rotated pre-shared keys kill tunnels at the worst moment; certificate expiry dates belong on a monitoring dashboard, not in someone's memory.</li>
+</ul>
+</div>
+
+<div class="resume-card">
+<h3>Incident walkthrough: trader can't reach the trading system</h3>
+<div class="example-box">
+<p>8:55 AM: a trader working from home reports the order-entry screen won't load; colleagues in the office are fine. Triage order: (1) Is the VPN client connected? Yes, tunnel is up. (2) Can they reach anything internal? Intranet loads — so the tunnel works and it's not credentials. (3) Traceroute to the trading server dies after the VPN gateway. The trading VLAN's route was removed from the VPN concentrator's config during weekend maintenance. Fix: re-add the route, trader reconnects, orders flow. Total: 12 minutes — because the triage isolated "tunnel up, one destination unreachable" instead of reinstalling the VPN client.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>What production support watches</h3>
+<ul class="clean-list">
+<li><strong>Tunnel uptime and throughput</strong> — alert on tunnel state changes and on throughput drops, which precede user complaints by minutes.</li>
+<li><strong>Certificate expiry</strong> — track every VPN certificate's expiry centrally; a tunnel dying at 3 AM on a Sunday is always a certificate.</li>
+<li><strong>One user vs all users</strong> — the first question for any VPN ticket; it halves the troubleshooting space instantly.</li>
+<li><strong>Change correlation</strong> — VPN failures cluster around firewall and gateway maintenance windows; check the change calendar before deep diagnostics.</li>
+</ul>
+<div class="tag-list" style="margin-top:16px">
+<span class="tag">IPsec</span><span class="tag">IKE</span><span class="tag">Phase 1/2</span><span class="tag">DPD</span><span class="tag">MTU</span><span class="tag">Site-to-site</span><span class="tag">Client VPN</span>
+</div>
+</div>
+
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+</body>
+</html>

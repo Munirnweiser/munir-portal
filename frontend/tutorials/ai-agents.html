@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Building AI agents: the perceive-reason-act loop, tools and function calling, memory, the ReAct pattern, guardrails, and a worked alert-triage support bot design.">
+    <title>Building AI Agents | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .back-link { display:inline-block; margin-bottom:30px; color:#7dd3fc; text-decoration:none; }
+        .back-link:hover { text-decoration:underline; }
+        .tutorial-body p { color:#cbd5e1; line-height:1.75; margin-bottom:16px; }
+        .tutorial-body ul { color:#cbd5e1; padding-left:22px; margin-bottom:16px; }
+        .tutorial-body li { line-height:1.65; margin-bottom:8px; }
+        .tutorial-body h3 { color:#f8fafc; margin:28px 0 12px; font-size:1.3rem; }
+        .tutorial-body h4 { color:#7dd3fc; margin:20px 0 10px; font-size:1.05rem; }
+        .example-box { margin:18px 0; padding:18px 20px; border-left:3px solid #7dd3fc; background:rgba(30,41,59,.5); border-radius:10px; }
+        .example-box p { margin-bottom:8px; }
+        .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
+        pre.formula { padding:14px 16px; background:rgba(15,23,42,.7); border-radius:10px; overflow-x:auto; line-height:1.6; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container tutorial-body" style="padding:120px 0 80px">
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+
+<div class="section-heading">
+<p class="eyebrow">Tutorials • Artificial Intelligence</p>
+<h2>Building AI Agents</h2>
+<p>What an AI agent actually is, how it uses tools and memory, and how to design one that triages production alerts.</p>
+</div>
+
+<div class="resume-card">
+<h3>The agent loop: perceive → reason → act</h3>
+<p>A chatbot answers a prompt. An <em>agent</em> works a loop: it <strong>perceives</strong> (reads the alert, the logs, the dashboard), <strong>reasons</strong> (decides what the evidence means and what to check next), and <strong>acts</strong> (queries a tool, runs a command, escalates) — then perceives the result and loops again until the task is done. The loop is what turns a language model into something that can resolve an incident rather than just describe one.</p>
+</div>
+
+<div class="resume-card">
+<h3>Tools: function calling</h3>
+<p>An agent can't SSH into a server by thinking about it — it needs <em>tools</em>: declared functions the model can invoke, like <span class="formula">query_logs(service, time_range)</span> or <span class="formula">get_metric(host, metric)</span>. The model outputs a structured tool call, the harness executes it, and the result feeds back into the next reasoning step. Tool design is the real engineering: narrow, well-described tools with safe defaults beat a giant toolbox the model misuses.</p>
+<div class="example-box">
+<pre class="formula">tools = [
+  { "name": "query_logs",
+    "description": "Search application logs. Read-only.",
+    "parameters": { "service": "string", "minutes": "integer" } },
+  { "name": "restart_service",
+    "description": "Restart a service. REQUIRES human approval.",
+    "parameters": { "service": "string" } }
+]</pre>
+<p>Note the asymmetry: reading is free, acting needs approval. That single design choice prevents most agent disasters.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Memory and the ReAct pattern</h3>
+<p><em>Short-term memory</em> is the conversation and tool results within one incident — what the agent has already checked. <em>Long-term memory</em> persists across incidents: past resolutions, runbooks, known issues. The <em>ReAct</em> pattern structures each loop iteration explicitly as <strong>Reasoning</strong> (what do I know, what's the next best check) then <strong>Acting</strong> (call the tool) then <strong>Observation</strong> (what did the tool return) — written out, so the agent's thinking is auditable later.</p>
+</div>
+
+<div class="resume-card">
+<h3>Guardrails: what the agent may never do</h3>
+<ul class="clean-list">
+<li><strong>Read-only by default</strong> — diagnostics tools need no approval; anything that changes state (restarts, config edits, trade cancellations) requires explicit human confirmation.</li>
+<li><strong>Scope limits</strong> — the agent operates on named services only; it cannot touch databases or production trading engines without an approved runbook.</li>
+<li><strong>Confidence thresholds</strong> — below a confidence level, the agent must escalate to a human instead of guessing; a wrong auto-remediation is worse than a slow one.</li>
+<li><strong>Full audit log</strong> — every reasoning step, tool call and result is logged; in a bank, an agent without an audit trail doesn't get deployed.</li>
+</ul>
+</div>
+
+<div class="resume-card">
+<h3>Worked example: an alert-triage agent</h3>
+<div class="example-box">
+<p><strong>Design.</strong> Input: a PagerDuty-style alert — "pricing-engine CPU &gt; 90% for 5 min." Tools: <span class="formula">get_metric</span>, <span class="formula">query_logs</span>, <span class="formula">list_recent_deploys</span>, <span class="formula">check_runbook</span>, <span class="formula">page_human</span>.</p>
+<p><strong>Decision flow.</strong> 1) Perceive: read the alert and pull the CPU chart. 2) Reason: CPU spike started 12 minutes ago — check what changed. 3) Act: <span class="formula">list_recent_deploys</span> shows a deploy 14 minutes ago. 4) Reason: correlate — pull error logs since the deploy. 5) Act: logs show a retry storm from the new version. 6) Reason: matches runbook "retry storm" — but restart needs approval. 7) Act: <span class="formula">page_human</span> with the full evidence bundle: deploy diff, log excerpts, suggested rollback.</p>
+<p>The agent didn't fix it — it did the 15 minutes of triage in 60 seconds and handed a human a decision-ready briefing. That is the realistic, deployable shape of support agents today.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>What production support watches</h3>
+<ul class="clean-list">
+<li><strong>Agent actions are changes</strong> — every agent with write tools needs the same change-control discipline as a human operator, including rollback plans.</li>
+<li><strong>Prompt injection</strong> — an agent that reads logs and tickets can be misled by malicious content in them; treat tool outputs as data, never as instructions.</li>
+<li><strong>Cost and latency</strong> — each loop iteration is a model call; a looping agent burns budget and delays the page — cap iterations and set timeouts.</li>
+<li><strong>Evaluation</strong> — replay past incidents through the agent and score its triage before it ever touches production; untested agents stay in the lab.</li>
+</ul>
+<div class="tag-list" style="margin-top:16px">
+<span class="tag">Agent loop</span><span class="tag">Function calling</span><span class="tag">ReAct</span><span class="tag">Memory</span><span class="tag">Guardrails</span><span class="tag">Runbooks</span>
+</div>
+</div>
+
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+</body>
+</html>

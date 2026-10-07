@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Incident Commander — a timed production-support triage game. Pick the right first action before the clock runs out.">
+    <title>Incident Commander | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        /* Page-specific layout: incident triage game */
+        .incident-card { margin-bottom: 20px; }
+        .incident-meta {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        .severity {
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 4px 10px;
+            border-radius: 999px;
+        }
+        .severity.critical { background: rgba(251, 113, 133, 0.15); color: #fb7185; border: 1px solid rgba(251, 113, 133, 0.4); }
+        .severity.high { background: rgba(251, 191, 36, 0.12); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.4); }
+        .round-label { color: #94a3b8; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; }
+        .timer-bar {
+            height: 8px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.06);
+            overflow: hidden;
+            margin: 14px 0 4px;
+        }
+        .timer-fill {
+            height: 100%;
+            width: 100%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #38bdf8, #a78bfa);
+            transition: width 0.1s linear;
+        }
+        .timer-fill.low { background: linear-gradient(90deg, #fb7185, #f43f5e); }
+        .timer-text { font-size: 0.8rem; color: #94a3b8; margin-bottom: 16px; }
+        .action-options .btn {
+            display: block;
+            width: 100%;
+            text-align: left;
+            margin-bottom: 10px;
+            font-weight: 600;
+            justify-content: flex-start;
+            white-space: normal;
+        }
+        .action-options .btn:disabled { opacity: 1; cursor: default; transform: none; }
+        .action-options .btn.correct {
+            border-color: #34d399;
+            background: rgba(52, 211, 153, 0.12);
+            color: #e8f0ff;
+        }
+        .action-options .btn.wrong {
+            border-color: #fb7185;
+            background: rgba(251, 113, 133, 0.12);
+            color: #e8f0ff;
+        }
+        .feedback {
+            margin-top: 14px;
+            padding: 14px 16px;
+            border-radius: 10px;
+            border-left: 3px solid #7dd3fc;
+            background: rgba(30, 41, 59, 0.5);
+            color: #cbd5e1;
+            line-height: 1.65;
+        }
+        .feedback.good { border-left-color: #34d399; }
+        .feedback.bad { border-left-color: #fb7185; }
+        .score-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+        .score-box {
+            flex: 1 1 110px;
+            text-align: center;
+            padding: 10px;
+            border: 1px solid rgba(125, 211, 252, 0.18);
+            border-radius: 12px;
+            background: rgba(15, 23, 42, 0.55);
+        }
+        .score-box strong { display: block; font-size: 1.3rem; color: #7dd3fc; }
+        .score-box span { font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: #94a3b8; }
+        .result-actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 18px;
+        }
+        .final-rank { text-align: center; padding: 10px 0; }
+        .final-rank .big { font-size: 2.2rem; margin: 8px 0; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main>
+<section class="section">
+<div class="container" style="max-width: 820px;">
+
+    <div class="section-heading">
+        <p class="eyebrow">Games • Production Support</p>
+        <h2>Incident Commander</h2>
+        <p>Ten production incidents. Fifteen seconds each. Pick the right <em>first</em> action — the one a calm L2/L3 engineer takes before touching anything.</p>
+    </div>
+
+    <!-- Start screen -->
+    <div class="resume-card" id="start-screen">
+        <h3>How it works</h3>
+        <ul class="clean-list">
+            <li><strong>10 rounds</strong>, one incident at a time, <strong>15 seconds</strong> on the clock.</li>
+            <li>Correct first action: <strong>100 pts</strong> + up to <strong>60 speed bonus</strong> + <strong>15 per streak</strong>.</li>
+            <li>Wrong pick or timeout: no points, streak resets. Read the <em>why</em> — that's the training.</li>
+        </ul>
+        <div class="result-actions">
+            <button type="button" class="btn" id="start-btn">Take command</button>
+        </div>
+    </div>
+
+    <!-- Game screen -->
+    <div id="game-screen" style="display:none;">
+        <div class="score-row">
+            <div class="score-box"><strong id="hud-score">0</strong><span>Score</span></div>
+            <div class="score-box"><strong id="hud-round">1/10</strong><span>Round</span></div>
+            <div class="score-box"><strong id="hud-streak">0</strong><span>Streak</span></div>
+        </div>
+
+        <div class="resume-card incident-card">
+            <div class="incident-meta">
+                <span class="severity" id="inc-severity">Critical</span>
+                <span class="round-label" id="inc-system">pricing-engine</span>
+            </div>
+            <h3 id="inc-title"></h3>
+            <p id="inc-desc" style="color:#cbd5e1; line-height:1.7;"></p>
+            <div class="timer-bar"><div class="timer-fill" id="timer-fill"></div></div>
+            <div class="timer-text"><span id="timer-text">15.0</span>s left</div>
+            <div class="action-options" id="options"></div>
+            <div class="feedback" id="feedback" style="display:none;"></div>
+        </div>
+
+        <div class="result-actions">
+            <button type="button" class="btn" id="next-btn" style="display:none;">Next incident →</button>
+        </div>
+    </div>
+
+    <!-- Final screen -->
+    <div class="resume-card final-rank" id="final-screen" style="display:none;">
+        <p class="eyebrow">Shift over</p>
+        <h3 id="final-rank-title">L3 Commander</h3>
+        <div class="big" id="final-rank-emoji">🎖️</div>
+        <p id="final-summary" style="color:#cbd5e1; line-height:1.7;"></p>
+        <div class="result-actions">
+            <button type="button" class="btn" id="again-btn">Run it back</button>
+            <a href="../index.html#games" class="btn btn-secondary">More games</a>
+        </div>
+    </div>
+
+</div>
+</section>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+
+<script src="../app.js"></script>
+<script>
+(function () {
+    "use strict";
+
+    var ROUNDS = [
+        {
+            system: "pricing-engine", severity: "critical", sevClass: "critical",
+            title: "CPU at 97% for 5 minutes, response times climbing",
+            desc: "Dynatrace shows one pricing-engine host pinned at 97% CPU. Quote latency is up 4x and traders are starting to call.",
+            options: [
+                "Find which process and thread is burning CPU (top, thread dump) before acting",
+                "Restart the pricing engine immediately to clear it",
+                "Page the network team — latency is their problem",
+                "Delete old log files to free up the CPU"
+            ],
+            correct: 0,
+            why: "Never restart what you have not diagnosed — you destroy the evidence. Identify the hot thread first (a stuck pricing loop vs. a GC spiral need very different fixes)."
+        },
+        {
+            system: "fix-gateway", severity: "high", sevClass: "high",
+            title: "FIX session sequence gap with broker, ResendRequest storm",
+            desc: "Tag 34 jumped from 1042 to 1051 on the broker session. Both sides are now hammering each other with ResendRequests.",
+            options: [
+                "Panic and bounce the FIX gateway",
+                "Delete the FIX message logs to stop the storm",
+                "Let the session recover via the standard ResendRequest / SequenceReset procedure and watch it",
+                "Manually edit the sequence numbers in the store file"
+            ],
+            correct: 2,
+            why: "Sequence gaps are a normal, recoverable FIX event. The protocol has a defined recovery path — interfering by hand-editing sequence state is how you turn a gap into a trading halt."
+        },
+        {
+            system: "oracle-db", severity: "critical", sevClass: "critical",
+            title: "Tablespace USERS at 98% — inserts failing",
+            desc: "The trade-booking schema just threw ORA-01653: unable to extend table. New trades cannot persist.",
+            options: [
+                "Drop the biggest old tables to make room",
+                "Kill every database session to stop the writes",
+                "Check what is growing, then add a datafile or extend the tablespace",
+                "Disable archivelog mode to save space"
+            ],
+            correct: 2,
+            why: "Dropping tables or killing sessions is data destruction. The safe first action is always: identify the growth, then extend. Archivelog exists for recovery — never disable it under pressure."
+        },
+        {
+            system: "confirmations", severity: "high", sevClass: "high",
+            title: "12 confirmation breaks in the last hour",
+            desc: "Counterparty confirms are not matching our bookings. Breaks are aging and the STP rate is dropping.",
+            options: [
+                "Re-send all confirmations and hope they match this time",
+                "Compare economics field by field — price, quantity, direction, value date",
+                "Restart the matching engine",
+                "Email the counterparty blaming their system"
+            ],
+            correct: 1,
+            why: "Breaks are almost always an economics mismatch — a price in the wrong currency, a flipped buy/sell, a value-date off by a holiday. Compare the fields before touching any system."
+        },
+        {
+            system: "web-frontend", severity: "high", sevClass: "high",
+            title: "Pods CrashLoopBackOff right after today's deploy",
+            desc: "The 10:00 deploy rolled out and web-frontend pods are crash-looping. The previous version was healthy.",
+            options: [
+                "Scale the deployment to 50 replicas to absorb the crashes",
+                "kubectl describe the pod and read logs --previous to find the crash reason",
+                "Delete the whole namespace and start over",
+                "Roll back immediately without looking at anything"
+            ],
+            correct: 1,
+            why: "CrashLoopBackOff has a reason — bad config, missing secret, failed probe. Thirty seconds of describe + logs tells you whether it is a bad image (roll back) or a bad config (fix forward). Diagnose, then decide."
+        },
+        {
+            system: "autosys", severity: "high", sevClass: "high",
+            title: "Overnight TRADE_FEED job failed at 02:00",
+            desc: "The feed job that loads yesterday's trades failed. Downstream risk and P&L reports are stale and the desk arrives in 3 hours.",
+            options: [
+                "Force-start the job right now to save time",
+                "Read the job's log and output first, then decide: fix and rerun, or rerun as-is",
+                "Disable the job so it stops alerting",
+                "Wait for the next scheduled run tomorrow"
+            ],
+            correct: 1,
+            why: "A blind rerun of a failed batch often fails the same way — or worse, double-loads. The log tells you in one minute whether it is a data issue, a DB blip, or a code bug."
+        },
+        {
+            system: "trade-api", severity: "high", sevClass: "high",
+            title: "Memory climbing 200 MB/hour with no release",
+            desc: "The heap graph is a staircase going up. GC runs but the baseline keeps rising. An OOM kill is roughly a day away.",
+            options: [
+                "Add a weekly cron restart and stop worrying",
+                "Add more RAM to the container",
+                "Take a heap dump, find what is being retained, then plan the fix",
+                "Do nothing — the garbage collector will eventually catch up"
+            ],
+            correct: 2,
+            why: "A rising baseline after GC is the textbook signature of a leak. A heap dump names the culprit class in minutes. Restarts and RAM only buy time — and hide the bug from the developers who need to fix it."
+        },
+        {
+            system: "pricing-batch", severity: "high", sevClass: "high",
+            title: "End-of-day pricing batch running 3x slower than usual",
+            desc: "The batch normally finishes by 21:00. It is 22:30 and it is at 40%. Risk reports will miss the cutoff.",
+            options: [
+                "Kill the batch and rerun it — maybe it will go faster",
+                "Check database wait stats and long-running queries for the bottleneck",
+                "Run a second copy of the batch in parallel",
+                "Order a bigger database server"
+            ],
+            correct: 1,
+            why: "Slow batches are slow for a reason — a missing index, a locked table, a bad plan after stats changed. Wait stats point at the exact bottleneck; everything else is guessing with production consequences."
+        },
+        {
+            system: "market-data", severity: "critical", sevClass: "critical",
+            title: "Traders report stale EUR/USD prices on the spot ladder",
+            desc: "Two desks say the EUR/USD ladder has not moved in 4 minutes during an active session. Pricing may be off-market.",
+            options: [
+                "Tell the traders to refresh their browsers",
+                "Restart the entire trading platform",
+                "Check the market-data feed handler: last tick timestamps, sequence, and feed status",
+                "Wait — prices sometimes just do not move"
+            ],
+            correct: 2,
+            why: "Stale prices during an active session mean the feed is broken, not the UI. Check tick timestamps and feed health first — trading on stale prices loses real money, so this is confirm-feed-or-halt territory."
+        },
+        {
+            system: "log-server", severity: "high", sevClass: "high",
+            title: "Disk at 99% on the central log server",
+            desc: "New logs are failing to write. If the disk fills, you lose visibility across every application at once.",
+            options: [
+                "rm -rf the oldest log directories to make space fast",
+                "Find the largest files, compress and archive old logs, and check log rotation is working",
+                "Stop all applications so they stop logging",
+                "Order more disk and wait for delivery"
+            ],
+            correct: 1,
+            why: "Blind rm on a log server destroys audit evidence and often deletes the file an active process is writing to (without freeing space). Archive, compress, fix rotation — space back in minutes, evidence intact."
+        }
+    ];
+
+    var ROUND_TIME = 15;
+    var totalRounds = ROUNDS.length;
+
+    var startScreen = document.getElementById("start-screen");
+    var gameScreen = document.getElementById("game-screen");
+    var finalScreen = document.getElementById("final-screen");
+    var optionsEl = document.getElementById("options");
+    var feedbackEl = document.getElementById("feedback");
+    var nextBtn = document.getElementById("next-btn");
+    var timerFill = document.getElementById("timer-fill");
+    var timerText = document.getElementById("timer-text");
+
+    var roundIndex = 0;
+    var score = 0;
+    var streak = 0;
+    var correctCount = 0;
+    var timeLeft = ROUND_TIME;
+    var tickId = null;
+    var answered = false;
+
+    function updateHud() {
+        document.getElementById("hud-score").textContent = String(score);
+        document.getElementById("hud-round").textContent = (roundIndex + 1) + "/" + totalRounds;
+        document.getElementById("hud-streak").textContent = String(streak);
+    }
+
+    function renderRound() {
+        var r = ROUNDS[roundIndex];
+        answered = false;
+        document.getElementById("inc-severity").textContent = r.severity;
+        document.getElementById("inc-severity").className = "severity " + r.sevClass;
+        document.getElementById("inc-system").textContent = r.system;
+        document.getElementById("inc-title").textContent = r.title;
+        document.getElementById("inc-desc").textContent = r.desc;
+        feedbackEl.style.display = "none";
+        feedbackEl.className = "feedback";
+        feedbackEl.textContent = "";
+        nextBtn.style.display = "none";
+
+        optionsEl.innerHTML = "";
+        r.options.forEach(function (text, i) {
+            var b = document.createElement("button");
+            b.type = "button";
+            b.className = "btn btn-secondary";
+            b.textContent = text;
+            b.addEventListener("click", function () { answer(i); });
+            optionsEl.appendChild(b);
+        });
+
+        updateHud();
+        startTimer();
+    }
+
+    function startTimer() {
+        stopTimer();
+        timeLeft = ROUND_TIME;
+        drawTimer();
+        var last = Date.now();
+        tickId = setInterval(function () {
+            var now = Date.now();
+            timeLeft -= (now - last) / 1000;
+            last = now;
+            if (timeLeft <= 0) {
+                timeLeft = 0;
+                drawTimer();
+                onTimeout();
+            } else {
+                drawTimer();
+            }
+        }, 100);
+    }
+
+    function drawTimer() {
+        var pct = (timeLeft / ROUND_TIME) * 100;
+        timerFill.style.width = pct + "%";
+        timerFill.classList.toggle("low", timeLeft < 5);
+        timerText.textContent = timeLeft.toFixed(1);
+    }
+
+    function stopTimer() {
+        if (tickId) clearInterval(tickId);
+        tickId = null;
+    }
+
+    function lockOptions() {
+        var btns = optionsEl.querySelectorAll("button");
+        for (var i = 0; i < btns.length; i++) btns[i].disabled = true;
+    }
+
+    function showFeedback(ok, headline, whyText, points) {
+        feedbackEl.style.display = "block";
+        feedbackEl.classList.add(ok ? "good" : "bad");
+        feedbackEl.innerHTML = "";
+        var h = document.createElement("strong");
+        h.textContent = headline + (points > 0 ? "  (+" + points + " pts)" : "");
+        var p = document.createElement("p");
+        p.style.margin = "8px 0 0";
+        p.textContent = whyText;
+        feedbackEl.appendChild(h);
+        feedbackEl.appendChild(p);
+    }
+
+    function markCorrect() {
+        var btns = optionsEl.querySelectorAll("button");
+        btns[ROUNDS[roundIndex].correct].classList.add("correct");
+    }
+
+    function answer(picked) {
+        if (answered) return;
+        answered = true;
+        stopTimer();
+        lockOptions();
+        var r = ROUNDS[roundIndex];
+        var btns = optionsEl.querySelectorAll("button");
+        if (picked === r.correct) {
+            var speedBonus = Math.round(timeLeft * 4);
+            var streakBonus = streak * 15;
+            var points = 100 + speedBonus + streakBonus;
+            score += points;
+            streak++;
+            correctCount++;
+            btns[picked].classList.add("correct");
+            showFeedback(true, "Correct call.", r.why, points);
+        } else {
+            streak = 0;
+            btns[picked].classList.add("wrong");
+            markCorrect();
+            showFeedback(false, "Wrong first move.", r.why, 0);
+        }
+        updateHud();
+        nextBtn.style.display = "inline-block";
+        nextBtn.textContent = roundIndex === totalRounds - 1 ? "See your rank →" : "Next incident →";
+    }
+
+    function onTimeout() {
+        if (answered) return;
+        answered = true;
+        stopTimer();
+        lockOptions();
+        streak = 0;
+        markCorrect();
+        showFeedback(false, "Too slow — the incident escalated without you.", ROUNDS[roundIndex].why, 0);
+        updateHud();
+        nextBtn.style.display = "inline-block";
+        nextBtn.textContent = roundIndex === totalRounds - 1 ? "See your rank →" : "Next incident →";
+    }
+
+    function rankFor(s) {
+        if (s >= 2000) return { title: "L3 Commander", emoji: "🎖️" };
+        if (s >= 1500) return { title: "L2 Responder", emoji: "🥇" };
+        if (s >= 1000) return { title: "L1 Triage", emoji: "🥈" };
+        if (s >= 600) return { title: "Pager-duty Intern", emoji: "📟" };
+        return { title: "Back to the Runbook", emoji: "📖" };
+    }
+
+    function showFinal() {
+        gameScreen.style.display = "none";
+        finalScreen.style.display = "block";
+        var r = rankFor(score);
+        document.getElementById("final-rank-title").textContent = r.title;
+        document.getElementById("final-rank-emoji").textContent = r.emoji;
+        document.getElementById("final-summary").textContent =
+            "You handled " + correctCount + " of " + totalRounds + " incidents correctly, finishing with " +
+            score + " points. " +
+            (correctCount === totalRounds ? "A perfect shift — the desk is safe in your hands." :
+             correctCount >= 7 ? "Strong triage instincts. Review the ones you missed and run it back." :
+             "Every miss came with a why — read them, then take command again.");
+    }
+
+    function newGame() {
+        stopTimer();
+        roundIndex = 0;
+        score = 0;
+        streak = 0;
+        correctCount = 0;
+        startScreen.style.display = "none";
+        finalScreen.style.display = "none";
+        gameScreen.style.display = "block";
+        renderRound();
+    }
+
+    document.getElementById("start-btn").addEventListener("click", newGame);
+    document.getElementById("again-btn").addEventListener("click", newGame);
+    nextBtn.addEventListener("click", function () {
+        roundIndex++;
+        if (roundIndex >= totalRounds) {
+            showFinal();
+        } else {
+            renderRound();
+        }
+    });
+})();
+</script>
+</body>
+</html>

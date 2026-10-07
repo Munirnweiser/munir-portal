@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Instruments across asset classes for production support: equities, fixed income, FX, commodities and derivatives, with settlement conventions and what breaks per class.">
+    <title>Multi-Asset Instruments | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .back-link { display:inline-block; margin-bottom:30px; color:#7dd3fc; text-decoration:none; }
+        .back-link:hover { text-decoration:underline; }
+        .tutorial-body p { color:#cbd5e1; line-height:1.75; margin-bottom:16px; }
+        .tutorial-body ul { color:#cbd5e1; padding-left:22px; margin-bottom:16px; }
+        .tutorial-body li { line-height:1.65; margin-bottom:8px; }
+        .tutorial-body h3 { color:#f8fafc; margin:28px 0 12px; font-size:1.3rem; }
+        .tutorial-body h4 { color:#7dd3fc; margin:20px 0 10px; font-size:1.05rem; }
+        .example-box { margin:18px 0; padding:18px 20px; border-left:3px solid #7dd3fc; background:rgba(30,41,59,.5); border-radius:10px; }
+        .example-box p { margin-bottom:8px; }
+        .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container tutorial-body" style="padding:120px 0 80px">
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+
+<div class="section-heading">
+<p class="eyebrow">Tutorials • Multi-Asset</p>
+<h2>Multi-Asset Instruments</h2>
+<p>One desk trades them all: equities, bonds, FX, commodities and derivatives — what each instrument is, how it settles, and where support tickets come from.</p>
+</div>
+
+<div class="resume-card">
+<h3>Equities: shares, ETFs and ADRs</h3>
+<p>An ordinary share is part-ownership of a company. An <em>ETF</em> is a fund that trades like a share and tracks an index or basket. An <em>ADR</em> (American Depositary Receipt) lets a US investor hold a foreign share — the foreign shares sit with a custodian bank, and the ADR trades in USD in New York.</p>
+<p>Cash equities settle T+1 in the US and Canada (T+2 in much of Europe and Asia). Corporate actions — dividends, splits, mergers — are the classic support headache: a stock split changes every open order's price and quantity, and a missed corporate-action feed means positions show the wrong economics.</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> A client buys 10,000 shares of a stock at $50.00 on Monday. Settlement is Tuesday (T+1): $500,000 of cash moves against 10,000 shares through the clearinghouse. If the client's custodian details (SSI) are wrong, the delivery fails and the trade sits in a fail queue accruing charges.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Fixed income: bonds, T-bills and repos</h3>
+<p>Bonds pay coupons and return principal at maturity; T-bills are short-term discount paper with no coupon. A <em>repo</em> (repurchase agreement) is a collateralized loan: sell a bond today, agree to buy it back tomorrow at a slightly higher price — the difference is the repo rate, the market's overnight funding rate.</p>
+<p>Bonds settle T+1 (US Treasuries) or T+2 (many corporates). Accrued interest must be computed exactly — day-count conventions (30/360, ACT/ACT) differ by market, and a wrong convention breaks the settlement amount by the coupon accrual.</p>
+</div>
+
+<div class="resume-card">
+<h3>FX: spot, forwards, swaps and NDFs</h3>
+<p>FX spot settles T+2 (T+1 for USD/CAD); forwards and swaps settle on their agreed value dates; NDFs cash-settle in USD against an official fixing. FX is the highest-volume asset class in the world, and settlement runs through CLS Bank on hard intraday deadlines.</p>
+<p>Support pain points: missed CLS pay-in deadlines, late fixings for NDF valuation, and value dates falling on currency holidays — each creates fails that cascade into funding costs.</p>
+</div>
+
+<div class="resume-card">
+<h3>Commodities: futures and physical</h3>
+<p>Commodity futures (oil, gas, metals, agriculture) are exchange-traded contracts for delivery at a future date, margined daily — gains and losses are settled in cash every day. Physical commodities add logistics: storage, delivery location, and quality grades.</p>
+<p>Watch for <em>expiry handling</em>: a future approaching its last trading day must be rolled or closed, and first-notice-day rules differ per exchange. A position left into delivery by mistake becomes an operations incident, not a trading decision.</p>
+</div>
+
+<div class="resume-card">
+<h3>Derivatives: options, swaps, CDS and exotics</h3>
+<p>Options give the right (not the obligation) to buy or sell; swaps exchange cash flows (fixed-for-floating rates, or currencies); a <em>CDS</em> (credit default swap) is insurance against a borrower defaulting; exotics add path-dependent or barrier features. Listed derivatives are margined daily; OTC derivatives are collateralized bilaterally or cleared.</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> A 1-year interest-rate swap: the bank pays fixed 4.00% and receives floating SOFR on $100M notional. If SOFR averages 4.50%, the bank nets roughly $500,000 over the year. The trade's value moves with the rate curve, so a stale curve in the pricing engine misprices every swap on the book at once.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>What production support watches</h3>
+<ul class="clean-list">
+<li><strong>Settlement calendars</strong> — every asset class has its own holiday calendars; a bad calendar breaks value dates across the whole book.</li>
+<li><strong>Reference data</strong> — wrong day-count, wrong fixing source, missing corporate action: most "trade breaks" are data breaks wearing a trade's clothes.</li>
+<li><strong>Margin calls</strong> — futures and cleared swaps margin daily; a failed margin feed means the desk flies blind on funding needs.</li>
+<li><strong>Cross-asset knock-ons</strong> — an FX fail delays a bond settlement funded in another currency; always check upstream when a downstream trade breaks.</li>
+</ul>
+<div class="tag-list" style="margin-top:16px">
+<span class="tag">Equities</span><span class="tag">ETF</span><span class="tag">ADR</span><span class="tag">Bonds</span><span class="tag">Repo</span><span class="tag">FX</span><span class="tag">Commodities</span><span class="tag">Options</span><span class="tag">Swaps</span><span class="tag">CDS</span>
+</div>
+</div>
+
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="3-tier and middleware architecture for production support: frontend, backend services, middleware (MQ/Kafka), request tracing and per-tier failure diagnosis.">
+    <title>Frontend / Backend / Middleware | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .back-link { display:inline-block; margin-bottom:30px; color:#7dd3fc; text-decoration:none; }
+        .back-link:hover { text-decoration:underline; }
+        .tutorial-body p { color:#cbd5e1; line-height:1.75; margin-bottom:16px; }
+        .tutorial-body ul { color:#cbd5e1; padding-left:22px; margin-bottom:16px; }
+        .tutorial-body li { line-height:1.65; margin-bottom:8px; }
+        .tutorial-body h3 { color:#f8fafc; margin:28px 0 12px; font-size:1.3rem; }
+        .tutorial-body h4 { color:#7dd3fc; margin:20px 0 10px; font-size:1.05rem; }
+        .example-box { margin:18px 0; padding:18px 20px; border-left:3px solid #7dd3fc; background:rgba(30,41,59,.5); border-radius:10px; }
+        .example-box p { margin-bottom:8px; }
+        .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
+        pre.formula { padding:14px 16px; background:rgba(15,23,42,.7); border-radius:10px; overflow-x:auto; line-height:1.6; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container tutorial-body" style="padding:120px 0 80px">
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+
+<div class="section-heading">
+<p class="eyebrow">Tutorials • Architecture</p>
+<h2>Frontend / Backend / Middleware</h2>
+<p>Where a trade actually travels: browser to backend through middleware — and which tier to blame when it breaks.</p>
+</div>
+
+<div class="resume-card">
+<h3>The three tiers</h3>
+<p><strong>Frontend</strong> is what the trader sees — the order entry screen, blotters, charts. It calls APIs and renders responses; it holds almost no business logic. <strong>Backend</strong> services do the real work: validation, pricing, booking, risk checks — usually a set of services behind a load balancer, each owning a domain. <strong>Middleware</strong> is the plumbing between them and to the outside world: message queues (IBM MQ, Kafka), enterprise service buses, FIX engines, file-transfer gateways.</p>
+<div class="example-box">
+<pre class="formula">Trader clicks BUY
+  → Frontend sends REST order to Order API
+    → Order service validates, publishes to Kafka topic "orders"
+      → Matching engine consumes, executes, publishes "fills"
+        → Booking service consumes fills, writes to database
+          → Frontend receives fill via websocket, blotter updates</pre>
+<p>One click, five hops. An incident at any hop looks identical to the trader ("my order didn't fill") — the job is locating the hop.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Tracing a request across tiers</h3>
+<p>Modern systems attach a <em>correlation ID</em> to every request, propagated through each hop and logged everywhere. The triage sequence: take the order ID or timestamp from the trader, find the correlation ID in the frontend/API logs, then follow it hop by hop. Where the trail stops is where the failure is. Without correlation IDs you're grepping five log systems by timestamp and hoping the clocks agree — which is why the first question in any bridge call is "do we have the correlation ID?"</p>
+</div>
+
+<div class="resume-card">
+<h3>Where support looks when each tier fails</h3>
+<ul class="clean-list">
+<li><strong>Frontend broken for everyone</strong> — check the CDN/static hosting and the API gateway first; a blank screen for one trader is their browser or VPN, for all traders it's the deploy.</li>
+<li><strong>Backend slow</strong> — check service CPU/memory, database query times, and downstream dependencies; slowness usually lives one layer below where it's felt.</li>
+<li><strong>Middleware backed up</strong> — check queue depth on MQ/Kafka: a growing queue with idle consumers means the consumer is down; a growing queue with busy consumers means the producer is flooding or the consumer is too slow.</li>
+<li><strong>Messages stuck or duplicated</strong> — check for poison messages (one bad message blocking a queue) and whether consumers are idempotent before replaying anything.</li>
+</ul>
+<div class="example-box">
+<p><strong>Incident walkthrough.</strong> Traders report fills not appearing in the blotter, but orders are executing (the exchange confirms). Correlation IDs show fills published to Kafka but the booking service's consumer lag is climbing — it stopped consuming 20 minutes ago. Logs show it can't reach the database: a firewall rule expired. Fix the rule, the consumer drains the backlog, blotters backfill. The frontend was innocent; the database was the root cause; the middleware queue was the symptom that pointed at both.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>What production support watches</h3>
+<ul class="clean-list">
+<li><strong>Queue depth dashboards</strong> — the single best early-warning signal in a message-driven architecture; alert on growth rate, not just absolute depth.</li>
+<li><strong>End-to-end latency</strong> — per-hop timings expose which tier degrades first; averages hide it, so watch p95/p99.</li>
+<li><strong>Consumer lag</strong> — Kafka consumer lag climbing while the service looks "up" is the classic silent failure.</li>
+<li><strong>Contract changes</strong> — a backend that changes its message format without telling the middleware team breaks every consumer at once; schema registries exist to prevent exactly this.</li>
+</ul>
+<div class="tag-list" style="margin-top:16px">
+<span class="tag">3-tier</span><span class="tag">Middleware</span><span class="tag">Kafka</span><span class="tag">IBM MQ</span><span class="tag">Correlation ID</span><span class="tag">Consumer lag</span>
+</div>
+</div>
+
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+</body>
+</html>

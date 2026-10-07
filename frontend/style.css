@@ -2074,3 +2074,19 @@ textarea:focus-visible {
     }
 
 }
+
+/* Visitor counter + site credit (subtle, muted) */
+.visitor-count {
+    color: var(--text-muted, #94a3b8);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+}
+
+.site-credit {
+    display: block;
+    margin-top: 6px;
+    color: var(--text-muted, #94a3b8);
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    opacity: 0.85;
+}

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Jenkins for production support: declarative pipelines, agents, Blue Ocean stages, reading build logs and failed-deployment triage.">
+    <title>Jenkins | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .back-link { display:inline-block; margin-bottom:30px; color:#7dd3fc; text-decoration:none; }
+        .back-link:hover { text-decoration:underline; }
+        .tutorial-body p { color:#cbd5e1; line-height:1.75; margin-bottom:16px; }
+        .tutorial-body ul { color:#cbd5e1; padding-left:22px; margin-bottom:16px; }
+        .tutorial-body li { line-height:1.65; margin-bottom:8px; }
+        .tutorial-body h3 { color:#f8fafc; margin:28px 0 12px; font-size:1.3rem; }
+        .tutorial-body h4 { color:#7dd3fc; margin:20px 0 10px; font-size:1.05rem; }
+        .example-box { margin:18px 0; padding:18px 20px; border-left:3px solid #7dd3fc; background:rgba(30,41,59,.5); border-radius:10px; }
+        .example-box p { margin-bottom:8px; }
+        .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
+        pre.formula { padding:14px 16px; background:rgba(15,23,42,.7); border-radius:10px; overflow-x:auto; line-height:1.6; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container tutorial-body" style="padding:120px 0 80px">
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+
+<div class="section-heading">
+<p class="eyebrow">Tutorials • CI/CD</p>
+<h2>Jenkins</h2>
+<p>The build server behind most bank deployments: pipelines, agents, logs — and how support triages a failed release at 2 AM.</p>
+</div>
+
+<div class="resume-card">
+<h3>How Jenkins is organized</h3>
+<p>Jenkins has a <em>controller</em> (the web UI, job definitions, scheduling) and <em>agents</em> (workers that actually run builds). Work is defined in <em>pipelines</em> — a <span class="formula">Jenkinsfile</span> checked into the repo — split into <em>stages</em> (Checkout → Build → Test → Deploy) made of <em>steps</em>. Blue Ocean renders the pipeline as a visual flow where each stage is green, red, or still running.</p>
+<div class="example-box">
+<pre class="formula">pipeline {
+  agent { label 'linux-build' }
+  stages {
+    stage('Checkout') { steps { checkout scm } }
+    stage('Build')    { steps { sh 'mvn -q package -DskipTests' } }
+    stage('Test')     { steps { sh 'mvn test' } }
+    stage('Deploy')   { steps { sh './deploy.sh staging' } }
+  }
+}</pre>
+<p>Declarative pipelines like this are the bank standard: the whole release process is code, reviewed and versioned like everything else.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Reading a failed build</h3>
+<p>When a deployment fails, open the build → <em>Console Output</em>. Read bottom-up: the last 50 lines hold the actual error; everything above is context. The pattern that matters:</p>
+<ul class="clean-list">
+<li><strong>Compilation/test failure</strong> — red in the Test stage; the code is broken, page the dev team, not support.</li>
+<li><strong>Agent offline</strong> — build never starts, "waiting for next available executor"; the agent node is down or disconnected.</li>
+<li><strong>Timeout in Deploy</strong> — the deploy script hung; check whether it partially deployed before killing it, or you get half a release.</li>
+<li><strong>Credential errors</strong> — "invalid credentials" or 401 pushing artifacts; the service account password rotated and nobody updated Jenkins.</li>
+</ul>
+</div>
+
+<div class="resume-card">
+<h3>Support actions: restart, abort, roll back</h3>
+<p><em>Restart from stage</em> re-runs only the failed stage — use it when the failure was environmental (agent hiccup, flaky test), not when the code is broken. <em>Abort</em> stops a hung build, but first verify what it already did: an aborted deploy mid-copy leaves inconsistent binaries. For rollbacks, banks keep the previous artifact — redeploy the last green build's artifact rather than "reverting code and rebuilding," which is slower and riskier.</p>
+<div class="example-box">
+<p><strong>Incident walkthrough.</strong> 2:10 AM: the pricing-engine deploy goes red at the Deploy stage — "connection refused" to the target host. Console shows the SSH step failing. Check: the target server is up (ping works), but the deploy user can't log in — its key was rotated at midnight. Fix: update the Jenkins credential, restart from the Deploy stage, confirm the health check turns green. Total downtime 25 minutes, and the root cause goes in the incident report, not just "restarted Jenkins."</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>What production support watches</h3>
+<ul class="clean-list">
+<li><strong>Credential hygiene</strong> — rotated passwords and expired certificates are the #1 cause of "Jenkins is broken" tickets; the fix is in the credentials store, not the pipeline.</li>
+<li><strong>Agent capacity</strong> — a queue of builds with no free executors means agents are down or undersized; releases pile up behind each other.</li>
+<li><strong>Artifact traceability</strong> — every production deploy must map to a build number and a git commit; if it doesn't, the audit trail is broken.</li>
+<li><strong>Never "just rebuild"</strong> — rebuilding masks flaky failures; read the console output first, then decide whether a restart is safe.</li>
+</ul>
+<div class="tag-list" style="margin-top:16px">
+<span class="tag">Pipeline</span><span class="tag">Jenkinsfile</span><span class="tag">Agents</span><span class="tag">Blue Ocean</span><span class="tag">Console output</span><span class="tag">Rollback</span>
+</div>
+</div>
+
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+</body>
+</html>

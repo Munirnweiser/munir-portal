@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Git for production support: branching, merging, rebasing, conflict resolution, cherry-pick, stash, reflog recovery and the hotfix workflow.">
+    <title>Git Essentials | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .back-link { display:inline-block; margin-bottom:30px; color:#7dd3fc; text-decoration:none; }
+        .back-link:hover { text-decoration:underline; }
+        .tutorial-body p { color:#cbd5e1; line-height:1.75; margin-bottom:16px; }
+        .tutorial-body ul { color:#cbd5e1; padding-left:22px; margin-bottom:16px; }
+        .tutorial-body li { line-height:1.65; margin-bottom:8px; }
+        .tutorial-body h3 { color:#f8fafc; margin:28px 0 12px; font-size:1.3rem; }
+        .tutorial-body h4 { color:#7dd3fc; margin:20px 0 10px; font-size:1.05rem; }
+        .example-box { margin:18px 0; padding:18px 20px; border-left:3px solid #7dd3fc; background:rgba(30,41,59,.5); border-radius:10px; }
+        .example-box p { margin-bottom:8px; }
+        .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
+        pre.formula { padding:14px 16px; background:rgba(15,23,42,.7); border-radius:10px; overflow-x:auto; line-height:1.6; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container tutorial-body" style="padding:120px 0 80px">
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+
+<div class="section-heading">
+<p class="eyebrow">Tutorials • Version Control</p>
+<h2>Git Essentials</h2>
+<p>The commands support actually uses: branching, hotfixes, conflict resolution, and recovering from mistakes without panic.</p>
+</div>
+
+<div class="resume-card">
+<h3>The model in one minute</h3>
+<p>Git tracks snapshots, not files. Work happens on <em>branches</em> — movable pointers to a commit. <span class="formula">main</span> is the production line; feature branches diverge and come back via <em>merge</em> (keeps history) or <em>rebase</em> (rewrites history into a straight line). The golden rule: never rebase a branch someone else is using — rewriting shared history breaks everyone's clone.</p>
+<div class="example-box">
+<pre class="formula">git checkout -b hotfix/fix-margin-calc   # branch from main
+# ... edit, test ...
+git add -A && git commit -m "Fix margin calc for cleared swaps"
+git push -u origin hotfix/fix-margin-calc  # open the PR / merge request</pre>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Merge conflicts: resolve, don't fear</h3>
+<p>A conflict means two branches edited the same lines. Git marks the file with <span class="formula">&lt;&lt;&lt;&lt;&lt;&lt;&lt;</span> / <span class="formula">=======</span> / <span class="formula">&gt;&gt;&gt;&gt;&gt;&gt;&gt;</span> sections — your change on top, theirs below. Edit the file to the correct final state, remove the markers, then <span class="formula">git add</span> the file and <span class="formula">git commit</span> to finish the merge. The dangerous move is picking "mine" or "theirs" wholesale without reading both sides; in a pricing config, that silently ships the wrong parameters.</p>
+</div>
+
+<div class="resume-card">
+<h3>The recovery toolkit</h3>
+<ul class="clean-list">
+<li><strong>Stash</strong> — <span class="formula">git stash</span> shelves uncommitted work so you can switch branches for an urgent fix; <span class="formula">git stash pop</span> brings it back.</li>
+<li><strong>Cherry-pick</strong> — <span class="formula">git cherry-pick &lt;commit&gt;</span> copies one commit onto your branch; the standard way to port a fix from main to a release branch.</li>
+<li><strong>Reflog</strong> — <span class="formula">git reflog</span> shows every move HEAD ever made, including "deleted" branches and bad resets. Almost nothing is truly lost: find the commit hash and <span class="formula">git checkout -b recovery &lt;hash&gt;</span>.</li>
+<li><strong>.gitignore</strong> — never commit secrets, logs, or build output; one leaked credential in history means rotating it everywhere, since history is forever.</li>
+</ul>
+<div class="example-box">
+<p><strong>Hotfix workflow.</strong> Production pricing is wrong and the fix is one line. Branch <span class="formula">hotfix/</span> from the production tag (not from main, which may contain unreleased work), commit the fix, run the checks, merge to main <em>and</em> tag the release. The release tag is what the deploy pipeline picks up — if the fix isn't tagged, it isn't deployed, no matter how good the commit is.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>What production support watches</h3>
+<ul class="clean-list">
+<li><strong>What exactly is deployed</strong> — <span class="formula">git log --oneline -5</span> and <span class="formula">git describe --tags</span> on the release repo answer "which commit is running in prod?" in seconds.</li>
+<li><strong>Blame before assumptions</strong> — <span class="formula">git blame</span> shows who last touched a broken line and when; check the commit message before paging anyone.</li>
+<li><strong>Hooks</strong> — pre-commit hooks run lint and secret scans; if a deploy fails "mysteriously," check whether a hook silently changed or blocked something.</li>
+<li><strong>Force-push is a red flag</strong> — <span class="formula">git push --force</span> on a shared branch rewrites teammates' history; in banks it is usually blocked by policy for good reason.</li>
+</ul>
+<div class="tag-list" style="margin-top:16px">
+<span class="tag">Branch</span><span class="tag">Merge</span><span class="tag">Rebase</span><span class="tag">Cherry-pick</span><span class="tag">Stash</span><span class="tag">Reflog</span><span class="tag">Hotfix</span>
+</div>
+</div>
+
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+</body>
+</html>

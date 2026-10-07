@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Risk measures for production support: VaR (parametric and historical), Stressed VaR, stress testing, Expected Shortfall and backtesting, with worked numbers.">
+    <title>Risk Measures: VaR &amp; Stress | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .back-link { display:inline-block; margin-bottom:30px; color:#7dd3fc; text-decoration:none; }
+        .back-link:hover { text-decoration:underline; }
+        .tutorial-body p { color:#cbd5e1; line-height:1.75; margin-bottom:16px; }
+        .tutorial-body ul { color:#cbd5e1; padding-left:22px; margin-bottom:16px; }
+        .tutorial-body li { line-height:1.65; margin-bottom:8px; }
+        .tutorial-body h3 { color:#f8fafc; margin:28px 0 12px; font-size:1.3rem; }
+        .tutorial-body h4 { color:#7dd3fc; margin:20px 0 10px; font-size:1.05rem; }
+        .example-box { margin:18px 0; padding:18px 20px; border-left:3px solid #7dd3fc; background:rgba(30,41,59,.5); border-radius:10px; }
+        .example-box p { margin-bottom:8px; }
+        .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container tutorial-body" style="padding:120px 0 80px">
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+
+<div class="section-heading">
+<p class="eyebrow">Tutorials • Risk</p>
+<h2>Risk Measures: VaR &amp; Stress</h2>
+<p>VaR, Stressed VaR, stress tests and Expected Shortfall — the numbers risk engines produce every night, and what support does when they look wrong.</p>
+</div>
+
+<div class="resume-card">
+<h3>Parametric VaR: the formula approach</h3>
+<p><em>Value at Risk</em> answers: "what is the most we can lose over a horizon, with a given confidence?" Parametric VaR assumes returns are normally distributed:</p>
+<p class="formula">VaR = z × σ × √t × portfolio value</p>
+<p>where z is 1.65 for 95% confidence (2.33 for 99%), σ is daily volatility, and t is the horizon in days.</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> A $10M equity book with 1.2% daily volatility. 1-day 95% VaR = 1.65 × 0.012 × $10M = <strong>$198,000</strong>. For a 10-day horizon (the regulatory standard), scale by √10: $198,000 × 3.162 ≈ <strong>$626,000</strong>.</p>
+<p>Interpretation: on 95 out of 100 days, the loss should not exceed $198,000. On the other 5 days, it can — and VaR says nothing about how bad those days get.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Historical VaR: let the data speak</h3>
+<p>Historical VaR makes no normality assumption. Take the last 250 daily P&amp;L observations, sort worst to best, and read off the loss at the 5% tail — the 13th worst day (5% of 250 = 12.5). That loss is the 1-day 95% historical VaR.</p>
+<p>It captures fat tails and real market behavior, but it is only as good as its window: a calm year produces a VaR that understates risk the moment volatility returns. That weakness is exactly why regulators added Stressed VaR.</p>
+</div>
+
+<div class="resume-card">
+<h3>Stressed VaR (SVaR): VaR in a crisis</h3>
+<p>SVaR runs the same VaR calculation but calibrated on a continuous 12-month period of significant market stress (2008, March 2020). Because stressed volatility is far higher, SVaR is typically 2–4× normal VaR — it answers "what would our risk look like if 2008 happened to today's book?"</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> The same $10M book: normal 10-day 99% VaR = $450,000. Recalibrated on a 2008 stress window, daily vol jumps to 3.8%: SVaR = 2.33 × 0.038 × √10 × $10M ≈ <strong>$2.8M</strong>. Capital requirements are driven by the stressed number, not the calm one.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Stress testing and scenario analysis</h3>
+<p>Stress tests skip probability entirely and ask "what if?": apply a defined shock to every position and revalue. Typical scenarios: +200bp parallel rate shift, −30% global equities, oil +50%, credit spreads ×3. Unlike VaR, a stress test shows the actual dollar loss under each named scenario — no confidence level, no distribution, just the number.</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> A bond portfolio with $1.2M DV01 (dollar loss per 1bp rate rise) under a +200bp shock loses roughly 200 × $1.2M = <strong>$240M</strong> before convexity. Risk committees live on these tables; when the overnight stress run fails, the desk has no official numbers at the morning meeting.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Expected Shortfall and backtesting</h3>
+<p><em>Expected Shortfall</em> (ES) fixes VaR's blind spot: it is the average loss on the days VaR is breached — the tail beyond the line. <em>Backtesting</em> checks the model against reality: count how many times the actual loss exceeded 1-day 99% VaR over 250 days. Regulators use traffic lights: 0–4 exceptions = green, 5–9 = yellow (capital add-on), 10+ = red (model rejected).</p>
+</div>
+
+<div class="resume-card">
+<h3>What production support watches</h3>
+<ul class="clean-list">
+<li><strong>Risk-feed breaks</strong> — VaR engines consume positions, market data and curves; a missing feed means stale or missing risk numbers, and traders notice before risk managers do.</li>
+<li><strong>Limit breaches</strong> — when VaR exceeds its limit, the alert must fire and reach the desk; a silent breach is a support incident with regulatory overtones.</li>
+<li><strong>Overnight batch failures</strong> — SVaR and stress runs are heavy jobs; a failed run at 3 AM needs triage before the 7 AM risk meeting, not after.</li>
+<li><strong>Model vs market divergence</strong> — repeated backtesting exceptions mean the model is wrong, not the market; escalate to quantitative risk, don't just restart the job.</li>
+</ul>
+<div class="tag-list" style="margin-top:16px">
+<span class="tag">VaR</span><span class="tag">SVaR</span><span class="tag">Stress testing</span><span class="tag">Expected Shortfall</span><span class="tag">Backtesting</span><span class="tag">DV01</span>
+</div>
+</div>
+
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+</body>
+</html>

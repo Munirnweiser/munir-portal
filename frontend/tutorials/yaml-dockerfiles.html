@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="YAML gotchas and Dockerfile best practices for production support: indentation traps, layer caching, multi-stage builds and running as non-root.">
+    <title>YAML &amp; Dockerfiles | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .back-link { display:inline-block; margin-bottom:30px; color:#7dd3fc; text-decoration:none; }
+        .back-link:hover { text-decoration:underline; }
+        .tutorial-body p { color:#cbd5e1; line-height:1.75; margin-bottom:16px; }
+        .tutorial-body ul { color:#cbd5e1; padding-left:22px; margin-bottom:16px; }
+        .tutorial-body li { line-height:1.65; margin-bottom:8px; }
+        .tutorial-body h3 { color:#f8fafc; margin:28px 0 12px; font-size:1.3rem; }
+        .tutorial-body h4 { color:#7dd3fc; margin:20px 0 10px; font-size:1.05rem; }
+        .example-box { margin:18px 0; padding:18px 20px; border-left:3px solid #7dd3fc; background:rgba(30,41,59,.5); border-radius:10px; }
+        .example-box p { margin-bottom:8px; }
+        .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
+        pre.formula { padding:14px 16px; background:rgba(15,23,42,.7); border-radius:10px; overflow-x:auto; line-height:1.6; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container tutorial-body" style="padding:120px 0 80px">
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+
+<div class="section-heading">
+<p class="eyebrow">Tutorials • Containers</p>
+<h2>YAML &amp; Dockerfiles</h2>
+<p>Two files that break deployments silently: YAML's indentation traps and Dockerfiles that build slow, fat, insecure images.</p>
+</div>
+
+<div class="resume-card">
+<h3>YAML gotchas that page support</h3>
+<p>YAML is whitespace-significant: two spaces per level, never tabs. The classic traps:</p>
+<ul class="clean-list">
+<li><strong>Tabs</strong> — a single tab character is a parse error; editors that "helpfully" insert tabs corrupt Kubernetes manifests and Ansible playbooks.</li>
+<li><strong>Unquoted special values</strong> — <span class="formula">version: 1.10</span> parses as the float 1.1; <span class="formula">on</span>/<span class="formula">yes</span> parse as boolean true. Quote them: <span class="formula">"1.10"</span>.</li>
+<li><strong>Anchors and aliases</strong> — <span class="formula">&amp;base</span> defines a reusable block, <span class="formula">*base</span> references it; great for repeated env vars, dangerous when someone edits the anchor not realizing five services share it.</li>
+</ul>
+<div class="example-box">
+<pre class="formula"># BROKEN: 'ports' is a sibling of 'env' here, not a child of the container
+env:
+  - name: DB_HOST
+    value: "db01"
+ports:                      # wrong indent: belongs to the pod spec level
+  - containerPort: 8080
+
+# FIXED: ports indented under the container
+        env:
+          - name: DB_HOST
+            value: "db01"
+        ports:
+          - containerPort: 8080</pre>
+<p>When a manifest "applies fine but the app misbehaves," re-read the indentation before blaming the application.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Dockerfile best practices</h3>
+<p>Each instruction creates a cached <em>layer</em>. Order instructions from least-frequently-changed to most: dependencies first, application code last — so a code change rebuilds only the final layers instead of reinstalling the world.</p>
+<div class="example-box">
+<pre class="formula"># GOOD: deps cached, code last, non-root user, multi-stage
+FROM maven:3.9 AS build
+WORKDIR /app
+COPY pom.xml .
+RUN mvn -q dependency:go-offline
+COPY src ./src
+RUN mvn -q package -DskipTests
+
+FROM eclipse-temurin:17-jre
+RUN useradd -m appuser
+USER appuser
+COPY --from=build /app/target/trading-app.jar /app.jar
+ENTRYPOINT ["java","-jar","/app.jar"]</pre>
+<p>Three wins here: <strong>multi-stage</strong> keeps build tools out of the runtime image (smaller, fewer CVEs); <strong>layer ordering</strong> makes rebuilds take seconds; <strong>non-root USER</strong> limits what a container escape can do.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>HEALTHCHECK: let the orchestrator know you're alive</h3>
+<p>A <span class="formula">HEALTHCHECK</span> instruction tells Docker how to probe the container — and Kubernetes and load balancers rely on the same idea with liveness/readiness probes. Without one, the orchestrator considers a container healthy as long as its main process hasn't exited — even if the application inside is wedged and rejecting every request.</p>
+<div class="example-box">
+<pre class="formula">HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+  CMD curl -f http://localhost:8080/health || exit 1</pre>
+<p>Support angle: when a container is "running but the app is down," the first question is whether a health check exists and what it actually tests. A health check that only verifies the process exists will stay green through most application-level failures — make it hit a real endpoint that exercises the critical path.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>What production support watches</h3>
+<ul class="clean-list">
+<li><strong>Image pull failures</strong> — ImagePullBackOff usually means a wrong tag, a deleted image, or expired registry credentials; the Dockerfile is fine, the reference is not.</li>
+<li><strong>Tag discipline</strong> — <span class="formula">:latest</span> is not a version; pin digests or semantic tags so rollbacks restore the exact bytes.</li>
+<li><strong>Build context bloat</strong> — a missing <span class="formula">.dockerignore</span> sends gigabytes (including <span class="formula">.git</span>) to the daemon; slow builds are often a context problem, not a Dockerfile problem.</li>
+<li><strong>Secrets in layers</strong> — a secret copied in one layer and "deleted" in a later one is still in the image history; use build secrets or runtime injection instead.</li>
+</ul>
+<div class="tag-list" style="margin-top:16px">
+<span class="tag">YAML</span><span class="tag">Dockerfile</span><span class="tag">Layer caching</span><span class="tag">Multi-stage</span><span class="tag">Non-root</span><span class="tag">.dockerignore</span>
+</div>
+</div>
+
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+</body>
+</html>

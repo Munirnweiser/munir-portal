@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Ansible for production support: playbooks, inventory, ad-hoc commands, idempotency, failed-task triage and vault basics.">
+    <title>Ansible | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .back-link { display:inline-block; margin-bottom:30px; color:#7dd3fc; text-decoration:none; }
+        .back-link:hover { text-decoration:underline; }
+        .tutorial-body p { color:#cbd5e1; line-height:1.75; margin-bottom:16px; }
+        .tutorial-body ul { color:#cbd5e1; padding-left:22px; margin-bottom:16px; }
+        .tutorial-body li { line-height:1.65; margin-bottom:8px; }
+        .tutorial-body h3 { color:#f8fafc; margin:28px 0 12px; font-size:1.3rem; }
+        .tutorial-body h4 { color:#7dd3fc; margin:20px 0 10px; font-size:1.05rem; }
+        .example-box { margin:18px 0; padding:18px 20px; border-left:3px solid #7dd3fc; background:rgba(30,41,59,.5); border-radius:10px; }
+        .example-box p { margin-bottom:8px; }
+        .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
+        pre.formula { padding:14px 16px; background:rgba(15,23,42,.7); border-radius:10px; overflow-x:auto; line-height:1.6; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container tutorial-body" style="padding:120px 0 80px">
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+
+<div class="section-heading">
+<p class="eyebrow">Tutorials • Automation</p>
+<h2>Ansible</h2>
+<p>Agentless automation for support: run one command on fifty servers, and know exactly what a failed playbook did and didn't do.</p>
+</div>
+
+<div class="resume-card">
+<h3>Playbooks, inventory and ad-hoc commands</h3>
+<p>Ansible connects over SSH — no agent to install. <em>Inventory</em> lists the target hosts (grouped: <span class="formula">[pricing]</span>, <span class="formula">[databases]</span>); <em>playbooks</em> are YAML files declaring the desired state in <em>tasks</em>; <em>ad-hoc commands</em> run a single module without a playbook.</p>
+<div class="example-box">
+<pre class="formula"># ad-hoc: check disk on every app server, in parallel
+ansible appservers -m shell -a "df -h /opt | tail -1"
+
+# playbook: ensure the logrotate config exists everywhere
+- hosts: appservers
+  tasks:
+    - name: Install logrotate config
+      copy:
+        src: files/app-logrotate
+        dest: /etc/logrotate.d/trading-app</pre>
+<p>The ad-hoc form is the support daily driver: one command, every host, no playbook ceremony.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Idempotency: safe to re-run</h3>
+<p>Good Ansible tasks are <em>idempotent</em> — running them twice changes nothing the second time. Modules like <span class="formula">copy</span>, <span class="formula">service</span> and <span class="formula">user</span> check state first; raw <span class="formula">shell</span>/<span class="formula">command</span> tasks do not. That distinction decides whether re-running a half-failed playbook is safe: re-running idempotent tasks converges; re-running raw shell tasks can double-apply — two restarts, two config appends, two database migrations.</p>
+</div>
+
+<div class="resume-card">
+<h3>Triaging a failed playbook</h3>
+<p>Ansible stops at the first failed task by default and reports per host: <span class="formula">ok</span>, <span class="formula">changed</span>, <span class="formula">failed</span>, <span class="formula">unreachable</span>. Read the recap at the bottom first — it tells you which hosts failed and which never got that far.</p>
+<ul class="clean-list">
+<li><strong>unreachable</strong> — SSH problem (host down, key changed, firewall); the playbook never ran there.</li>
+<li><strong>failed on one task</strong> — everything before it applied, everything after it didn't; the fleet is now in a mixed state, so don't just re-run blindly.</li>
+<li><strong>Use <span class="formula">--check</span> (dry run)</strong> to preview what would change, and <span class="formula">--limit</span> to re-run against one host before the whole fleet.</li>
+</ul>
+<div class="example-box">
+<p><strong>Incident walkthrough.</strong> A playbook restarts the market-data feed on 12 servers; 9 succeed, 3 fail at the "start service" task — port already in use. The old process didn't die on those 3. Fix: kill the stale process on the 3 hosts, re-run with <span class="formula">--limit</span> on just those hosts, verify all 12 healthy. The mixed state was the real problem, not the restart itself.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>What production support watches</h3>
+<ul class="clean-list">
+<li><strong>Vault for secrets</strong> — Ansible Vault encrypts passwords and keys in playbooks; plaintext secrets in a repo are an incident waiting for an audit.</li>
+<li><strong>What changed vs what ran</strong> — the recap's <span class="formula">changed=N</span> count is your audit trail of what the run actually modified.</li>
+<li><strong>Partial application</strong> — a playbook that dies halfway leaves hosts inconsistent; always verify fleet-wide state after a failure, not just the failed host.</li>
+<li><strong>Privilege escalation</strong> — tasks needing root use <span class="formula">become: yes</span>; a task failing with "permission denied" usually just needs it added, not a new sudoers rule.</li>
+</ul>
+<div class="tag-list" style="margin-top:16px">
+<span class="tag">Playbook</span><span class="tag">Inventory</span><span class="tag">Ad-hoc</span><span class="tag">Idempotency</span><span class="tag">Vault</span><span class="tag">--check</span>
+</div>
+</div>
+
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+</body>
+</html>

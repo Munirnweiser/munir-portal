@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Terraform for production support: resources, state, plans, state locks, drift detection and safe rollback reading.">
+    <title>Terraform | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .back-link { display:inline-block; margin-bottom:30px; color:#7dd3fc; text-decoration:none; }
+        .back-link:hover { text-decoration:underline; }
+        .tutorial-body p { color:#cbd5e1; line-height:1.75; margin-bottom:16px; }
+        .tutorial-body ul { color:#cbd5e1; padding-left:22px; margin-bottom:16px; }
+        .tutorial-body li { line-height:1.65; margin-bottom:8px; }
+        .tutorial-body h3 { color:#f8fafc; margin:28px 0 12px; font-size:1.3rem; }
+        .tutorial-body h4 { color:#7dd3fc; margin:20px 0 10px; font-size:1.05rem; }
+        .example-box { margin:18px 0; padding:18px 20px; border-left:3px solid #7dd3fc; background:rgba(30,41,59,.5); border-radius:10px; }
+        .example-box p { margin-bottom:8px; }
+        .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
+        pre.formula { padding:14px 16px; background:rgba(15,23,42,.7); border-radius:10px; overflow-x:auto; line-height:1.6; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container tutorial-body" style="padding:120px 0 80px">
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+
+<div class="section-heading">
+<p class="eyebrow">Tutorials • Infrastructure as Code</p>
+<h2>Terraform</h2>
+<p>Infrastructure as code for support: reading plans, understanding state, and untangling the two classic failures — locks and drift.</p>
+</div>
+
+<div class="resume-card">
+<h3>Resources, state and plans</h3>
+<p>Terraform manages <em>resources</em> (VMs, databases, networks) declared in <span class="formula">.tf</span> files. The <em>state file</em> records what Terraform believes exists; <span class="formula">terraform plan</span> compares desired configuration against state and reality, then prints the diff; <span class="formula">terraform apply</span> executes it.</p>
+<div class="example-box">
+<pre class="formula">$ terraform plan
+  # aws_instance.pricing_engine will be updated in-place
+  ~ instance_type = "m5.xlarge" -&gt; "m5.2xlarge"
+  # aws_db_instance.riskdb will be replaced
+  -/+ engine_version = "14.5" -&gt; "15.2" (forces replacement)
+
+Plan: 1 to add, 1 to change, 1 to destroy.</pre>
+<p>Learn to read this output like a release note: <span class="formula">+</span> creates, <span class="formula">-</span> destroys, <span class="formula">~/</span> updates in place, <span class="formula">-/+</span> destroys and recreates. A <span class="formula">-/+</span> on a database means downtime and data migration — that line deserves a change ticket, not a casual apply.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>State locks: the pipeline is stuck</h3>
+<p>State is shared, so Terraform <em>locks</em> it during runs. If a run crashes mid-apply, the lock can stick and every later run fails with "Error acquiring the state lock." First check whether a run is genuinely still active; if the holder is dead, <span class="formula">terraform force-unlock &lt;lock-id&gt;</span> releases it. The support discipline: never force-unlock while another apply might be running — two writers corrupt state, and corrupted state means Terraform no longer knows what exists.</p>
+</div>
+
+<div class="resume-card">
+<h3>Drift: reality diverged from code</h3>
+<p><em>Drift</em> is when someone changes infrastructure by hand — a bigger VM sized up in the console during an incident, a firewall rule added for debugging. The next plan suddenly wants to "fix" those manual changes back, which can undo the very thing keeping production alive.</p>
+<div class="example-box">
+<p><strong>Incident walkthrough.</strong> During a market-data outage, an engineer manually doubled the feed handler's instance size in the cloud console. A week later, a routine plan proposes shrinking it back — applying it would re-create the outage. The correct sequence: import the reality into the configuration (or update the <span class="formula">.tf</span> to match), then plan clean. Rule of thumb: the console is for reading during incidents; all changes go through code afterwards.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Import: bringing hand-built infrastructure under management</h3>
+<p>Sometimes infrastructure already exists — built by hand before Terraform was adopted. <span class="formula">terraform import</span> maps an existing real-world resource to a resource block, after which Terraform manages it like any other. The workflow: write the resource block to match reality as closely as you can, run <span class="formula">terraform import aws_instance.pricing_engine i-0abcd1234</span>, then run <span class="formula">terraform plan</span> — it should show no changes. If the plan wants to modify things, adjust the configuration until it is clean; only then is the import safe. Support relevance: after an incident where someone built emergency infrastructure by hand, importing it (rather than leaving it unmanaged) prevents the next plan from trying to delete it.</p>
+</div>
+
+<div class="resume-card">
+<h3>What production support watches</h3>
+<ul class="clean-list">
+<li><strong>Plan before apply, always</strong> — a plan with unexpected destroys is a stopped deployment, not a puzzle to solve by applying and hoping.</li>
+<li><strong>State backend health</strong> — state lives in remote storage (S3, Terraform Cloud); if that storage is unreachable, no infrastructure change can run at all.</li>
+<li><strong>Rollback = previous known-good apply</strong> — keep prior plans; rolling back means applying the last good configuration, and knowing which commit that was.</li>
+<li><strong>Secrets stay out</strong> — state files can contain secrets in plaintext; they must be encrypted at rest and never committed to git.</li>
+</ul>
+<div class="tag-list" style="margin-top:16px">
+<span class="tag">Plan</span><span class="tag">Apply</span><span class="tag">State</span><span class="tag">State lock</span><span class="tag">Drift</span><span class="tag">IaC</span>
+</div>
+</div>
+
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+</body>
+</html>

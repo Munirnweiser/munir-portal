@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="FIX Tag Memory Match — flip the cards and pair every FIX tag number with its field name.">
+    <title>FIX Tag Match | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        /* Page-specific layout: memory match board */
+        .match-stats {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .match-stat {
+            flex: 1 1 120px;
+            text-align: center;
+            padding: 12px;
+            border: 1px solid rgba(125, 211, 252, 0.18);
+            border-radius: 12px;
+            background: rgba(15, 23, 42, 0.55);
+        }
+        .match-stat strong {
+            display: block;
+            font-size: 1.4rem;
+            color: #7dd3fc;
+        }
+        .match-stat span {
+            font-size: 0.72rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #94a3b8;
+        }
+        .match-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+        @media (max-width: 560px) {
+            .match-grid { grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        }
+        .match-card {
+            aspect-ratio: 3 / 4;
+            perspective: 600px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+        }
+        .match-card:disabled { cursor: default; }
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            transition: transform 0.45s ease;
+        }
+        .match-card.flipped .card-inner { transform: rotateY(180deg); }
+        .card-face {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 8px;
+            border-radius: 12px;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            font-weight: 700;
+            overflow: hidden;
+        }
+        .card-front {
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.16), rgba(167, 139, 250, 0.16));
+            border: 1px solid rgba(125, 211, 252, 0.35);
+            color: #7dd3fc;
+            font-size: 1.6rem;
+        }
+        .card-back {
+            transform: rotateY(180deg);
+            background: rgba(15, 23, 42, 0.92);
+            border: 1px solid rgba(125, 211, 252, 0.35);
+            color: #e8f0ff;
+            font-size: 0.82rem;
+            word-break: break-word;
+        }
+        .card-back.tag-number { font-size: 1.5rem; color: #7dd3fc; }
+        .match-card.matched .card-back {
+            border-color: #34d399;
+            background: rgba(52, 211, 153, 0.12);
+        }
+        .match-card.matched { cursor: default; }
+        .match-result { text-align: center; padding: 12px 0; }
+        .match-result .rating { font-size: 2rem; margin: 10px 0; }
+        .result-actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 18px;
+        }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main>
+<section class="section">
+<div class="container" style="max-width: 820px;">
+
+    <div class="section-heading">
+        <p class="eyebrow">Games • FIX Protocol</p>
+        <h2>FIX Tag Match</h2>
+        <p>Sixteen cards, eight pairs. Match every FIX tag number with its field name — the tags you will see on every trading floor.</p>
+    </div>
+
+    <!-- Start screen -->
+    <div class="resume-card" id="start-screen">
+        <h3>How it works</h3>
+        <ul class="clean-list">
+            <li><strong>8 pairs</strong> — each pair is a FIX tag number and its field name (35 ↔ MsgType, 49 ↔ SenderCompID, …).</li>
+            <li>Flip two cards. A tag matches its <strong>name</strong>, not another number.</li>
+            <li>The clock starts on your first flip. Fewer moves, better rank.</li>
+        </ul>
+        <div class="result-actions">
+            <button type="button" class="btn" id="start-btn">Start game</button>
+        </div>
+    </div>
+
+    <!-- Game screen -->
+    <div id="game-screen" style="display:none;">
+        <div class="match-stats">
+            <div class="match-stat"><strong id="stat-moves">0</strong><span>Moves</span></div>
+            <div class="match-stat"><strong id="stat-time">0:00</strong><span>Time</span></div>
+            <div class="match-stat"><strong id="stat-pairs">0/8</strong><span>Pairs</span></div>
+        </div>
+        <div class="match-grid" id="board" role="grid" aria-label="Memory match board"></div>
+        <div class="result-actions">
+            <button type="button" class="btn btn-secondary" id="restart-btn">Restart</button>
+        </div>
+    </div>
+
+    <!-- Win screen -->
+    <div class="resume-card match-result" id="win-screen" style="display:none;">
+        <p class="eyebrow">Board cleared</p>
+        <h3 id="win-title">Well played</h3>
+        <div class="rating" id="win-rating">🏆</div>
+        <p id="win-summary"></p>
+        <div class="result-actions">
+            <button type="button" class="btn" id="again-btn">Play again</button>
+            <a href="../index.html#games" class="btn btn-secondary">More games</a>
+        </div>
+    </div>
+
+</div>
+</section>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+
+<script src="../app.js"></script>
+<script>
+(function () {
+    "use strict";
+
+    var PAIRS = [
+        { tag: "35",  name: "MsgType" },
+        { tag: "49",  name: "SenderCompID" },
+        { tag: "56",  name: "TargetCompID" },
+        { tag: "34",  name: "MsgSeqNum" },
+        { tag: "52",  name: "SendingTime" },
+        { tag: "11",  name: "ClOrdID" },
+        { tag: "39",  name: "OrdStatus" },
+        { tag: "150", name: "ExecType" }
+    ];
+
+    var board = document.getElementById("board");
+    var startScreen = document.getElementById("start-screen");
+    var gameScreen = document.getElementById("game-screen");
+    var winScreen = document.getElementById("win-screen");
+    var movesEl = document.getElementById("stat-moves");
+    var timeEl = document.getElementById("stat-time");
+    var pairsEl = document.getElementById("stat-pairs");
+
+    var deck = [];
+    var firstCard = null;
+    var lockBoard = false;
+    var moves = 0;
+    var matchedPairs = 0;
+    var seconds = 0;
+    var timerId = null;
+    var timerStarted = false;
+
+    function shuffle(arr) {
+        for (var i = arr.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var tmp = arr[i];
+            arr[i] = arr[j];
+            arr[j] = tmp;
+        }
+        return arr;
+    }
+
+    function formatTime(s) {
+        var m = Math.floor(s / 60);
+        var r = s % 60;
+        return m + ":" + (r < 10 ? "0" : "") + r;
+    }
+
+    function startTimer() {
+        if (timerStarted) return;
+        timerStarted = true;
+        timerId = setInterval(function () {
+            seconds++;
+            timeEl.textContent = formatTime(seconds);
+        }, 1000);
+    }
+
+    function stopTimer() {
+        if (timerId) clearInterval(timerId);
+        timerId = null;
+    }
+
+    function buildDeck() {
+        deck = [];
+        for (var i = 0; i < PAIRS.length; i++) {
+            deck.push({ pairId: i, text: PAIRS[i].tag, kind: "tag" });
+            deck.push({ pairId: i, text: PAIRS[i].name, kind: "name" });
+        }
+        return shuffle(deck);
+    }
+
+    function renderBoard() {
+        board.innerHTML = "";
+        deck.forEach(function (card, idx) {
+            var btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "match-card";
+            btn.setAttribute("data-index", String(idx));
+            btn.setAttribute("aria-label", "Hidden card");
+
+            var inner = document.createElement("span");
+            inner.className = "card-inner";
+
+            var front = document.createElement("span");
+            front.className = "card-face card-front";
+            front.textContent = "✦";
+
+            var back = document.createElement("span");
+            back.className = "card-face card-back" + (card.kind === "tag" ? " tag-number" : "");
+            back.textContent = card.text;
+
+            inner.appendChild(front);
+            inner.appendChild(back);
+            btn.appendChild(inner);
+            btn.addEventListener("click", function () { onCardClick(btn, card); });
+            board.appendChild(btn);
+        });
+    }
+
+    function onCardClick(btn, card) {
+        if (lockBoard || btn.classList.contains("flipped")) return;
+        startTimer();
+        btn.classList.add("flipped");
+
+        if (!firstCard) {
+            firstCard = { btn: btn, card: card };
+            return;
+        }
+
+        moves++;
+        movesEl.textContent = String(moves);
+
+        var second = { btn: btn, card: card };
+        if (firstCard.card.pairId === second.card.pairId) {
+            firstCard.btn.classList.add("matched");
+            second.btn.classList.add("matched");
+            firstCard.btn.disabled = true;
+            second.btn.disabled = true;
+            firstCard = null;
+            matchedPairs++;
+            pairsEl.textContent = matchedPairs + "/8";
+            if (matchedPairs === PAIRS.length) {
+                stopTimer();
+                setTimeout(showWin, 600);
+            }
+        } else {
+            lockBoard = true;
+            var a = firstCard.btn, b = second.btn;
+            firstCard = null;
+            setTimeout(function () {
+                a.classList.remove("flipped");
+                b.classList.remove("flipped");
+                lockBoard = false;
+            }, 800);
+        }
+    }
+
+    function ratingFor(m, s) {
+        if (m <= 12) return { title: "FIX Certified", emoji: "🏆", blurb: "Flawless session. The FIX engine would be proud." };
+        if (m <= 16) return { title: "Session Admin", emoji: "🥇", blurb: "Sharp and steady — production-ready recall." };
+        if (m <= 22) return { title: "Getting There", emoji: "🥈", blurb: "Solid. A few more sessions and the tags will stick." };
+        return { title: "Keep Practicing", emoji: "📖", blurb: "Every expert once mixed up 49 and 56. Run it back." };
+    }
+
+    function showWin() {
+        gameScreen.style.display = "none";
+        winScreen.style.display = "block";
+        var r = ratingFor(moves, seconds);
+        document.getElementById("win-title").textContent = r.title;
+        document.getElementById("win-rating").textContent = r.emoji;
+        document.getElementById("win-summary").textContent =
+            r.blurb + " Cleared in " + moves + " moves and " + formatTime(seconds) + ".";
+        winScreen.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    function newGame() {
+        stopTimer();
+        moves = 0;
+        matchedPairs = 0;
+        seconds = 0;
+        firstCard = null;
+        lockBoard = false;
+        timerStarted = false;
+        movesEl.textContent = "0";
+        timeEl.textContent = "0:00";
+        pairsEl.textContent = "0/8";
+        buildDeck();
+        renderBoard();
+        startScreen.style.display = "none";
+        winScreen.style.display = "none";
+        gameScreen.style.display = "block";
+    }
+
+    document.getElementById("start-btn").addEventListener("click", newGame);
+    document.getElementById("restart-btn").addEventListener("click", newGame);
+    document.getElementById("again-btn").addEventListener("click", newGame);
+})();
+</script>
+</body>
+</html>

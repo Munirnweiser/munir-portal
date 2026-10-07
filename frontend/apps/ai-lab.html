@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI Lab — how AI agents are built, and a demo desk agent that answers questions about Munir and this site.">
+    <title>AI Lab | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        /* Page-specific layout: AI lab chat */
+        .concept-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+            margin: 18px 0 8px;
+        }
+        @media (max-width: 700px) {
+            .concept-grid { grid-template-columns: 1fr; }
+        }
+        .concept-card {
+            padding: 18px;
+            border: 1px solid rgba(125, 211, 252, 0.18);
+            border-radius: 12px;
+            background: rgba(15, 23, 42, 0.55);
+        }
+        .concept-card h4 { color: #7dd3fc; margin: 0 0 8px; font-size: 1rem; }
+        .concept-card p { color: #cbd5e1; font-size: 0.9rem; line-height: 1.65; margin: 0; }
+        .chat-window {
+            border: 1px solid rgba(125, 211, 252, 0.22);
+            border-radius: 14px;
+            background: rgba(10, 16, 30, 0.7);
+            overflow: hidden;
+            margin-top: 18px;
+        }
+        .chat-log {
+            height: 340px;
+            overflow-y: auto;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .chat-msg {
+            max-width: 85%;
+            padding: 10px 14px;
+            border-radius: 12px;
+            line-height: 1.6;
+            font-size: 0.92rem;
+        }
+        .chat-msg.agent {
+            align-self: flex-start;
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid rgba(125, 211, 252, 0.25);
+            color: #e8f0ff;
+        }
+        .chat-msg.user {
+            align-self: flex-end;
+            background: rgba(167, 139, 250, 0.14);
+            border: 1px solid rgba(167, 139, 250, 0.35);
+            color: #e8f0ff;
+        }
+        .chat-msg.typing { color: #94a3b8; font-style: italic; }
+        .chat-input-row {
+            display: flex;
+            gap: 10px;
+            padding: 14px;
+            border-top: 1px solid rgba(125, 211, 252, 0.15);
+        }
+        .chat-input-row input {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(125, 211, 252, 0.25);
+            background: rgba(15, 23, 42, 0.8);
+            color: #e8f0ff;
+            font-size: 0.92rem;
+        }
+        .chat-input-row input:focus {
+            outline: none;
+            border-color: #7dd3fc;
+        }
+        .chip-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 14px;
+        }
+        .chip {
+            font-size: 0.8rem;
+            padding: 6px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(125, 211, 252, 0.3);
+            background: transparent;
+            color: #7dd3fc;
+            cursor: pointer;
+        }
+        .chip:hover { background: rgba(125, 211, 252, 0.1); }
+        .demo-note {
+            margin-top: 14px;
+            color: #94a3b8;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main>
+<section class="section">
+<div class="container" style="max-width: 860px;">
+
+    <div class="section-heading">
+        <p class="eyebrow">Explore • Artificial Intelligence</p>
+        <h2>AI Lab</h2>
+        <p>How AI agents are built — and a working demo agent you can interrogate right now.</p>
+    </div>
+
+    <div class="resume-card">
+        <h3>What makes an AI agent an <em>agent</em></h3>
+        <p style="color:#cbd5e1; line-height:1.7;">A chatbot answers. An agent <strong>acts</strong>: it perceives a goal, plans steps, uses tools, remembers what happened, and iterates until the job is done. Three building blocks:</p>
+        <div class="concept-grid">
+            <div class="concept-card">
+                <h4>🧰 Tools</h4>
+                <p>Functions the agent can call — run a shell command, query a database, read a log file. Tools turn language into action. This site's desk agent below uses a tiny tool: keyword lookup over the site's content.</p>
+            </div>
+            <div class="concept-card">
+                <h4>🧠 Memory</h4>
+                <p>Short-term memory (this conversation) and long-term memory (facts that persist across sessions). Memory is what lets an agent learn your preferences instead of starting from zero every time.</p>
+            </div>
+            <div class="concept-card">
+                <h4>🔁 Planning loop</h4>
+                <p>Observe → think → act → observe again. The agent breaks a goal into steps, executes one, checks the result, and adjusts. Production agents add guardrails: approvals, rate limits, audit logs.</p>
+            </div>
+        </div>
+        <p style="color:#cbd5e1; line-height:1.7; margin-top:14px;">Want the full breakdown — agent architectures, tool design, memory patterns, and guardrails for production? <a href="../tutorials/ai-agents.html" class="tutorial-link">Read the AI Agents tutorial →</a></p>
+    </div>
+
+    <div class="resume-card" style="margin-top:24px;">
+        <h3>Ask the desk agent <span class="tag" style="margin-left:8px;">live demo</span></h3>
+        <p style="color:#cbd5e1; line-height:1.7;">A rule-based agent that answers questions about Munir and this site. Try a suggestion, or ask your own:</p>
+
+        <div class="chat-window">
+            <div class="chat-log" id="chat-log" aria-live="polite"></div>
+            <div class="chat-input-row">
+                <input type="text" id="chat-input" placeholder="Ask about Munir, the trading app, tutorials…" maxlength="300" aria-label="Ask the desk agent">
+                <button type="button" class="btn" id="chat-send">Send</button>
+            </div>
+        </div>
+
+        <div class="chip-row" id="chip-row">
+            <button type="button" class="chip">Who is Munir?</button>
+            <button type="button" class="chip">What is the trading app?</button>
+            <button type="button" class="chip">Where are the tutorials?</button>
+            <button type="button" class="chip">What calculators exist?</button>
+            <button type="button" class="chip">How do I contact him?</button>
+        </div>
+
+        <p class="demo-note">Demo agent: answers come from keyword matching over this site's content — no data leaves your browser.</p>
+    </div>
+
+</div>
+</section>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+
+<script src="../app.js"></script>
+<script>
+(function () {
+    "use strict";
+
+    var log = document.getElementById("chat-log");
+    var input = document.getElementById("chat-input");
+    var sendBtn = document.getElementById("chat-send");
+
+    var RULES = [
+        {
+            keys: ["who is munir", "about munir", "munir background", "his background"],
+            answer: "Munir Nweiser is a Senior Production Support Analyst in Capital Markets with 5 years of L1–L3 experience at Morgan Stanley, Société Générale CIB, and Crédit Agricole CIB. His stack: Linux, SQL (Oracle / SQL Server), FIX protocol, Dynatrace, Autosys, and trading platforms. Full details are on the Resume page."
+        },
+        {
+            keys: ["skill", "stack", "technologies", "tools he", "what can he"],
+            answer: "Core skills: Linux/Unix, Python & Bash, SQL (Oracle, MS SQL Server), FIX 4.2/4.4/5.0, ITIL v4, ServiceNow, Splunk, Geneos, Grafana, Dynatrace, Autosys, Control-M, and trading systems like Orchestrade and DealHub. The Resume page has the complete list."
+        },
+        {
+            keys: ["trading app", "trade lifecycle app", "workstation", "trading simulator"],
+            answer: "The Trading App is a full simulated workstation: live market data for 4 symbols, an order ticket (market/limit), a matching engine with partial fills, and every order walking the complete 11-stage trade lifecycle — entry, validation, risk check, routing, execution, capture, enrichment, allocation, confirmation, clearing, settlement — with real FIX 4.4 messages at each stage. Find it under Games on the home page."
+        },
+        {
+            keys: ["tutorial", "learn", "course", "guide"],
+            answer: "Tutorials cover markets (FX, fixed income, futures & options, FIX protocol, STP, risk, trade lifecycle, valuation), databases (SQL, Oracle, SQL Server), and DevOps (Docker, Kubernetes). Open Tutorials on the home page — each one is written from a production-support angle."
+        },
+        {
+            keys: ["calculator", "cfa", "tvm", "npv", "bond"],
+            answer: "The CFA Calculator Lab has 11 tools: a full scientific calculator plus TVM, NPV/IRR, bond price & YTM, duration & convexity, CAPM, WACC, two-asset portfolio, Sharpe ratio, FX forwards, and option payoff charts. Hit 'CFA Calculator Lab' on the home page."
+        },
+        {
+            keys: ["fix", "tag 35", "protocol"],
+            answer: "The FIX protocol tutorial covers session management, message anatomy (tags 8/9/35/49/56/34/52/10), NewOrderSingle and ExecutionReport flows, and sequence-gap recovery. And if you want to drill the tags, play FIX Tag Match under Games."
+        },
+        {
+            keys: ["dynatrace", "monitor", "incident", "production issue"],
+            answer: "Two ways to train here: the Dynatrace Simulator (Explore section) lets you inject CPU spikes, memory leaks, DB slowdowns and crash loops into a live dashboard, and Incident Commander (Games) tests your first-action instincts against 10 timed production incidents."
+        },
+        {
+            keys: ["weather"],
+            answer: "The Weather page (Explore section) shows live conditions and a 7-day forecast for any city, powered by the free Open-Meteo API — no key needed."
+        },
+        {
+            keys: ["comment", "guestbook", "message him", "leave"],
+            answer: "The Guestbook (Explore section) lets visitors leave a comment — every comment goes through moderation before it appears publicly."
+        },
+        {
+            keys: ["contact", "email", "hire", "reach", "resume", "cv"],
+            answer: "The Resume page has Munir's full professional background and contact details. This site itself is his portfolio — interviewers get the resume plus working proof of the skills on it."
+        },
+        {
+            keys: ["ai agent", "how are you built", "how do you work", "agent"],
+            answer: "I'm a demo: a rule-based agent that matches keywords in your question to answers about this site. Real agents add tools (shell, database, APIs), memory across sessions, and a planning loop — the three building blocks explained above, and in the AI Agents tutorial."
+        },
+        {
+            keys: ["hello", "hi", "hey", "good morning", "good evening"],
+            answer: "Hello! I'm the desk agent. Ask me about Munir's background, the trading app, the tutorials, the calculators — or try one of the suggestion chips below."
+        },
+        {
+            keys: ["thank", "thanks", "great", "cool", "nice"],
+            answer: "You're welcome! Anything else — the games, the Dynatrace simulator, the databases tutorials?"
+        }
+    ];
+
+    var FALLBACK = "I can answer questions about Munir's background and skills, the trading app, tutorials, calculators, games, and how to contact him. Try rephrasing, or tap a suggestion chip.";
+
+    function escapeHtml(s) {
+        return s.replace(/&/g, "&amp;").replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    function addMsg(text, who) {
+        var div = document.createElement("div");
+        div.className = "chat-msg " + who;
+        div.innerHTML = escapeHtml(text);
+        log.appendChild(div);
+        log.scrollTop = log.scrollHeight;
+        return div;
+    }
+
+    function findAnswer(q) {
+        var lower = q.toLowerCase();
+        for (var i = 0; i < RULES.length; i++) {
+            var rule = RULES[i];
+            for (var j = 0; j < rule.keys.length; j++) {
+                if (lower.indexOf(rule.keys[j]) !== -1) return rule.answer;
+            }
+        }
+        return FALLBACK;
+    }
+
+    function respond(userText) {
+        var typing = document.createElement("div");
+        typing.className = "chat-msg agent typing";
+        typing.textContent = "Desk agent is thinking…";
+        log.appendChild(typing);
+        log.scrollTop = log.scrollHeight;
+        setTimeout(function () {
+            typing.remove();
+            addMsg(findAnswer(userText), "agent");
+        }, 450);
+    }
+
+    function send() {
+        var text = input.value.trim();
+        if (!text) return;
+        addMsg(text, "user");
+        input.value = "";
+        respond(text);
+    }
+
+    sendBtn.addEventListener("click", send);
+    input.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") send();
+    });
+
+    document.getElementById("chip-row").addEventListener("click", function (e) {
+        var t = e.target;
+        if (t && t.classList && t.classList.contains("chip")) {
+            addMsg(t.textContent, "user");
+            respond(t.textContent);
+        }
+    });
+
+    // Greeting on load
+    addMsg("Hello! I'm the desk agent — a small demo AI that knows this site inside out. Ask me anything about Munir or what's on here.", "agent");
+})();
+</script>
+</body>
+</html>
