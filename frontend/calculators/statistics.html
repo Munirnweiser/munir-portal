@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Descriptive statistics calculator — mean, median, mode, variance, quartiles, z-scores, histogram.">
+    <title>Statistics Calculator | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+        .result-body strong { color: var(--cyan); }
+        .result-body .big { font-size: 1.5rem; color: #fff; font-weight: 800; }
+        .formula-note { color: var(--text-muted); font-size: 0.82rem; margin-top: 12px; }
+        #resultCard { margin-top: 16px; }
+        #data { width: 100%; min-height: 90px; font-family: monospace; }
+        .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin: 12px 0; }
+        .stat-box { background: rgba(148,163,184,0.08); border-radius: 8px; padding: 10px 12px; }
+        .stat-box .lbl { font-size: 0.75rem; color: var(--text-muted); }
+        .stat-box .val { font-size: 1.15rem; font-weight: 700; color: #fff; }
+        #hist { width: 100%; max-width: 560px; height: 220px; display: block; margin-top: 8px; }
+        .ztable { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.85rem; }
+        .ztable th, .ztable td { text-align: right; padding: 4px 8px; border-bottom: 1px solid rgba(148,163,184,0.15); }
+        .ztable th:first-child, .ztable td:first-child { text-align: left; }
+    </style>
+    <meta property="og:title" content="Statistics Calculator | Munir Nweiser">
+    <meta property="og:description" content="Descriptive statistics: mean, median, mode, variance, quartiles, z-scores, histogram.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://munirnweiser.github.io/munir-portal/calculators/statistics.html">
+    <meta property="og:site_name" content="Munir Nweiser — Capital Markets Technology">
+    <meta name="twitter:card" content="summary">
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav>
+            <button
+                id="mobile-menu-button"
+                class="mobile-menu-button"
+                type="button"
+                aria-label="Open navigation menu"
+                aria-expanded="false"
+            >
+                ☰
+            </button>
+</div></header>
+<main class="container" style="padding:120px 0 80px">
+    <p class="eyebrow">CFA Learning Lab</p>
+    <div class="section-heading">
+        <h2>Statistics Calculator</h2>
+        <p>Descriptive statistics for any dataset: paste comma, space or line separated numbers.</p>
+    </div>
+
+    <div class="resume-card">
+        <form id="statForm">
+            <label for="data">Dataset</label>
+            <textarea id="data" class="sql" spellcheck="false">2, 4, 4, 4, 5, 5, 7, 9</textarea>
+            <div class="btn-row" style="margin-top:10px">
+                <button class="btn btn-primary" type="submit">Compute</button>
+                <button class="btn btn-secondary" type="button" id="sampleBtn">Load sample</button>
+                <button class="btn btn-secondary" type="reset">Clear</button>
+            </div>
+            <p class="form-status" id="err" style="display:none; color: var(--red); margin-top:10px;"></p>
+        </form>
+    </div>
+
+    <div class="resume-card" id="resultCard" hidden>
+        <h3>Results</h3>
+        <div class="stat-grid" id="statGrid"></div>
+        <h4 style="margin-top:14px">Histogram</h4>
+        <canvas id="hist" width="560" height="220"></canvas>
+        <h4 style="margin-top:14px">Z-scores (sample)</h4>
+        <div style="overflow-x:auto"><table class="ztable" id="zTable"></table></div>
+    </div>
+
+    <div class="resume-card" style="margin-top:16px">
+        <h3>Formulas</h3>
+        <p>Mean = &Sigma;x / n &nbsp;·&nbsp; Sample variance = &Sigma;(x &minus; mean)&sup2; / (n&minus;1) &nbsp;·&nbsp; Population variance = &Sigma;(x &minus; mean)&sup2; / n</p>
+        <p class="formula-note">Quartiles use linear interpolation (same method as NumPy default). Mode lists every value tied for highest frequency. Z-score = (x &minus; mean) / sample std dev.</p>
+    </div>
+
+    <p style="margin-top:18px"><a class="btn btn-secondary" href="../calculators.html">&larr; All calculators</a></p>
+</main>
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+<script>
+(function () {
+    'use strict';
+    function $(id) { return document.getElementById(id); }
+    function fmt(x, d) {
+        d = (d === undefined) ? 4 : d;
+        if (!Number.isFinite(x)) return '—';
+        var r = Number(x.toPrecision(10));
+        if (Object.is(r, -0)) r = 0;
+        return r.toLocaleString('en-US', { maximumFractionDigits: d });
+    }
+    function err(msg) {
+        var e = $('err');
+        if (msg) { e.textContent = msg; e.style.display = 'block'; }
+        else { e.textContent = ''; e.style.display = 'none'; }
+    }
+    function quantile(sorted, q) {
+        var pos = (sorted.length - 1) * q;
+        var base = Math.floor(pos), rest = pos - base;
+        return sorted[base] + rest * ((sorted[base + 1] === undefined ? sorted[base] : sorted[base + 1]) - sorted[base]);
+    }
+
+    function stats(data) {
+        var n = data.length;
+        var sorted = data.slice().sort(function (a, b) { return a - b; });
+        var sum = data.reduce(function (a, b) { return a + b; }, 0);
+        var mean = sum / n;
+        var mid = Math.floor(n / 2);
+        var median = n % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+        var freq = {}, maxF = 0;
+        data.forEach(function (x) { freq[x] = (freq[x] || 0) + 1; if (freq[x] > maxF) maxF = freq[x]; });
+        var mode = Object.keys(freq).filter(function (k) { return freq[k] === maxF; })
+            .map(Number).sort(function (a, b) { return a - b; });
+        var ss = data.reduce(function (a, x) { return a + (x - mean) * (x - mean); }, 0);
+        var sVar = n > 1 ? ss / (n - 1) : NaN;
+        var pVar = ss / n;
+        var q1 = quantile(sorted, 0.25), q3 = quantile(sorted, 0.75);
+        return { n: n, mean: mean, median: median, mode: mode, sVar: sVar,
+            sSd: Math.sqrt(sVar), pVar: pVar, pSd: Math.sqrt(pVar),
+            min: sorted[0], max: sorted[n - 1], q1: q1, q3: q3, iqr: q3 - q1, sorted: sorted };
+    }
+
+    function drawHist(data) {
+        var c = $('hist'), ctx = c.getContext('2d');
+        var W = c.width, H = c.height;
+        ctx.clearRect(0, 0, W, H);
+        var min = Math.min.apply(null, data), max = Math.max.apply(null, data);
+        var bins = Math.min(20, Math.max(5, Math.ceil(Math.sqrt(data.length))));
+        if (min === max) { min -= 0.5; max += 0.5; }
+        var counts = new Array(bins).fill(0), w = (max - min) / bins;
+        data.forEach(function (x) {
+            var b = Math.min(bins - 1, Math.floor((x - min) / w));
+            counts[b]++;
+        });
+        var peak = Math.max.apply(null, counts);
+        var pad = 24, bw = (W - pad * 2) / bins;
+        ctx.fillStyle = '#22d3ee';
+        counts.forEach(function (ct, i) {
+            var bh = peak ? (H - pad * 2) * ct / peak : 0;
+            var x = pad + i * bw + 2, y = H - pad - bh;
+            ctx.fillRect(x, y, bw - 4, bh);
+            ctx.fillStyle = 'rgba(148,163,184,0.9)';
+            ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText(fmt(min + i * w, 2), x + (bw - 4) / 2, H - 8);
+            ctx.fillStyle = '#22d3ee';
+        });
+        ctx.strokeStyle = 'rgba(148,163,184,0.4)';
+        ctx.beginPath(); ctx.moveTo(pad, H - pad); ctx.lineTo(W - pad, H - pad); ctx.stroke();
+    }
+
+    function box(lbl, val) {
+        return '<div class="stat-box"><div class="lbl">' + lbl + '</div><div class="val">' + val + '</div></div>';
+    }
+
+    $('sampleBtn').addEventListener('click', function () {
+        $('data').value = '2, 4, 4, 4, 5, 5, 7, 9';
+    });
+    $('statForm').addEventListener('reset', function () {
+        setTimeout(function () { $('resultCard').hidden = true; err(null); }, 0);
+    });
+    $('statForm').addEventListener('submit', function (e) {
+        e.preventDefault(); err(null);
+        var raw = $('data').value.split(/[\s,;]+/).filter(function (s) { return s.length; });
+        var data = raw.map(Number);
+        var bad = data.filter(function (x) { return !Number.isFinite(x); });
+        if (!data.length) { err('Enter at least one number.'); return; }
+        if (bad.length) { err('Could not parse: ' + bad.slice(0, 5).join(', ')); return; }
+        var s = stats(data);
+        var g = $('statGrid');
+        g.innerHTML =
+            box('Count (n)', s.n) + box('Mean', fmt(s.mean)) +
+            box('Median', fmt(s.median)) + box('Mode', s.mode.map(function (m) { return fmt(m); }).join(', ')) +
+            box('Sample variance', fmt(s.sVar)) + box('Sample std dev', fmt(s.sSd)) +
+            box('Population variance', fmt(s.pVar)) + box('Population std dev', fmt(s.pSd)) +
+            box('Min', fmt(s.min)) + box('Max', fmt(s.max)) + box('Range', fmt(s.max - s.min)) +
+            box('Q1 (25%)', fmt(s.q1)) + box('Q3 (75%)', fmt(s.q3)) + box('IQR', fmt(s.iqr));
+        drawHist(data);
+        var rows = data.map(function (x, i) {
+            var z = s.sSd > 0 ? (x - s.mean) / s.sSd : 0;
+            return '<tr><td>#' + (i + 1) + '</td><td>' + fmt(x) + '</td><td>' + fmt(z) + '</td></tr>';
+        }).join('');
+        $('zTable').innerHTML = '<tr><th>#</th><th>Value</th><th>Z-score</th></tr>' + rows;
+        $('resultCard').hidden = false;
+        $('resultCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+})();
+</script>
+</body>
+</html>

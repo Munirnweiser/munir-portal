@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Health Lab: BMI calculator, BMR and TDEE estimator. Educational only — not medical advice.">
+    <title>Health Lab | Munir Nweiser</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+        .unit-toggle { display: flex; gap: 8px; margin-bottom: 14px; }
+        .unit-toggle .btn.active { border-color: var(--cyan); color: var(--cyan); }
+        .bmi-bar { height: 14px; border-radius: 7px; margin: 14px 0 6px;
+            background: linear-gradient(to right, #38bdf8 0%, #38bdf8 18.5%, #34d399 18.5%, #34d399 25%, #fbbf24 25%, #fbbf24 30%, #f87171 30%, #f87171 100%); }
+        .bmi-marker { width: 3px; height: 20px; background: #fff; margin-top: -17px; border-radius: 2px; }
+        .bmi-scale { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-muted); }
+        .big-result { font-size: 1.6rem; font-weight: 800; color: #fff; }
+        .cat-under { color: #38bdf8; } .cat-ok { color: #34d399; }
+        .cat-over { color: #fbbf24; } .cat-obese { color: #f87171; }
+        .form-status { color: var(--red); display: none; margin-top: 10px; }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+    </style>
+    <meta property="og:title" content="Health Lab | Munir Nweiser">
+    <meta property="og:description" content="BMI calculator plus BMR and TDEE estimator. Educational only.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://munirnweiser.github.io/munir-portal/health.html">
+    <meta property="og:site_name" content="Munir Nweiser — Capital Markets Technology">
+    <meta name="twitter:card" content="summary">
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header">
+
+        <div class="container nav-container">
+
+            <a href="#home" class="logo">
+                <span class="logo-mark">MN</span>
+
+                <span class="logo-text">
+                    Munir Nweiser
+                    <small>Capital Markets • Technology</small>
+                </span>
+            </a>
+
+
+            <nav class="main-nav" aria-label="Main navigation">
+
+                <a href="#home">Home</a>
+                <a href="resume.html">Resume</a>
+                <a href="scientific-calculator.html">Calculator</a>
+                <a href="#markets">Markets</a>
+                <a href="#trading">Trading</a>
+                <a href="#tutorials">Tutorials</a>
+                <a href="roadmap.html">Roadmap</a>
+                <a href="changelog.html">Changelog</a>
+                <a href="#games">Games</a>
+                <a href="#memories">Memories</a>
+
+            </nav>
+
+            <button
+                id="mobile-menu-button"
+                class="mobile-menu-button"
+                type="button"
+                aria-label="Open navigation menu"
+                aria-expanded="false"
+            >
+                ☰
+            </button>
+
+        </div>
+
+    </header>
+<main class="container" style="padding:120px 0 80px; max-width: 860px;">
+    <div class="section-heading">
+        <p class="eyebrow">Health Lab</p>
+        <h2>BMI &amp; Energy Calculator</h2>
+        <p>Body-mass index, basal metabolic rate (Mifflin-St Jeor) and daily calorie needs. Quick, honest math — not a diagnosis.</p>
+    </div>
+
+    <div class="two-col">
+        <div class="resume-card">
+            <h3>BMI</h3>
+            <div class="unit-toggle" role="group" aria-label="Units">
+                <button class="btn btn-secondary active" id="uMetric" type="button">Metric</button>
+                <button class="btn btn-secondary" id="uImperial" type="button">Imperial</button>
+            </div>
+            <form id="bmiForm">
+                <label for="height" id="heightLabel">Height (cm)</label>
+                <input type="number" id="height" step="any" min="0" value="178">
+                <label for="weight" id="weightLabel">Weight (kg)</label>
+                <input type="number" id="weight" step="any" min="0" value="75">
+                <div class="btn-row" style="margin-top:10px">
+                    <button class="btn btn-primary" type="submit">Compute BMI</button>
+                </div>
+                <p class="form-status" id="bmiErr"></p>
+            </form>
+            <div id="bmiOut" hidden style="margin-top:14px">
+                <p class="big-result"><span id="bmiVal"></span> — <span id="bmiCat"></span></p>
+                <div class="bmi-bar"></div>
+                <div class="bmi-marker" id="bmiMarker"></div>
+                <div class="bmi-scale"><span>14</span><span>18.5</span><span>25</span><span>30</span><span>40</span></div>
+            </div>
+        </div>
+
+        <div class="resume-card">
+            <h3>BMR &amp; TDEE</h3>
+            <form id="bmrForm">
+                <label for="age">Age (years)</label>
+                <input type="number" id="age" min="0" value="30">
+                <label for="sex">Sex</label>
+                <select id="sex"><option value="m">Male</option><option value="f">Female</option></select>
+                <label for="bmrH">Height (cm)</label>
+                <input type="number" id="bmrH" step="any" min="0" value="178">
+                <label for="bmrW">Weight (kg)</label>
+                <input type="number" id="bmrW" step="any" min="0" value="75">
+                <label for="act">Activity level</label>
+                <select id="act">
+                    <option value="1.2">Sedentary (little exercise)</option>
+                    <option value="1.375">Light (1–3 days/week)</option>
+                    <option value="1.55" selected>Moderate (3–5 days/week)</option>
+                    <option value="1.725">Active (6–7 days/week)</option>
+                    <option value="1.9">Very active (physical job)</option>
+                </select>
+                <div class="btn-row" style="margin-top:10px">
+                    <button class="btn btn-primary" type="submit">Compute</button>
+                </div>
+                <p class="form-status" id="bmrErr"></p>
+            </form>
+            <div id="bmrOut" hidden style="margin-top:14px">
+                <ul class="clean-list">
+                    <li>BMR: <strong class="big-result" id="bmrVal"></strong> kcal/day</li>
+                    <li>TDEE: <strong class="big-result" id="tdeeVal"></strong> kcal/day</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="resume-card" style="margin-top:16px">
+        <h3>How to read this</h3>
+        <ul class="clean-list">
+            <li><span class="cat-under"><strong>Under 18.5</strong></span> — underweight</li>
+            <li><span class="cat-ok"><strong>18.5 – 24.9</strong></span> — healthy range</li>
+            <li><span class="cat-over"><strong>25 – 29.9</strong></span> — overweight</li>
+            <li><span class="cat-obese"><strong>30+</strong></span> — obese (class I from 30, II from 35, III from 40)</li>
+        </ul>
+        <p style="color:var(--text-muted); font-size:0.85rem; margin-top:12px;">BMR uses the Mifflin-St Jeor equation: men = 10·kg + 6.25·cm − 5·age + 5; women = 10·kg + 6.25·cm − 5·age − 161. TDEE multiplies BMR by the activity factor.</p>
+    </div>
+
+    <div class="example-box" style="margin-top:16px">
+        <strong>Disclaimer:</strong> this page is for education only and is not medical advice. BMI is a screening tool — it does not measure body fat and can misclassify muscular people. Talk to a clinician about health decisions.
+    </div>
+</main>
+<footer class="site-footer">
+
+        <div class="container footer-content">
+
+            <div>
+
+                <strong>
+                    Munir Nweiser
+                </strong>
+
+                <p>
+                    Application Support • Capital Markets • Technology
+                </p>
+
+            </div>
+
+
+            <div class="footer-links">
+
+                <a href="#home">Home</a>
+                <a href="#resume">Resume</a>
+                <a href="#trading">Trading</a>
+                <a href="#tutorials">Tutorials</a>
+
+            </div>
+
+
+            <div>
+
+                <small>
+                    © <span id="current-year"></span>
+                    Munir Nweiser
+                </small>
+
+                <br>
+
+                <small class="visitor-count">
+                    <span id="visitor-count"></span>
+                </small>
+
+                <small class="site-credit">
+                    Designed &amp; built with Muse 🤖
+                </small>
+
+            </div>
+
+        </div>
+
+    </footer>
+<script src="app.js"></script>
+<script src="counter.js"></script>
+<script>
+(function () {
+    'use strict';
+    function $(id) { return document.getElementById(id); }
+    function showErr(id, msg) {
+        var e = $(id);
+        if (msg) { e.textContent = msg; e.style.display = 'block'; }
+        else { e.textContent = ''; e.style.display = 'none'; }
+    }
+    var imperial = false;
+    $('uMetric').addEventListener('click', function () {
+        imperial = false;
+        $('uMetric').classList.add('active'); $('uImperial').classList.remove('active');
+        $('heightLabel').textContent = 'Height (cm)'; $('weightLabel').textContent = 'Weight (kg)';
+    });
+    $('uImperial').addEventListener('click', function () {
+        imperial = true;
+        $('uImperial').classList.add('active'); $('uMetric').classList.remove('active');
+        $('heightLabel').textContent = 'Height (in)'; $('weightLabel').textContent = 'Weight (lb)';
+    });
+
+    $('bmiForm').addEventListener('submit', function (e) {
+        e.preventDefault(); showErr('bmiErr', null);
+        var h = parseFloat($('height').value), w = parseFloat($('weight').value);
+        if (!Number.isFinite(h) || !Number.isFinite(w) || h <= 0 || w <= 0) {
+            showErr('bmiErr', 'Enter a positive height and weight.'); return;
+        }
+        var bmi = imperial ? 703 * w / (h * h) : w / Math.pow(h / 100, 2);
+        var cat, cls;
+        if (bmi < 18.5) { cat = 'Underweight'; cls = 'cat-under'; }
+        else if (bmi < 25) { cat = 'Healthy'; cls = 'cat-ok'; }
+        else if (bmi < 30) { cat = 'Overweight'; cls = 'cat-over'; }
+        else { cat = 'Obese'; cls = 'cat-obese'; }
+        $('bmiVal').textContent = bmi.toFixed(1);
+        var c = $('bmiCat'); c.textContent = cat; c.className = cls;
+        var pos = Math.min(100, Math.max(0, (bmi - 14) / (40 - 14) * 100));
+        $('bmiMarker').style.marginLeft = 'calc(' + pos.toFixed(1) + '% - 2px)';
+        $('bmiOut').hidden = false;
+    });
+
+    $('bmrForm').addEventListener('submit', function (e) {
+        e.preventDefault(); showErr('bmrErr', null);
+        var age = parseFloat($('age').value), h = parseFloat($('bmrH').value),
+            w = parseFloat($('bmrW').value), act = parseFloat($('act').value);
+        if (![age, h, w].every(Number.isFinite) || age <= 0 || h <= 0 || w <= 0) {
+            showErr('bmrErr', 'Enter positive values for age, height and weight.'); return;
+        }
+        var bmr = 10 * w + 6.25 * h - 5 * age + ($('sex').value === 'm' ? 5 : -161);
+        $('bmrVal').textContent = Math.round(bmr).toLocaleString('en-US');
+        $('tdeeVal').textContent = Math.round(bmr * act).toLocaleString('en-US');
+        $('bmrOut').hidden = false;
+    });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="World News reader: top tech, finance and science stories, live from Hacker News.">
+    <title>World News | Munir Nweiser</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .tab-row { display: flex; gap: 8px; margin: 18px 0; flex-wrap: wrap; }
+        .tab-row .btn.active { border-color: var(--cyan); color: var(--cyan); }
+        .news-item { padding: 14px 0; border-bottom: 1px solid rgba(148,163,184,0.15); }
+        .news-item:last-child { border-bottom: none; }
+        .news-item a.title { color: #fff; font-weight: 600; font-size: 1.02rem; text-decoration: none; }
+        .news-item a.title:hover { color: var(--cyan); }
+        .news-meta { color: var(--text-muted); font-size: 0.82rem; margin-top: 6px; }
+        .news-meta a { color: var(--cyan); }
+        .spinner { color: var(--text-muted); padding: 30px 0; text-align: center; }
+        .news-error { color: var(--red); padding: 30px 0; text-align: center; }
+        .refresh-row { margin-top: 14px; }
+    </style>
+    <meta property="og:title" content="World News | Munir Nweiser">
+    <meta property="og:description" content="Top tech, finance and science stories, live from Hacker News.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://munirnweiser.github.io/munir-portal/news.html">
+    <meta property="og:site_name" content="Munir Nweiser — Capital Markets Technology">
+    <meta name="twitter:card" content="summary">
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header">
+
+        <div class="container nav-container">
+
+            <a href="#home" class="logo">
+                <span class="logo-mark">MN</span>
+
+                <span class="logo-text">
+                    Munir Nweiser
+                    <small>Capital Markets • Technology</small>
+                </span>
+            </a>
+
+
+            <nav class="main-nav" aria-label="Main navigation">
+
+                <a href="#home">Home</a>
+                <a href="resume.html">Resume</a>
+                <a href="scientific-calculator.html">Calculator</a>
+                <a href="#markets">Markets</a>
+                <a href="#trading">Trading</a>
+                <a href="#tutorials">Tutorials</a>
+                <a href="roadmap.html">Roadmap</a>
+                <a href="changelog.html">Changelog</a>
+                <a href="#games">Games</a>
+                <a href="#memories">Memories</a>
+
+            </nav>
+
+            <button
+                id="mobile-menu-button"
+                class="mobile-menu-button"
+                type="button"
+                aria-label="Open navigation menu"
+                aria-expanded="false"
+            >
+                ☰
+            </button>
+
+        </div>
+
+    </header>
+<main class="container" style="padding:120px 0 80px; max-width: 860px;">
+    <div class="section-heading">
+        <p class="eyebrow">Stay current</p>
+        <h2>World News</h2>
+        <p>Top stories in tech, finance and science — fetched live from Hacker News. No account, no key, no tracking.</p>
+    </div>
+
+    <div class="resume-card">
+        <div class="tab-row" role="tablist" aria-label="News topics">
+            <button class="btn btn-secondary active" data-topic="tech" type="button">Tech</button>
+            <button class="btn btn-secondary" data-topic="finance" type="button">Finance</button>
+            <button class="btn btn-secondary" data-topic="science" type="button">Science</button>
+        </div>
+        <div id="newsList"><p class="spinner">Loading stories…</p></div>
+        <div class="refresh-row">
+            <button class="btn btn-secondary" id="refreshBtn" type="button">Refresh</button>
+        </div>
+        <p style="color:var(--text-muted); font-size:0.78rem; margin-top:14px;">Source: Hacker News via the public Algolia API. Stories open in a new tab.</p>
+    </div>
+</main>
+<footer class="site-footer">
+
+        <div class="container footer-content">
+
+            <div>
+
+                <strong>
+                    Munir Nweiser
+                </strong>
+
+                <p>
+                    Application Support • Capital Markets • Technology
+                </p>
+
+            </div>
+
+
+            <div class="footer-links">
+
+                <a href="#home">Home</a>
+                <a href="#resume">Resume</a>
+                <a href="#trading">Trading</a>
+                <a href="#tutorials">Tutorials</a>
+
+            </div>
+
+
+            <div>
+
+                <small>
+                    © <span id="current-year"></span>
+                    Munir Nweiser
+                </small>
+
+                <br>
+
+                <small class="visitor-count">
+                    <span id="visitor-count"></span>
+                </small>
+
+                <small class="site-credit">
+                    Designed &amp; built with Muse 🤖
+                </small>
+
+            </div>
+
+        </div>
+
+    </footer>
+<script src="app.js"></script>
+<script src="counter.js"></script>
+<script>
+(function () {
+    'use strict';
+    var QUERIES = { tech: 'technology', finance: 'finance markets', science: 'science' };
+    var current = 'tech';
+    var list = document.getElementById('newsList');
+
+    function esc(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
+    function timeAgo(ts) {
+        var s = Math.floor(Date.now() / 1000 - ts);
+        if (s < 3600) return Math.max(1, Math.floor(s / 60)) + 'm ago';
+        if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+        return Math.floor(s / 86400) + 'd ago';
+    }
+    function render(items) {
+        if (!items.length) {
+            list.innerHTML = '<p class="news-error">No stories found right now.</p>';
+            return;
+        }
+        list.innerHTML = items.map(function (it) {
+            var url = it.url || ('https://news.ycombinator.com/item?id=' + it.objectID);
+            return '<div class="news-item">' +
+                '<a class="title" href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(it.title) + '</a>' +
+                '<div class="news-meta">' + it.points + ' points · by ' + esc(it.author) + ' · ' + timeAgo(it.created_at_i) +
+                ' · <a href="https://news.ycombinator.com/item?id=' + esc(it.objectID) + '" target="_blank" rel="noopener">' + it.num_comments + ' comments</a></div>' +
+                '</div>';
+        }).join('');
+    }
+    function load(topic) {
+        current = topic;
+        list.innerHTML = '<p class="spinner">Loading stories…</p>';
+        var q = encodeURIComponent(QUERIES[topic]);
+        fetch('https://hn.algolia.com/api/v1/search?query=' + q + '&tags=story&hitsPerPage=15')
+            .then(function (r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            })
+            .then(function (data) { render(data.hits || []); })
+            .catch(function () {
+                list.innerHTML = '<p class="news-error">Could not load stories — check your connection and try Refresh.</p>';
+            });
+    }
+    var tabs = document.querySelectorAll('.tab-row .btn');
+    tabs.forEach(function (b) {
+        b.addEventListener('click', function () {
+            tabs.forEach(function (x) { x.classList.remove('active'); });
+            b.classList.add('active');
+            load(b.getAttribute('data-topic'));
+        });
+    });
+    document.getElementById('refreshBtn').addEventListener('click', function () { load(current); });
+    load('tech');
+})();
+</script>
+</body>
+</html>
