@@ -1951,3 +1951,126 @@ textarea:focus-visible {
 }
 ```
 
+
+/* ============================================================
+   FAIRY ANIMATION — motion
+   ============================================================ */
+
+.fairy {
+    left: 0;
+    top: 0;
+    transition: opacity 1.2s ease;
+}
+
+@keyframes fairy-flap-left {
+    0%, 100% { transform: rotate(-25deg); }
+    50%      { transform: rotate(-55deg); }
+}
+
+@keyframes fairy-flap-right {
+    0%, 100% { transform: scaleX(-1) rotate(-25deg); }
+    50%      { transform: scaleX(-1) rotate(-55deg); }
+}
+
+.fairy-wing-left  { animation: fairy-flap-left 0.35s ease-in-out infinite; }
+.fairy-wing-right { animation: fairy-flap-right 0.35s ease-in-out infinite; }
+
+/* ============================================================
+   TUTORIAL LINKS + MEMORIES GALLERY
+   ============================================================ */
+
+.tutorial-link {
+    display: inline-block;
+
+    margin-top: 14px;
+
+    color: var(--cyan);
+
+    font-size: 0.8rem;
+
+    font-weight: 700;
+}
+
+.tutorial-link:hover {
+    text-decoration: underline;
+}
+
+.memories-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 16px;
+}
+
+.memory-tile {
+    position: relative;
+
+    aspect-ratio: 4 / 3;
+
+    overflow: hidden;
+
+    border:
+        1px dashed rgba(167,139,250,0.25);
+
+    border-radius: 16px;
+
+    background:
+        radial-gradient(
+            circle at center,
+            rgba(139,92,246,0.08),
+            transparent 60%
+        );
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+}
+
+.memory-tile img {
+    position: absolute;
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+}
+
+.memory-tile figcaption {
+    color: var(--text-muted);
+
+    font-size: 0.72rem;
+
+    letter-spacing: 0.1em;
+
+    text-transform: uppercase;
+}
+
+.memory-tile:has(img) figcaption {
+    position: absolute;
+
+    bottom: 0;
+    left: 0;
+    right: 0;
+
+    padding: 8px;
+
+    background:
+        linear-gradient(
+            transparent,
+            rgba(0,0,0,0.65)
+        );
+
+    color: white;
+}
+
+@media (max-width: 700px) {
+
+    .memories-grid {
+        grid-template-columns: 1fr;
+    }
+
+}

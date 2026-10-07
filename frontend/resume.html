@@ -223,20 +223,33 @@
 
 <body>
 
+<!-- Fairy animation is controlled by app.js -->
+<div
+    id="fairy-layer"
+    aria-hidden="true"
+></div>
+
+
 <header class="site-header">
-    <div class="container">
+    <div class="container nav-container">
 
         <a href="index.html" class="logo">
-            MN<span>.</span>
+            <span class="logo-mark">MN</span>
+            <span class="logo-text">
+                Munir Nweiser
+                <small>Capital Markets • Technology</small>
+            </span>
         </a>
 
-        <nav>
+        <nav class="main-nav" aria-label="Main navigation">
             <a href="index.html">Home</a>
-            <a href="resume.html" class="active">Resume</a>
-            <a href="index.html#calculator">Calculator</a>
+            <a href="resume.html">Resume</a>
+            <a href="scientific-calculator.html">Calculator</a>
             <a href="index.html#markets">Markets</a>
             <a href="index.html#trading">Trading</a>
             <a href="index.html#tutorials">Tutorials</a>
+            <a href="index.html#games">Games</a>
+            <a href="index.html#memories">Memories</a>
         </nav>
 
     </div>
@@ -1092,11 +1105,31 @@
 </main>
 
 
-<footer>
-    <p>
-        © 2026 Munir Nweiser · Capital Markets Application Production Support
-    </p>
+<footer class="site-footer">
+    <div class="container footer-content">
+        <div>
+            <strong>
+                Munir Nweiser
+            </strong>
+            <p>
+                Application Support • Capital Markets • Technology
+            </p>
+        </div>
+        <div class="footer-links">
+            <a href="index.html">Home</a>
+            <a href="resume.html">Resume</a>
+            <a href="index.html#trading">Trading</a>
+            <a href="index.html#tutorials">Tutorials</a>
+        </div>
+        <div>
+            <small>
+                © <span id="current-year"></span> Munir Nweiser
+            </small>
+        </div>
+    </div>
 </footer>
+
+<script src="app.js"></script>
 
 </body>
 </html>
