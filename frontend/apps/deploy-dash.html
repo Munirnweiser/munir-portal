@@ -29,7 +29,17 @@
 <a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
 <nav class="main-nav" aria-label="Main navigation">
 <a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
-</nav></div></header>
+</nav>
+            <button
+                id="mobile-menu-button"
+                class="mobile-menu-button"
+                type="button"
+                aria-label="Open navigation menu"
+                aria-expanded="false"
+            >
+                ☰
+            </button>
+</div></header>
 
 <main class="container" style="padding:120px 0 80px">
 <div class="section-heading">
@@ -83,7 +93,8 @@
         { icon: '🔒', label: 'expired cert' },
         { icon: '🧨', label: 'bad migration' }
     ];
-    var canvas, ctx, running, px, items, keys, score, dist, pickups, hits, speed, last, spawnT, elapsed;
+    var canvas, ctx, running, px, items, score, dist, pickups, hits, speed, last, spawnT, elapsed;
+    var keys = { left: false, right: false };
 
     function $(id) { return document.getElementById(id); }
     function show(id) {
@@ -208,7 +219,8 @@
         show('end-screen');
     }
     function startGame() {
-        px = W / 2 - 20; items = []; keys = { left: false, right: false };
+        px = W / 2 - 20; items = [];
+        keys.left = false; keys.right = false;
         score = 0; dist = 0; pickups = 0; hits = 0;
         speed = 190; elapsed = 0; spawnT = 0.8; running = true;
         updateHud();
