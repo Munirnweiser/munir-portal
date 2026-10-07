@@ -159,6 +159,16 @@
                 <div class="badge-icon">🧮</div>
                 <div class="badge-name">Number Cruncher</div>
                 <div class="badge-desc">Run 5 different calculators</div>
+            <div class="badge-card locked" data-badge="incident-commander">
+                <div class="badge-icon">🚨</div>
+                <div class="badge-name">Incident Commander</div>
+                <div class="badge-desc">Score 16+ on A Day on the Desk</div>
+            </div>
+            <div class="badge-card locked" data-badge="fix-certified">
+                <div class="badge-icon">📜</div>
+                <div class="badge-name">FIX Certified</div>
+                <div class="badge-desc">Perfect score on the FIX Certification Simulator</div>
+            </div>
             </div>
     </div>
 
@@ -395,7 +405,7 @@
         document.getElementById('stat-xp').textContent = snap.xp;
         document.getElementById('stat-streak').textContent = snap.streak + ' (best ' + snap.longestStreak + ')';
         document.getElementById('stat-tuts').textContent = snap.tutorialsDone + '/23';
-        document.getElementById('stat-badges').textContent = snap.badges.length + '/8';
+        document.getElementById('stat-badges').textContent = snap.badges.length + '/' + window.PortalProgress.BADGES.length;
 
         document.querySelectorAll('#badge-grid .badge-card').forEach(function (card) {
             var id = card.getAttribute('data-badge');

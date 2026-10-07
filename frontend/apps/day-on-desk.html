@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A Day on the Desk — choose-your-own-adventure sev-1. You&#x27;re the on-call analyst at 3 AM: triage, diagnose, escalate, fix, postmortem. Every call scored.">
+    <title>A Day on the Desk | Munir Nweiser</title>
+    <meta property="og:title" content="A Day on the Desk | Munir Nweiser">
+    <meta property="og:description" content="Survive a 3 AM sev-1: 9 scored decisions across a realistic FIX session outage.">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .adv-wrap { max-width: 780px; margin: 0 auto; }
+        .hidden { display: none !important; }
+        .kicker { color: var(--cyan); font-size: .8rem; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 6px; }
+        .scene-card { background: rgba(15,23,42,.7); border: 1px solid rgba(148,163,184,.2); border-radius: 14px; padding: 24px; margin: 16px 0; }
+        .scene-text { color: #cbd5e1; line-height: 1.8; margin: 10px 0 18px; }
+        .opt-btn { display: block; width: 100%; text-align: left; background: rgba(34,211,238,.05); border: 1px solid rgba(34,211,238,.25); color: #e2e8f0; padding: 12px 16px; border-radius: 10px; cursor: pointer; font-size: .92rem; margin: 8px 0; font-family: inherit; line-height: 1.5; }
+        .opt-btn:hover:not(:disabled) { background: rgba(34,211,238,.14); }
+        .opt-btn:disabled { cursor: default; opacity: .85; }
+        .opt-best { border-color: #34d399 !important; }
+        .opt-good { background: rgba(52,211,153,.15) !important; border-color: #34d399 !important; }
+        .opt-ok { background: rgba(251,191,36,.12) !important; border-color: #fbbf24 !important; }
+        .opt-bad { background: rgba(248,113,113,.12) !important; border-color: #f87171 !important; }
+        .why-box { background: rgba(15,23,42,.9); border-left: 3px solid var(--cyan); border-radius: 0 10px 10px 0; padding: 14px 18px; margin: 14px 0; }
+        .why-box p { color: #cbd5e1; line-height: 1.7; margin: 8px 0 0; font-size: .92rem; }
+        .pts-tag { display: inline-block; font-weight: 700; font-size: .8rem; border-radius: 6px; padding: 3px 10px; }
+        .pts-good { background: rgba(52,211,153,.15); color: #6ee7b7; border: 1px solid rgba(52,211,153,.4); }
+        .pts-ok { background: rgba(251,191,36,.12); color: #fcd34d; border: 1px solid rgba(251,191,36,.4); }
+        .pts-bad { background: rgba(248,113,113,.12); color: #fca5a5; border: 1px solid rgba(248,113,113,.4); }
+        .fix-raw { background: #0b1220; border: 1px solid rgba(148,163,184,.25); border-radius: 10px; padding: 14px 16px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .82rem; color: #a5f3fc; overflow-x: auto; white-space: pre-wrap; word-break: break-all; line-height: 1.7; }
+        .timer-bar { height: 8px; background: rgba(148,163,184,.15); border-radius: 4px; overflow: hidden; margin: 10px 0; }
+        .timer-fill { height: 100%; background: #22d3ee; width: 100%; transition: width 1s linear; }
+        .timer-fill.low { background: #f87171; }
+        .score-line { color: var(--text-muted); font-size: .85rem; margin: 6px 0; }
+        .big-score { font-size: 3rem; font-weight: 800; color: #22d3ee; }
+        .grade { font-size: 1.3rem; font-weight: 700; margin: 8px 0; }
+        .review-item { border-bottom: 1px solid rgba(148,163,184,.12); padding: 12px 0; }
+        .review-item p { color: #cbd5e1; font-size: .9rem; line-height: 1.65; margin: 6px 0; }
+        .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+        .share-btn { display: inline-block; padding: 7px 14px; border: 1px solid var(--border); border-radius: 999px; color: var(--cyan); font-size: 0.8rem; background: transparent; cursor: pointer; text-decoration: none; font-family: inherit; }
+        .share-btn:hover { border-color: var(--cyan); }
+
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header">
+
+        <div class="container nav-container">
+
+            <a href="../index.html" class="logo">
+                <span class="logo-mark">MN</span>
+
+                <span class="logo-text">
+                    Munir Nweiser
+                    <small>Capital Markets • Technology</small>
+                </span>
+            </a>
+
+
+            <nav class="main-nav" aria-label="Main navigation">
+
+                <a href="../index.html">Home</a>
+                <a href="../resume.html">Resume</a>
+                <a href="../scientific-calculator.html">Calculator</a>
+                <a href="../index.html#markets">Markets</a>
+                <a href="../index.html#trading">Trading</a>
+                <a href="../index.html#tutorials">Tutorials</a>
+                <a href="../roadmap.html">Roadmap</a>
+                <a href="../changelog.html">Changelog</a>
+                <a href="../index.html#games">Games</a>
+                <a href="../index.html#memories">Memories</a>
+
+            </nav>
+
+            <button
+                id="mobile-menu-button"
+                class="mobile-menu-button"
+                type="button"
+                aria-label="Open navigation menu"
+                aria-expanded="false"
+            >
+                ☰
+            </button>
+
+        </div>
+
+    </header>
+
+<main class="container" style="padding:120px 0 80px; max-width: 900px;">
+
+    <div class="section-heading">
+        <p class="eyebrow">Interactive incident</p>
+        <h2>A Day on the Desk</h2>
+        <p>Nine decisions between you and the Tokyo open. Choose like it&#x27;s 3 AM — every call is scored.</p>
+    </div>
+
+    <div class="adv-wrap">
+
+    <div id="dod-start" class="scene-card">
+        <div class="kicker">Interactive incident &middot; 9 decisions</div>
+        <h3 style="margin:6px 0 12px;">03:07 AM. Your pager goes off.</h3>
+        <p class="scene-text">You are the on-call production support analyst for the equities flow platform. A FIX session just dropped 23 minutes before Tokyo open. Over the next 9 decisions — triage, diagnosis, escalation, fix, postmortem — every choice is scored like the real thing: the good call, the acceptable call, and the call that creates a second outage.</p>
+        <p class="scene-text" style="color:var(--text-muted); font-size:.9rem;">Scoring: best call +2, acceptable +1, dangerous 0. No timers — think like it's 3 AM.</p>
+        <div class="btn-row"><button type="button" class="btn btn-primary" id="dod-begin">Begin the shift</button></div>
+    </div>
+
+    <div id="dod-scene" class="scene-card hidden">
+        <div class="kicker" id="dod-time">03:07</div>
+        <h3 id="dod-title" style="margin:6px 0 4px;"></h3>
+        <p class="score-line" id="dod-score"></p>
+        <p class="scene-text" id="dod-text"></p>
+        <div id="dod-opts"></div>
+        <div id="dod-why" class="why-box hidden"></div>
+        <div class="btn-row"><button type="button" class="btn btn-primary hidden" id="dod-next">Continue</button></div>
+    </div>
+
+    <div id="dod-end" class="scene-card hidden">
+        <div class="kicker">Shift review</div>
+        <h3 style="margin:6px 0;">Your grade: <span id="dod-grade" class="grade"></span></h3>
+        <div class="big-score" id="dod-final-score"></div>
+        <p class="scene-text" id="dod-grade-sub"></p>
+        <h4 style="margin:18px 0 6px;">Decision-by-decision review</h4>
+        <div id="dod-review"></div>
+        <div class="btn-row"><button type="button" class="btn btn-secondary" id="dod-again">Run it again</button></div>
+
+<div class="score-share" style="margin-top:16px; text-align:center;">
+    <p style="color:var(--text-muted); font-size:0.8rem; margin:0 0 8px;">Share your score</p>
+    <a class="share-btn" data-ss="x" target="_blank" rel="noopener" href="#">X</a>
+    <a class="share-btn" data-ss="linkedin" target="_blank" rel="noopener" href="#">LinkedIn</a>
+    <a class="share-btn" data-ss="wa" target="_blank" rel="noopener" href="#">WhatsApp</a>
+    <button class="share-btn" data-ss="copy" type="button">Copy</button>
+</div>
+    </div>
+
+    </div>
+
+    <p style="margin-top:28px;"><a href="../index.html#games" class="btn btn-secondary">&larr; Back to games</a></p>
+
+</main>
+
+<footer class="site-footer">
+
+        <div class="container footer-content">
+
+            <div>
+
+                <strong>
+                    Munir Nweiser
+                </strong>
+
+                <p>
+                    Application Support • Capital Markets • Technology
+                </p>
+
+            </div>
+
+
+            <div class="footer-links">
+
+                <a href="../index.html#home">Home</a>
+                <a href="../resume.html">Resume</a>
+                <a href="../index.html#trading">Trading</a>
+                <a href="../index.html#tutorials">Tutorials</a>
+
+            </div>
+
+
+            <div>
+
+                <small>
+                    © <span id="current-year"></span>
+                    Munir Nweiser
+                </small>
+
+                <br>
+
+                <small class="visitor-count">
+                    <span id="visitor-count"></span>
+                </small>
+
+                <small class="site-credit">
+                    Designed &amp; built with Muse 🤖
+                </small>
+
+            </div>
+
+        </div>
+
+    </footer>
+<script src="../app.js"></script>
+<script src="../counter.js"></script>
+<script src="../js/progress.js"></script>
+
+<script>
+
+(function () {
+    'use strict';
+    var SCENES = [
+    {time: "03:07", title: "The pager", text: "PagerDuty is screaming. CRITICAL: FIX session SG-FIX-TOK-01 is DOWN. Tokyo opens in 23 minutes and the flow desk routes through that session. Your phone shows 4 missed calls from the night desk.",
+     opts: [
+        {t: "Acknowledge the page, join the incident bridge, pull up the session dashboard.", pts: 2, why: "Textbook. Acknowledge first so the escalation policy stops paging your manager, then get eyes on the problem before touching anything."},
+        {t: "Read the alert on your phone for a minute, then decide what to do.", pts: 1, why: "Slow start. Every minute of Tokyo pre-open without that session is client flow at risk — the desk is already noticing."},
+        {t: "Snooze it for 10 minutes — probably a flaky alert.", pts: 0, why: "A FIX session drop 23 minutes before Tokyo open is never flaky. By the time you wake up, the desk will have escalated over you."}
+     ]},
+    {time: "03:11", title: "Triage", text: "You're on the bridge. Two facts: the session shows DOWN, and the last 4 client orders were REJECTED before it died. The engine log is right there.",
+     opts: [
+        {t: "Check session status and tail the engine log before doing anything else.", pts: 2, why: "Diagnose before you act. The log will tell you whether this is network, sequence, or counterparty — each needs a different fix."},
+        {t: "Restart the FIX engine service now — fastest way to get the session back.", pts: 0, why: "Restarting blind wipes the session state you need for diagnosis. If it's a sequence-number issue, a restart can make it worse."},
+        {t: "Page the network team and the vendor immediately.", pts: 1, why: "Not wrong, but premature. Page with data ('session down, last error X'), not with panic — otherwise you burn goodwill."}
+     ]},
+    {time: "03:19", title: "The gap", text: "The log tells the story: last inbound MsgSeqNum processed was 34=152. The next message from the counterparty arrived as 34=155. Three messages vanished in transit.",
+     opts: [
+        {t: "Send a ResendRequest (35=2) for messages 152 to 154.", pts: 2, why: "Exactly right. A sequence gap means lost messages — possibly fills. ResendRequest is the protocol's built-in recovery; use it."},
+        {t: "Manually reset your sequence numbers to 155 and move on.", pts: 0, why: "You would silently drop 3 messages — possibly client fills. This is how reconciliation breaks are born at month-end."},
+        {t: "Wait — the counterparty will probably resend on their own.", pts: 1, why: "They won't. FIX puts recovery on the receiver: if you don't ask, those messages are gone forever."}
+     ]},
+    {time: "03:31", title: "Two fires", text: "ResendRequest is in flight. Meanwhile Grafana pings: the pricing engine's old-gen heap is climbing 200 MB/hour and just crossed 87%. Tokyo is about to open.",
+     opts: [
+        {t: "Use the wait productively: SSH in, grab a heap snapshot and check GC logs.", pts: 2, why: "Parallelize. The resend needs minutes; a heap dump now costs nothing and gives dev the evidence they'll need later."},
+        {t: "Restart the pricing engine right now before it OOMs.", pts: 0, why: "Restarting pricing mid-Tokyo-open without understanding the leak trades one outage for another — during live flow."},
+        {t: "Ignore the heap — the FIX session is the only priority.", pts: 1, why: "Understandable triage, but 87% and climbing is a second sev-1 brewing. At minimum set a watch alert so it can't surprise you."}
+     ]},
+    {time: "03:44", title: "The desk calls", text: "Tokyo sales is on the line: 'The client is asking why their orders aren't working. What do I tell them?'",
+     opts: [
+        {t: "'Session dropped at 03:07, we're replaying the missed messages now, ETA 10 minutes — I'll update you at :55.'", pts: 2, why: "Perfect comms: what happened, what you're doing, when they'll hear next. The desk can face the client with this."},
+        {t: "'We're working on it.'", pts: 1, why: "True but useless. The desk can't relay this to a client, so they'll call back in 5 minutes — now you're fighting two fires."},
+        {t: "Let it go to voicemail — you're busy fixing things.", pts: 0, why: "The client will escalate through sales management. Silence during an outage is read as chaos, whatever the reality."}
+     ]},
+    {time: "03:52", title: "Duplicates", text: "The resend arrived: 3 messages, all flagged 43=Y (PossDupFlag). One of them is a fill for 5,000 shares that your book may already have.",
+     opts: [
+        {t: "Reconcile all three against the order book before booking anything.", pts: 2, why: "PossDupFlag means 'you may have seen this'. Booking a duplicate fill double-counts the position — reconcile by ClOrdID/OrderID first."},
+        {t: "Book them — PossDupFlag is just informational.", pts: 0, why: "It is informational — it's informing you this might be a duplicate. Booking blind risks a phantom fill in the book."},
+        {t: "Book only the fill, skip the other two.", pts: 1, why: "Half right gets half credit. The fill is the dangerous one, but the other two could be cancels or replaces that matter."}
+     ]},
+    {time: "04:20", title: "The leak", text: "Heap just hit 94%. Tokyo is live, flow has resumed on the recovered session, but the pricing engine will not survive the morning at this rate.",
+     opts: [
+        {t: "Schedule a controlled restart right after Tokyo close, and file a Sev-3 to dev with the heap dump attached.", pts: 2, why: "The complete play: protect live trading, give dev the evidence, and make the leak somebody's tracked problem — not tomorrow's 3 AM page."},
+        {t: "Restart it now — it's about to OOM anyway.", pts: 1, why: "Defensible under pressure, but a mid-session restart is a gamble. The controlled post-close restart is cleaner and just as fast."},
+        {t: "It'll hold until the morning shift.", pts: 0, why: "At 200 MB/hour from 94%, it will not hold. This is how a sev-1 becomes a sev-1 with a side of data corruption."}
+     ]},
+    {time: "05:40", title: "Resolved", text: "Session stable for an hour. Heap restarted cleanly after the close. All breaks reconciled — no phantom fills. The bridge is quiet. What now?",
+     opts: [
+        {t: "Write the timeline, file a problem ticket with action items (heap alert at 80%, resend runbook).", pts: 2, why: "Incidents end with learning. The problem ticket turns your 3 AM heroics into something the next on-call doesn't have to repeat."},
+        {t: "Close the incident and go back to sleep. You earned it.", pts: 0, why: "You did earn it — but without a timeline, the review tomorrow runs on memory, and the heap alert never gets built."},
+        {t: "Write the timeline, skip the problem ticket.", pts: 1, why: "The timeline is the hard part and you did it. The problem ticket is 5 more minutes and it's what prevents recurrence."}
+     ]},
+    {time: "09:00", title: "The review", text: "Morning review. Your manager asks: 'What would you do differently next time?'",
+     opts: [
+        {t: "'We caught the heap leak by luck. I'd add an 80% heap alert and a resend-request runbook.'", pts: 2, why: "Honest, specific, forward-looking. This answer is why postmortems exist — and why managers trust you with the next sev-1."},
+        {t: "'Nothing — we handled it well.'", pts: 1, why: "Confident, but you learned nothing on paper. Reviews reward the analyst who finds the gap, not the one who hides it."},
+        {t: "Blame the counterparty's feed for dropping the messages.", pts: 0, why: "Maybe true, maybe not — and it teaches nothing. Owners fix their side; victims file complaints."}
+     ]}
+];
+    var MAX = SCENES.length * 2;
+    var idx = 0, score = 0, picks = [];
+    function $(id) { return document.getElementById(id); }
+    function show(id) {
+        ["dod-start","dod-scene","dod-end"].forEach(function (s) { $(s).classList.add("hidden"); });
+        $(id).classList.remove("hidden");
+    }
+    function renderScene() {
+        var s = SCENES[idx];
+        $("dod-time").textContent = s.time;
+        $("dod-title").textContent = "Decision " + (idx + 1) + " of " + SCENES.length + " — " + s.title;
+        $("dod-text").textContent = s.text;
+        $("dod-score").textContent = "Score: " + score + " / " + MAX;
+        var box = $("dod-opts"); box.innerHTML = "";
+        $("dod-why").classList.add("hidden");
+        $("dod-next").classList.add("hidden");
+        s.opts.forEach(function (o, i) {
+            var b = document.createElement("button");
+            b.type = "button"; b.className = "opt-btn";
+            b.textContent = o.t;
+            b.onclick = (function (j) { return function () { choose(j); }; })(i);
+            box.appendChild(b);
+        });
+        show("dod-scene");
+    }
+    function choose(i) {
+        var s = SCENES[idx], o = s.opts[i];
+        score += o.pts;
+        picks.push({i: idx, pick: i, pts: o.pts});
+        var btns = $("dod-opts").querySelectorAll(".opt-btn");
+        btns.forEach(function (b, j) {
+            b.disabled = true;
+            if (s.opts[j].pts === 2) b.classList.add("opt-best");
+        });
+        btns[i].classList.add(o.pts === 2 ? "opt-good" : (o.pts === 1 ? "opt-ok" : "opt-bad"));
+        var w = $("dod-why");
+        w.innerHTML = "";
+        var tag = document.createElement("div");
+        tag.className = "pts-tag " + (o.pts === 2 ? "pts-good" : (o.pts === 1 ? "pts-ok" : "pts-bad"));
+        tag.textContent = "+" + o.pts + " pts";
+        var p = document.createElement("p");
+        p.textContent = o.why;
+        w.appendChild(tag); w.appendChild(p);
+        w.classList.remove("hidden");
+        $("dod-score").textContent = "Score: " + score + " / " + MAX;
+        var nb = $("dod-next");
+        nb.textContent = (idx === SCENES.length - 1) ? "See your review" : "Continue";
+        nb.classList.remove("hidden");
+    }
+    function grade() {
+        if (score >= 16) return ["Incident Commander", "Calm, methodical, and you communicate. The desk trusts you with the next sev-1."];
+        if (score >= 12) return ["Solid Analyst", "Strong instincts with a couple of rough edges — review the misses below."];
+        if (score >= 8) return ["Journeyman", "You survived the night, but a few calls would have hurt in production. Study the misses."];
+        return ["Needs a mentor on the bridge", "Too many calls that create second outages. Walk through the misses below, then run it again."];
+    }
+    function finish() {
+        var g = grade();
+        $("dod-grade").textContent = g[0];
+        $("dod-grade-sub").textContent = g[1];
+        $("dod-final-score").textContent = score + " / " + MAX;
+        var rev = $("dod-review"); rev.innerHTML = "";
+        picks.forEach(function (pk) {
+            var s = SCENES[pk.i];
+            var div = document.createElement("div");
+            div.className = "review-item";
+            var h = document.createElement("strong");
+            h.textContent = s.time + " — " + s.title + " (+" + pk.pts + ")";
+            var yp = document.createElement("p");
+            yp.appendChild(document.createTextNode("Your call: " + s.opts[pk.pick].t));
+            var bp = document.createElement("p");
+            var best = s.opts.reduce(function (a, b) { return b.pts > a.pts ? b : a; });
+            bp.appendChild(document.createTextNode("Best call: " + best.t + " — " + best.why));
+            div.appendChild(h); div.appendChild(yp); div.appendChild(bp);
+            rev.appendChild(div);
+        });
+        var txt = "I scored " + score + "/" + MAX + " (" + g[0] + ") on A Day on the Desk — can you survive the sev-1?";
+        window.setScoreShareText(txt);
+        if (window.PortalProgress) {
+            var r = window.PortalProgress.setHighScore("day-on-desk", score);
+            if (r.isNew) window.PortalProgress.addXP(score >= 12 ? 50 : 25, "A Day on the Desk");
+            if (score >= 16) window.PortalProgress.award("incident-commander");
+        }
+        show("dod-end");
+    }
+    $("dod-begin").addEventListener("click", function () { idx = 0; score = 0; picks = []; renderScene(); });
+    $("dod-next").addEventListener("click", function () { idx++; if (idx < SCENES.length) renderScene(); else finish(); });
+    $("dod-again").addEventListener("click", function () { idx = 0; score = 0; picks = []; show("dod-start"); });
+
+    window.copyTextPlain = function (t, btn) {
+        function done() { if (btn) { var o = btn.textContent; btn.textContent = "Copied!"; setTimeout(function () { btn.textContent = o; }, 1200); } }
+        if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(t).then(done, function () { prompt("Copy your score:", t); }); }
+        else { prompt("Copy your score:", t); }
+    };
+    window.setScoreShareText = function (t) {
+        var url = location.href.split("?")[0];
+        var txt = encodeURIComponent(t + " " + url);
+        document.querySelectorAll("[data-ss]").forEach(function (el) {
+            var k = el.getAttribute("data-ss");
+            if (k === "x") el.href = "https://twitter.com/intent/tweet?text=" + txt;
+            else if (k === "linkedin") el.href = "https://www.linkedin.com/sharing/share-offsite/?url=" + encodeURIComponent(url);
+            else if (k === "wa") el.href = "https://wa.me/?text=" + txt;
+            else if (k === "copy") el.onclick = function () { window.copyTextPlain(decodeURIComponent(txt), el); };
+        });
+    };
+})();
+
+</script>
+
+<script src="../js/palette.js"></script>
+<script src="../js/reveal.js"></script>
+</body>
+</html>

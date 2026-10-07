@@ -260,4 +260,6 @@
     <loc>https://munirnweiser.github.io/munir-portal/weather.html</loc>
     <lastmod>2026-10-07</lastmod>
   </url>
+  <url><loc>https://munirnweiser.github.io/munir-portal/apps/day-on-desk.html</loc><lastmod>2026-10-07</lastmod></url>
+  <url><loc>https://munirnweiser.github.io/munir-portal/apps/fix-cert-sim.html</loc><lastmod>2026-10-07</lastmod></url>
 </urlset>

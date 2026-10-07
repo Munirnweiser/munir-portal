@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="FIX Certification Simulator — timed mock certification. 8 edge cases: sequence gaps, duplicates, rejects, logouts, heartbeat checks, checksum failures. 45 seconds each.">
+    <title>FIX Certification Simulator | Munir Nweiser</title>
+    <meta property="og:title" content="FIX Certification Simulator | Munir Nweiser">
+    <meta property="og:description" content="Mock FIX certification: 8 edge cases, 45 seconds each. Can you pass?">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .adv-wrap { max-width: 780px; margin: 0 auto; }
+        .hidden { display: none !important; }
+        .kicker { color: var(--cyan); font-size: .8rem; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 6px; }
+        .scene-card { background: rgba(15,23,42,.7); border: 1px solid rgba(148,163,184,.2); border-radius: 14px; padding: 24px; margin: 16px 0; }
+        .scene-text { color: #cbd5e1; line-height: 1.8; margin: 10px 0 18px; }
+        .opt-btn { display: block; width: 100%; text-align: left; background: rgba(34,211,238,.05); border: 1px solid rgba(34,211,238,.25); color: #e2e8f0; padding: 12px 16px; border-radius: 10px; cursor: pointer; font-size: .92rem; margin: 8px 0; font-family: inherit; line-height: 1.5; }
+        .opt-btn:hover:not(:disabled) { background: rgba(34,211,238,.14); }
+        .opt-btn:disabled { cursor: default; opacity: .85; }
+        .opt-best { border-color: #34d399 !important; }
+        .opt-good { background: rgba(52,211,153,.15) !important; border-color: #34d399 !important; }
+        .opt-ok { background: rgba(251,191,36,.12) !important; border-color: #fbbf24 !important; }
+        .opt-bad { background: rgba(248,113,113,.12) !important; border-color: #f87171 !important; }
+        .why-box { background: rgba(15,23,42,.9); border-left: 3px solid var(--cyan); border-radius: 0 10px 10px 0; padding: 14px 18px; margin: 14px 0; }
+        .why-box p { color: #cbd5e1; line-height: 1.7; margin: 8px 0 0; font-size: .92rem; }
+        .pts-tag { display: inline-block; font-weight: 700; font-size: .8rem; border-radius: 6px; padding: 3px 10px; }
+        .pts-good { background: rgba(52,211,153,.15); color: #6ee7b7; border: 1px solid rgba(52,211,153,.4); }
+        .pts-ok { background: rgba(251,191,36,.12); color: #fcd34d; border: 1px solid rgba(251,191,36,.4); }
+        .pts-bad { background: rgba(248,113,113,.12); color: #fca5a5; border: 1px solid rgba(248,113,113,.4); }
+        .fix-raw { background: #0b1220; border: 1px solid rgba(148,163,184,.25); border-radius: 10px; padding: 14px 16px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .82rem; color: #a5f3fc; overflow-x: auto; white-space: pre-wrap; word-break: break-all; line-height: 1.7; }
+        .timer-bar { height: 8px; background: rgba(148,163,184,.15); border-radius: 4px; overflow: hidden; margin: 10px 0; }
+        .timer-fill { height: 100%; background: #22d3ee; width: 100%; transition: width 1s linear; }
+        .timer-fill.low { background: #f87171; }
+        .score-line { color: var(--text-muted); font-size: .85rem; margin: 6px 0; }
+        .big-score { font-size: 3rem; font-weight: 800; color: #22d3ee; }
+        .grade { font-size: 1.3rem; font-weight: 700; margin: 8px 0; }
+        .review-item { border-bottom: 1px solid rgba(148,163,184,.12); padding: 12px 0; }
+        .review-item p { color: #cbd5e1; font-size: .9rem; line-height: 1.65; margin: 6px 0; }
+        .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+        .share-btn { display: inline-block; padding: 7px 14px; border: 1px solid var(--border); border-radius: 999px; color: var(--cyan); font-size: 0.8rem; background: transparent; cursor: pointer; text-decoration: none; font-family: inherit; }
+        .share-btn:hover { border-color: var(--cyan); }
+
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header">
+
+        <div class="container nav-container">
+
+            <a href="../index.html" class="logo">
+                <span class="logo-mark">MN</span>
+
+                <span class="logo-text">
+                    Munir Nweiser
+                    <small>Capital Markets • Technology</small>
+                </span>
+            </a>
+
+
+            <nav class="main-nav" aria-label="Main navigation">
+
+                <a href="../index.html">Home</a>
+                <a href="../resume.html">Resume</a>
+                <a href="../scientific-calculator.html">Calculator</a>
+                <a href="../index.html#markets">Markets</a>
+                <a href="../index.html#trading">Trading</a>
+                <a href="../index.html#tutorials">Tutorials</a>
+                <a href="../roadmap.html">Roadmap</a>
+                <a href="../changelog.html">Changelog</a>
+                <a href="../index.html#games">Games</a>
+                <a href="../index.html#memories">Memories</a>
+
+            </nav>
+
+            <button
+                id="mobile-menu-button"
+                class="mobile-menu-button"
+                type="button"
+                aria-label="Open navigation menu"
+                aria-expanded="false"
+            >
+                ☰
+            </button>
+
+        </div>
+
+    </header>
+
+<main class="container" style="padding:120px 0 80px; max-width: 900px;">
+
+    <div class="section-heading">
+        <p class="eyebrow">Mock certification</p>
+        <h2>FIX Certification Simulator</h2>
+        <p>Eight edge cases. Forty-five seconds each. Answer like the session depends on it.</p>
+    </div>
+
+    <div class="adv-wrap">
+
+    <div id="cert-start" class="scene-card">
+        <div class="kicker">Timed mock certification &middot; 8 cases &middot; 45s each</div>
+        <h3 style="margin:6px 0 12px;">The counterparty is waiting.</h3>
+        <p class="scene-text">This is a mock FIX certification: the "counterparty" throws 8 classic edge cases at you — sequence gaps, duplicates, rejects, logouts, heartbeat checks, cancel rejects, version mismatches, checksum failures. For each one you get the raw message and 45 seconds. Answer like the session depends on it.</p>
+        <div class="btn-row"><button type="button" class="btn btn-primary" id="cert-begin">Start certification</button></div>
+    </div>
+
+    <div id="cert-case" class="scene-card hidden">
+        <div class="kicker" id="cert-kicker"></div>
+        <div class="timer-bar"><div class="timer-fill" id="cert-timer-fill"></div></div>
+        <p class="score-line"><span id="cert-timer-label">45s</span> &nbsp;&middot;&nbsp; <span id="cert-score"></span></p>
+        <div class="fix-raw" id="cert-raw"></div>
+        <p class="scene-text" id="cert-note" style="font-size:.88rem; color:var(--text-muted);"></p>
+        <h4 id="cert-q" style="margin:10px 0;"></h4>
+        <div id="cert-opts"></div>
+        <div id="cert-why" class="why-box hidden"></div>
+        <div class="btn-row"><button type="button" class="btn btn-primary hidden" id="cert-next">Next case</button></div>
+    </div>
+
+    <div id="cert-end" class="scene-card hidden">
+        <div class="kicker">Certification result</div>
+        <h3 style="margin:6px 0;">Your grade: <span id="cert-grade" class="grade"></span></h3>
+        <div class="big-score" id="cert-final"></div>
+        <p class="scene-text" id="cert-grade-sub"></p>
+        <h4 style="margin:18px 0 6px;">Case-by-case review</h4>
+        <div id="cert-review"></div>
+        <div class="btn-row"><button type="button" class="btn btn-secondary" id="cert-again">Re-take</button></div>
+
+<div class="score-share" style="margin-top:16px; text-align:center;">
+    <p style="color:var(--text-muted); font-size:0.8rem; margin:0 0 8px;">Share your score</p>
+    <a class="share-btn" data-ss="x" target="_blank" rel="noopener" href="#">X</a>
+    <a class="share-btn" data-ss="linkedin" target="_blank" rel="noopener" href="#">LinkedIn</a>
+    <a class="share-btn" data-ss="wa" target="_blank" rel="noopener" href="#">WhatsApp</a>
+    <button class="share-btn" data-ss="copy" type="button">Copy</button>
+</div>
+    </div>
+
+    </div>
+
+    <p style="margin-top:28px;"><a href="../index.html#games" class="btn btn-secondary">&larr; Back to games</a></p>
+
+</main>
+
+<footer class="site-footer">
+
+        <div class="container footer-content">
+
+            <div>
+
+                <strong>
+                    Munir Nweiser
+                </strong>
+
+                <p>
+                    Application Support • Capital Markets • Technology
+                </p>
+
+            </div>
+
+
+            <div class="footer-links">
+
+                <a href="../index.html#home">Home</a>
+                <a href="../resume.html">Resume</a>
+                <a href="../index.html#trading">Trading</a>
+                <a href="../index.html#tutorials">Tutorials</a>
+
+            </div>
+
+
+            <div>
+
+                <small>
+                    © <span id="current-year"></span>
+                    Munir Nweiser
+                </small>
+
+                <br>
+
+                <small class="visitor-count">
+                    <span id="visitor-count"></span>
+                </small>
+
+                <small class="site-credit">
+                    Designed &amp; built with Muse 🤖
+                </small>
+
+            </div>
+
+        </div>
+
+    </footer>
+<script src="../app.js"></script>
+<script src="../counter.js"></script>
+<script src="../js/progress.js"></script>
+
+<script>
+
+(function () {
+    'use strict';
+    var CASES = [
+    {title: "Case 1 — The gap", raw: "8=FIX.4.4|9=112|35=D|49=CLIENT|56=SG|34=155|52=20261007-03:19:02|11=ORD7781|55=AAPL|54=1|60=20261007-03:19:01|40=2|44=150.25|38=500|10=042|", note: "Your session's expected inbound sequence number is 152.", q: "You receive 34=155 but expected 152. What do you send?", opts: ["ResendRequest (35=2) asking for messages 152-154", "SequenceReset (35=4) jumping straight to 155", "Logout (35=5) and reconnect", "Nothing — wait for the counterparty to notice"], correct: 0, why: "A sequence gap means lost messages — possibly fills. FIX recovery is the receiver's job: send 35=2 ResendRequest for 152-154. Never skip with a SequenceReset (that drops the missing messages) and never logout over a gap."},
+    {title: "Case 2 — The duplicate", raw: "8=FIX.4.4|9=140|35=8|49=SG|56=CLIENT|34=210|52=20261007-03:52:11|37=EXE991|11=ORD7781|17=EX992|20=0|150=2|39=2|55=AAPL|54=1|38=5000|32=5000|31=150.30|14=5000|6=150.30|43=Y|10=117|", note: "Note tag 43=Y.", q: "An ExecutionReport arrives with 43=Y (PossDupFlag). What do you do?", opts: ["Check ClOrdID/OrderID against your book; if already processed, discard it", "Book it immediately — a fill is a fill", "Reply with a Reject (35=3)", "Send a ResendRequest for it"], correct: 0, why: "43=Y means 'this may be a duplicate of something you already got' — typically from a resend. Reconcile by 11/37 first. Booking it blind double-counts the position; rejecting a valid report is wrong."},
+    {title: "Case 3 — The reject", raw: "8=FIX.4.4|9=98|35=3|49=SG|56=CLIENT|34=88|52=20261007-04:02:44|45=87|58=Required tag missing:44|371=44|372=D|373=1|10=203|", note: "45=87 refers to your outbound NewOrderSingle with 34=87.", q: "You get 35=3 Reject: 'Required tag missing: 44'. What is the fix?", opts: ["Add tag 44 (Price) to your NewOrderSingle and send it as a new order", "Resend the identical NewOrderSingle — maybe it was a glitch", "Send a TestRequest (35=1) to check the session", "Reset sequence numbers and try again"], correct: 0, why: "371=44 names the missing tag, 372=D says it was your NewOrderSingle, 373=1 means 'required tag missing'. For a limit order (40=2), tag 44 Price is mandatory. Fix the message and send a new order — never resend the identical broken one."},
+    {title: "Case 4 — The logout", raw: "8=FIX.4.4|9=64|35=5|49=SG|56=CLIENT|34=301|52=20261007-21:00:00|58=End of day|10=188|", note: "It's 21:00 — end of the trading day.", q: "The counterparty sends 35=5 Logout at end of day. You should:", opts: ["Stop sending, close the session gracefully, schedule tomorrow's logon", "Immediately send a Logon (35=A) to reconnect", "Keep sending orders — logout is only advisory", "Send a ResendRequest to make sure nothing was missed, then keep trading"], correct: 0, why: "A 35=5 is a clean session close. Honor it: stop outbound flow, tear down gracefully, and log on fresh next session. Reconnecting instantly or trading through a logout breaks the session contract and the next day's sequence numbers."},
+    {title: "Case 5 — The heartbeat check", raw: "8=FIX.4.4|9=72|35=1|49=SG|56=CLIENT|34=302|52=20261007-10:15:00|112=TEST7788|10=091|", note: "Tag 112 is present.", q: "You receive 35=1 TestRequest with 112=TEST7788. The correct reply is:", opts: ["Heartbeat (35=0) with 112=TEST7788 echoed back", "TestRequest (35=1) with a new 112 value", "Heartbeat (35=0) without tag 112", "Logout (35=5) — they think you're dead"], correct: 0, why: "A TestRequest demands a Heartbeat echoing the exact TestReqID (112). That's how the counterparty verifies you're alive. A new 112 answers a question nobody asked; omitting 112 fails the check."},
+    {title: "Case 6 — The cancel reject", raw: "8=FIX.4.4|9=128|35=9|49=SG|56=CLIENT|34=303|52=20261007-11:20:00|37=EXE991|11=CXL221|41=ORD7781|39=8|102=1|58=Unknown order|10=044|", note: "39=8 (Rejected), 102=1 (Unknown order).", q: "Your cancel gets 35=9 CancelReject: 39=8, 102=1 'Unknown order'. Next step?", opts: ["Verify the order's actual state yourself — check whether it already filled — before doing anything", "Retry the identical cancel immediately", "Send an OrderCancelReplaceRequest instead", "Reset sequence numbers to resync"], correct: 0, why: "'Unknown order' often means the order already filled or never reached the venue. Blindly retrying a cancel (or firing a replace) against a filled order is how you double-trade. Reconcile state first, then decide."},
+    {title: "Case 7 — The version mismatch", raw: "8=FIX.4.2|9=84|35=A|49=CLIENT|56=SG|34=1|52=20261007-08:00:00|98=0|108=30|10=156|", note: "Your session is configured for FIX.4.4.", q: "The counterparty logs on with 8=FIX.4.2, but your session is FIX.4.4. What do you do?", opts: ["Refuse the session — reply Logout; BeginString must match the agreed version", "Accept it — 4.2 and 4.4 are close enough", "Rewrite 8=FIX.4.4 on their messages and continue", "Ignore the logon and start sending orders"], correct: 0, why: "BeginString is the session's identity. A version mismatch means different dictionaries and different required tags — accepting it guarantees downstream rejects. The spec-correct move is to refuse (Logout) and fix the configuration, not to improvise."},
+    {title: "Case 8 — The bad checksum", raw: "8=FIX.4.4|9=96|35=0|49=SG|56=CLIENT|34=304|52=20261007-12:00:00|10=999|", note: "You recompute the checksum: it should be 10=137, not 10=999.", q: "An inbound message fails checksum validation. What do you do with it?", opts: ["Drop it — never process a message that fails checksum", "Process it anyway — checksum is advisory", "Reply with Reject (35=3)", "Reset the session"], correct: 0, why: "Checksum is the integrity gate. A failed checksum means the bytes are corrupt — processing it risks acting on garbage. FIX engines silently drop such messages (the counterparty's retransmit logic covers it). No reject: you can't even trust the parsed fields."}
+];
+    var PER_Q = 45;
+    var idx = 0, score = 0, timer = null, left = PER_Q, answered = false, log = [];
+    function $(id) { return document.getElementById(id); }
+    function show(id) {
+        ["cert-start","cert-case","cert-end"].forEach(function (s) { $(s).classList.add("hidden"); });
+        $(id).classList.remove("hidden");
+    }
+    function renderCase() {
+        answered = false;
+        var c = CASES[idx];
+        $("cert-kicker").textContent = c.title + "  (" + (idx + 1) + " of " + CASES.length + ")";
+        $("cert-raw").textContent = c.raw.split("|").join("|\n");
+        $("cert-note").textContent = c.note;
+        $("cert-q").textContent = c.q;
+        $("cert-score").textContent = "Score: " + score + " / " + CASES.length;
+        var box = $("cert-opts"); box.innerHTML = "";
+        c.opts.forEach(function (o, i) {
+            var b = document.createElement("button");
+            b.type = "button"; b.className = "opt-btn";
+            b.textContent = o;
+            b.onclick = (function (j) { return function () { answer(j); }; })(i);
+            box.appendChild(b);
+        });
+        $("cert-why").classList.add("hidden");
+        $("cert-next").classList.add("hidden");
+        left = PER_Q;
+        tick();
+        clearInterval(timer);
+        timer = setInterval(function () {
+            left--;
+            tick();
+            if (left <= 0) { clearInterval(timer); answer(-1); }
+        }, 1000);
+        show("cert-case");
+    }
+    function tick() {
+        var f = $("cert-timer-fill");
+        f.style.width = (100 * left / PER_Q) + "%";
+        f.classList.toggle("low", left <= 10);
+        $("cert-timer-label").textContent = left + "s";
+    }
+    function answer(i) {
+        if (answered) return;
+        answered = true;
+        clearInterval(timer);
+        var c = CASES[idx];
+        var ok = (i === c.correct);
+        if (ok) score++;
+        log.push({i: idx, pick: i, ok: ok});
+        var btns = $("cert-opts").querySelectorAll(".opt-btn");
+        btns.forEach(function (b, j) {
+            b.disabled = true;
+            if (j === c.correct) b.classList.add("opt-best");
+        });
+        if (i >= 0) btns[i].classList.add(ok ? "opt-good" : "opt-bad");
+        var w = $("cert-why");
+        w.innerHTML = "";
+        var tag = document.createElement("div");
+        tag.className = "pts-tag " + (ok ? "pts-good" : "pts-bad");
+        tag.textContent = i < 0 ? "TIME OUT — 0 pts" : (ok ? "CORRECT — +1" : "WRONG — 0 pts");
+        var p = document.createElement("p");
+        p.textContent = c.why;
+        w.appendChild(tag); w.appendChild(p);
+        w.classList.remove("hidden");
+        $("cert-score").textContent = "Score: " + score + " / " + CASES.length;
+        var nb = $("cert-next");
+        nb.textContent = (idx === CASES.length - 1) ? "See results" : "Next case";
+        nb.classList.remove("hidden");
+    }
+    function certGrade() {
+        if (score === 8) return ["CERTIFIED", "Clean sheet. You could sit the real certification tomorrow."];
+        if (score >= 6) return ["Nearly there", "One or two gaps — review the misses below and re-run."];
+        if (score >= 4) return ["Study the misses", "The patterns aren't solid yet. Read the FIX session spec, then try again."];
+        return ["Back to the spec", "Too many guesses. Walk the misses below line by line."];
+    }
+    function finish() {
+        var g = certGrade();
+        $("cert-grade").textContent = g[0];
+        $("cert-grade-sub").textContent = g[1];
+        $("cert-final").textContent = score + " / " + CASES.length;
+        var rev = $("cert-review"); rev.innerHTML = "";
+        log.forEach(function (e) {
+            var c = CASES[e.i];
+            var div = document.createElement("div");
+            div.className = "review-item";
+            var h = document.createElement("strong");
+            h.textContent = c.title + " — " + (e.ok ? "correct" : "missed");
+            var yp = document.createElement("p");
+            yp.appendChild(document.createTextNode("Your answer: " + (e.pick < 0 ? "(timed out)" : c.opts[e.pick])));
+            var bp = document.createElement("p");
+            bp.appendChild(document.createTextNode("Correct: " + c.opts[c.correct] + " — " + c.why));
+            div.appendChild(h); div.appendChild(yp); div.appendChild(bp);
+            rev.appendChild(div);
+        });
+        var txt = "I scored " + score + "/" + CASES.length + " (" + g[0] + ") on the FIX Certification Simulator — can you pass?";
+        window.setScoreShareText(txt);
+        if (window.PortalProgress) {
+            var r = window.PortalProgress.setHighScore("fix-cert-sim", score);
+            if (r.isNew) window.PortalProgress.addXP(score >= 6 ? 50 : 25, "FIX Certification Simulator");
+            if (score === 8) window.PortalProgress.award("fix-certified");
+        }
+        show("cert-end");
+    }
+    $("cert-begin").addEventListener("click", function () { idx = 0; score = 0; log = []; renderCase(); });
+    $("cert-next").addEventListener("click", function () { idx++; if (idx < CASES.length) renderCase(); else finish(); });
+    $("cert-again").addEventListener("click", function () { clearInterval(timer); show("cert-start"); });
+
+    window.copyTextPlain = function (t, btn) {
+        function done() { if (btn) { var o = btn.textContent; btn.textContent = "Copied!"; setTimeout(function () { btn.textContent = o; }, 1200); } }
+        if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(t).then(done, function () { prompt("Copy your score:", t); }); }
+        else { prompt("Copy your score:", t); }
+    };
+    window.setScoreShareText = function (t) {
+        var url = location.href.split("?")[0];
+        var txt = encodeURIComponent(t + " " + url);
+        document.querySelectorAll("[data-ss]").forEach(function (el) {
+            var k = el.getAttribute("data-ss");
+            if (k === "x") el.href = "https://twitter.com/intent/tweet?text=" + txt;
+            else if (k === "linkedin") el.href = "https://www.linkedin.com/sharing/share-offsite/?url=" + encodeURIComponent(url);
+            else if (k === "wa") el.href = "https://wa.me/?text=" + txt;
+            else if (k === "copy") el.onclick = function () { window.copyTextPlain(decodeURIComponent(txt), el); };
+        });
+    };
+})();
+
+</script>
+
+<script src="../js/palette.js"></script>
+<script src="../js/reveal.js"></script>
+</body>
+</html>

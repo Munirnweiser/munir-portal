@@ -27,7 +27,9 @@
         { id: 'speed-demon',      icon: '⚡', name: 'Speed Demon',      desc: 'Score 800+ in Latency Racer' },
         { id: 'night-owl',        icon: '🦉', name: 'Night Owl',        desc: 'Visit between midnight and 5 AM' },
         { id: 'explorer',         icon: '🗺️', name: 'Explorer',         desc: 'Visit 10 different pages' },
-        { id: 'number-cruncher',  icon: '🧮', name: 'Number Cruncher',  desc: 'Run 5 different calculators' }
+        { id: 'number-cruncher',  icon: '🧮', name: 'Number Cruncher',  desc: 'Run 5 different calculators' },
+        { id: 'incident-commander', icon: '🚨', name: 'Incident Commander', desc: 'Score 16+ on A Day on the Desk' },
+        { id: 'fix-certified',   icon: '📜', name: 'FIX Certified',   desc: 'Perfect score on the FIX Certification Simulator' }
     ];
 
     function blank() {
