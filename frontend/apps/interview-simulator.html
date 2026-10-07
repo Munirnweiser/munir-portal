@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Interview Simulator — timed mock interviews for production support roles: Linux, SQL, FIX, incidents, DevOps. Answer, get auto-scored against model answers.">
+    <title>Interview Simulator | Munir Nweiser</title>
+    <meta property="og:title" content="Interview Simulator | Munir Nweiser">
+    <meta property="og:description" content="Timed mock interviews for capital-markets production support. Answer like you're in the room, get scored.">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .sim-wrap { max-width: 760px; margin: 0 auto; }
+        .track-grid { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0; }
+        .track-btn { background: rgba(34,211,238,.08); border: 1px solid rgba(34,211,238,.35); color: #a5f3fc; padding: 10px 18px; border-radius: 999px; cursor: pointer; font-size: .9rem; }
+        .track-btn:hover { background: rgba(34,211,238,.18); }
+        .timer-bar { height: 8px; background: rgba(148,163,184,.15); border-radius: 4px; overflow: hidden; margin: 12px 0; }
+        .timer-fill { height: 100%; background: #22d3ee; width: 100%; transition: width 1s linear; }
+        .timer-fill.low { background: #f87171; }
+        .q-card { background: rgba(15,23,42,.7); border: 1px solid rgba(148,163,184,.2); border-radius: 14px; padding: 22px; margin: 16px 0; }
+        .q-meta { color: var(--text-muted); font-size: .8rem; margin-bottom: 8px; }
+        #answer-box { width: 100%; min-height: 130px; background: #0b1220; border: 1px solid rgba(148,163,184,.25); border-radius: 10px; color: #e2e8f0; padding: 12px; font-size: .92rem; resize: vertical; }
+        .model-box { background: rgba(52,211,153,.06); border: 1px solid rgba(52,211,153,.3); border-radius: 10px; padding: 16px; margin-top: 14px; }
+        .kw-hit { display: inline-block; background: rgba(52,211,153,.15); border: 1px solid rgba(52,211,153,.4); color: #6ee7b7; border-radius: 6px; padding: 2px 8px; margin: 2px 4px 2px 0; font-size: .78rem; }
+        .kw-miss { display: inline-block; background: rgba(148,163,184,.08); border: 1px solid rgba(148,163,184,.25); color: #94a3b8; border-radius: 6px; padding: 2px 8px; margin: 2px 4px 2px 0; font-size: .78rem; }
+        .score-big { font-size: 3rem; font-weight: 800; color: #22d3ee; }
+        .grade { font-size: 1.3rem; font-weight: 700; margin: 8px 0; }
+        .review-item { border-bottom: 1px solid rgba(148,163,184,.12); padding: 12px 0; }
+        .hidden { display: none !important; }
+        .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header">
+
+        <div class="container nav-container">
+
+            <a href="../index.html" class="logo">
+                <span class="logo-mark">MN</span>
+
+                <span class="logo-text">
+                    Munir Nweiser
+                    <small>Capital Markets • Technology</small>
+                </span>
+            </a>
+
+
+            <nav class="main-nav" aria-label="Main navigation">
+
+                <a href="../index.html">Home</a>
+                <a href="../resume.html">Resume</a>
+                <a href="../scientific-calculator.html">Calculator</a>
+                <a href="../index.html#markets">Markets</a>
+                <a href="../index.html#trading">Trading</a>
+                <a href="../index.html#tutorials">Tutorials</a>
+                <a href="../roadmap.html">Roadmap</a>
+                <a href="../changelog.html">Changelog</a>
+                <a href="../index.html#games">Games</a>
+                <a href="../index.html#memories">Memories</a>
+
+            </nav>
+
+            <button
+                id="mobile-menu-button"
+                class="mobile-menu-button"
+                type="button"
+                aria-label="Open navigation menu"
+                aria-expanded="false"
+            >
+                ☰
+            </button>
+
+        </div>
+
+    </header>
+
+<main class="container" style="padding:110px 0 70px;">
+<div class="sim-wrap">
+    <div class="section-heading">
+        <p class="eyebrow">Interview prep • Timed</p>
+        <h2>Interview Simulator</h2>
+        <p>A mock interview for production support roles. Pick a track, answer 5 questions against the clock like you're in the room, then get auto-scored against model answers.</p>
+    </div>
+
+    <div id="setup-screen" class="resume-card">
+        <h3>Choose your track</h3>
+        <div class="track-grid">
+            <button type="button" class="track-btn" data-track="linux">Linux</button>
+<button type="button" class="track-btn" data-track="sql">SQL</button>
+<button type="button" class="track-btn" data-track="fix">FIX Protocol</button>
+<button type="button" class="track-btn" data-track="incidents">Incidents</button>
+<button type="button" class="track-btn" data-track="devops">DevOps</button>
+            <button type="button" class="track-btn" data-track="mixed">🎲 Mixed</button>
+        </div>
+        <p style="color:var(--text-muted); font-size:.85rem;">5 questions • 90 seconds each • scored out of 50. Keywords from model answers are matched automatically — write like you talk.</p>
+    </div>
+
+    <div id="quiz-screen" class="hidden">
+        <div class="q-meta"><span id="q-pos"></span> • <span id="q-track"></span> • <span id="q-timer-text" style="font-weight:700;"></span></div>
+        <div class="timer-bar"><div id="q-timer-fill" class="timer-fill"></div></div>
+        <div class="q-card">
+            <h3 id="q-text" style="line-height:1.6;"></h3>
+            <textarea id="answer-box" placeholder="Type your answer as you would say it in the interview..."></textarea>
+            <div class="btn-row">
+                <button type="button" id="submit-btn" class="btn">Submit answer</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="feedback-screen" class="hidden">
+        <div class="q-card">
+            <h3>Your score: <span id="fb-score"></span>/10</h3>
+            <div id="fb-kws" style="margin:10px 0;"></div>
+            <div class="model-box">
+                <strong>Model answer</strong>
+                <p id="fb-model" style="line-height:1.7; margin:8px 0 0;"></p>
+            </div>
+            <div class="btn-row">
+                <button type="button" id="next-btn" class="btn">Next question →</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="results-screen" class="hidden">
+        <div class="resume-card" style="text-align:center;">
+            <h3>Interview complete</h3>
+            <div class="score-big"><span id="r-total"></span><span style="font-size:1.4rem; color:var(--text-muted);">/50</span></div>
+            <div class="grade" id="r-grade"></div>
+            <p id="r-note" style="color:var(--text-muted);"></p>
+            <div id="r-review" style="text-align:left; margin-top:16px;"></div>
+            <div class="btn-row" style="justify-content:center;">
+                <button type="button" id="again-btn" class="btn">↻ New interview</button>
+            </div>
+            <div class="score-share" style="margin-top:14px; text-align:center;">
+                <p style="color:var(--text-muted); font-size:.8rem; margin:0 0 8px;">Share your score</p>
+                <a class="share-btn" data-ss="x" target="_blank" rel="noopener" href="#">X</a>
+                <a class="share-btn" data-ss="linkedin" target="_blank" rel="noopener" href="#">LinkedIn</a>
+                <a class="share-btn" data-ss="wa" target="_blank" rel="noopener" href="#">WhatsApp</a>
+                <button class="share-btn" data-ss="copy" type="button">Copy</button>
+            </div>
+        </div>
+    </div>
+</div>
+</main>
+
+<footer class="site-footer">
+
+        <div class="container footer-content">
+
+            <div>
+
+                <strong>
+                    Munir Nweiser
+                </strong>
+
+                <p>
+                    Application Support • Capital Markets • Technology
+                </p>
+
+            </div>
+
+
+            <div class="footer-links">
+
+                <a href="../index.html#home">Home</a>
+                <a href="../resume.html">Resume</a>
+                <a href="../index.html#trading">Trading</a>
+                <a href="../index.html#tutorials">Tutorials</a>
+
+            </div>
+
+
+            <div>
+
+                <small>
+                    © <span id="current-year"></span>
+                    Munir Nweiser
+                </small>
+
+                <br>
+
+                <small class="visitor-count">
+                    <span id="visitor-count"></span>
+                </small>
+
+                <small class="site-credit">
+                    Designed &amp; built with Muse 🤖
+                </small>
+
+            </div>
+
+        </div>
+
+    </footer>
+<script src="../app.js"></script>
+<script src="../counter.js"></script>
+<script src="../js/progress.js"></script>
+<script>
+(function () {
+    "use strict";
+    var QUESTIONS = [{"track": "linux", "q": "A Java process is pinning 100% CPU on a production box. Walk me through your diagnosis.", "model": "First I'd confirm with top which PID is hot and for how long. Then I'd take thread dumps (jstack or kill -3) a few seconds apart to find the stuck thread, check GC logs for stop-the-world pauses, and look at what the process was doing in the app logs. Only after I know the cause would I act \u2014 restart or kill as a last resort, and always note it in the incident ticket.", "kw": ["top", "thread dump", "jstack", "pid", "gc", "logs"]}, {"track": "linux", "q": "How do you find which process is listening on port 8080?", "model": "I'd run ss -tlnp | grep 8080 (or netstat -tlnp on older boxes) \u2014 the -p flag shows the PID and process name. lsof -i :8080 works too. If nothing shows but the port seems busy, I'd check for TIME_WAIT pileups or a process bound only to a specific interface.", "kw": ["ss", "netstat", "-tlnp", "lsof", "pid"]}, {"track": "linux", "q": "The /var partition is at 100% on a live server. How do you fix it without downtime?", "model": "First df -h to confirm, then du -sh /* style drill-down to find the hog \u2014 usually logs. I'd check for deleted-but-held files with lsof | grep deleted (those still consume space until the process releases them). Safe moves: compress or truncate active logs with : > file (never rm a file a process is writing to), rotate with logrotate, and clean package caches. Then set up monitoring/alerting so it doesn't recur.", "kw": ["df", "du", "lsof", "deleted", "logrotate", "truncate"]}, {"track": "linux", "q": "You need every ERROR line from the last hour in a 10 GB log \u2014 without loading it into memory.", "model": "I'd avoid cat into memory entirely: use grep with a time pattern, or awk comparing timestamps, streaming the file. Something like awk '/ERROR/ && $1 > \"2026-10-07 01:\"' app.log, or combine tail with grep. less and zgrep work for compressed rotated logs. The key: stream, filter early, never slurp the whole file.", "kw": ["grep", "awk", "stream", "tail", "less", "zgrep"]}, {"track": "linux", "q": "What's the difference between kill, kill -15, and kill -9? When do you use each?", "model": "Plain kill defaults to SIGTERM (15) \u2014 a polite request letting the process clean up: flush buffers, close connections. kill -9 sends SIGKILL, which the kernel enforces immediately with no cleanup \u2014 data loss risk, so it's the last resort for hung processes. Always try SIGTERM first, wait, escalate to -9 only if it won't die.", "kw": ["sigterm", "sigkill", "graceful", "15", "9", "cleanup"]}, {"track": "sql", "q": "Write a query to find duplicate trade IDs in the trades table.", "model": "SELECT trade_id, COUNT(*) FROM trades GROUP BY trade_id HAVING COUNT(*) > 1. GROUP BY collapses rows per ID, and HAVING filters groups after aggregation (WHERE can't do that). I'd also check which duplicates are real vs. re-sent messages before deleting anything.", "kw": ["group by", "having", "count", "duplicate"]}, {"track": "sql", "q": "Explain clustered vs. non-clustered indexes.", "model": "A clustered index defines the physical order of table data \u2014 one per table, usually the primary key \u2014 so range scans on it are fast. Non-clustered indexes are separate structures pointing back to rows; you can have many, they're great for lookups on other columns, but each adds write overhead and needs maintenance.", "kw": ["physical order", "one per table", "primary key", "separate structure", "write overhead"]}, {"track": "sql", "q": "A query that ran in 2 seconds now takes 2 minutes. How do you investigate?", "model": "First check if it's blocked \u2014 look for locks/wait stats. Then compare the actual execution plan to the good one: a plan flip (often from stale statistics or parameter sniffing) is the classic cause. I'd check stats freshness, data volume growth, and missing indexes. Fix: update stats, add a hint or plan guide as a stopgap, fix the root cause after.", "kw": ["blocking", "execution plan", "statistics", "parameter sniffing", "locks"]}, {"track": "sql", "q": "What does SELECT ... FOR UPDATE do, and when is it risky?", "model": "It takes row-level locks on the selected rows until the transaction commits or rolls back \u2014 used when you read then update and must prevent concurrent changes. It's risky because holding locks while doing slow work (or waiting on user input) blocks other sessions and can deadlock; keep the transaction as short as possible.", "kw": ["row lock", "transaction", "deadlock", "commit", "rollback"]}, {"track": "sql", "q": "Find the second highest salary without using LIMIT or OFFSET.", "model": "One way: SELECT MAX(salary) FROM employees WHERE salary < (SELECT MAX(salary) FROM employees). Or with window functions: SELECT salary FROM (SELECT salary, DENSE_RANK() OVER (ORDER BY salary DESC) r FROM employees) t WHERE r = 2 \u2014 DENSE_RANK handles ties correctly where LIMIT 1,1 would not.", "kw": ["max", "subquery", "dense_rank", "ties"]}, {"track": "fix", "q": "You see 35=D on the wire. What is it, and what are the key fields?", "model": "35=D is a NewOrderSingle \u2014 the client asking to place an order. Key fields: 11 (ClOrdID, the client's order reference), 55 (symbol), 54 (side: 1=buy, 2=sell), 38 (quantity), 40 (order type: 1=market, 2=limit), 44 (price for limits), 59 (time in force). Every new order the desk sends starts life as a 35=D.", "kw": ["newordersingle", "clordid", "11", "55", "54", "38", "40"]}, {"track": "fix", "q": "Your counterparty reports a sequence number gap. What exactly do you do?", "model": "I send a 35=2 ResendRequest for the missing range (7=begin, 16=end). Incoming messages with PossDupFlag (43=Y) get processed carefully for duplicates \u2014 keyed on ClOrdID. If the gap is large or the session is unhealthy, I may reset sequence numbers by agreement, but never unilaterally mid-session.", "kw": ["resendrequest", "35=2", "possdupflag", "43", "sequence"]}, {"track": "fix", "q": "What is the difference between 35=D, 35=8, and 35=F?", "model": "35=D (NewOrderSingle) places an order; 35=8 (ExecutionReport) is the exchange/broker telling you what happened to it \u2014 fills, partial fills, rejects, cancels; 35=F (OrderCancelRequest) asks to cancel a live order. Lifecycle-wise: D goes out, 8s come back, F tries to stop it mid-flight.", "kw": ["newordersingle", "executionreport", "ordercancelrequest", "fills", "reject"]}, {"track": "fix", "q": "How is the FIX checksum in tag 10 calculated?", "model": "Sum every byte of the message up to (but not including) the 10= field itself, take modulo 256, and format as three digits. So 10=062 means the byte sum mod 256 was 62. If it doesn't match on receipt, the message is corrupt and the session should reject or resend.", "kw": ["sum", "modulo 256", "bytes", "three digits", "10="]}, {"track": "fix", "q": "What is PossDupFlag (tag 43) and when must it be set?", "model": "43=Y marks a message as a possible duplicate \u2014 set on any retransmission, e.g. messages replayed after a ResendRequest. The receiver must use it to avoid double-processing: an order with 43=Y and an already-seen ClOrdID must not create a second order. It's the main defense against duplicate fills after a session recovery.", "kw": ["duplicate", "retransmission", "resend", "clordid", "43"]}, {"track": "incidents", "q": "It's 3 AM. The desk calls: 'nothing is coming through.' What's your first five minutes?", "model": "Acknowledge immediately and open the incident ticket \u2014 the desk needs to know someone owns it. Then scope: is it one desk, one feed, or everything? Check monitoring dashboards and recent changes/deploys. Communicate status early ('investigating, update in 10 minutes') \u2014 silence is what turns incidents into escalations.", "kw": ["acknowledge", "ticket", "scope", "monitoring", "communicate"]}, {"track": "incidents", "q": "How do you tell a network issue apart from an application issue?", "model": "Check breadth: if multiple unrelated apps on different hosts fail the same way, suspect network; if it's one app everywhere, suspect the app. Use ping/traceroute for basic reachability, check switch/firewall logs, and compare against a known-good path. App logs with connection timeouts vs. refused connections also discriminate: timeouts lean network, refused leans app not listening.", "kw": ["ping", "traceroute", "breadth", "firewall", "timeout"]}, {"track": "incidents", "q": "What's the difference between a sev-1 and a sev-2, and what changes in your response?", "model": "Sev-1 is full outage or critical business impact \u2014 trading halted, money at risk: all hands, war room, updates every 15 minutes, wake whoever is needed. Sev-2 is degraded or at-risk: urgent but contained, smaller team, updates every 30-60 minutes. The classification drives who gets woken up and how fast \u2014 get it wrong in either direction and you either burn people out or under-respond.", "kw": ["outage", "business impact", "war room", "updates", "degraded"]}, {"track": "incidents", "q": "A deploy just went out and error rates spiked. Walk me through the rollback call.", "model": "First confirm correlation: did errors start exactly at deploy time, and is the deploy the only change? Check the error type \u2014 if it's clearly caused by the new code, roll back immediately; a rollback is a forward fix you already tested. If unclear, pull traffic/canary back while investigating. Never 'fix forward' under pressure unless rollback is impossible. Document the decision in the ticket.", "kw": ["correlation", "rollback", "canary", "deploy", "ticket"]}, {"track": "incidents", "q": "What makes a good postmortem?", "model": "Blameless and specific: timeline of what happened, quantified impact, root cause (not 'human error' \u2014 ask why the human could make that error), and action items with owners and dates. The test of a good postmortem: someone who wasn't there can prevent the recurrence from reading it.", "kw": ["blameless", "timeline", "root cause", "action items", "impact"]}, {"track": "devops", "q": "Your pod is stuck in CrashLoopBackOff. Debug it step by step.", "model": "kubectl describe pod for the events (OOMKilled? bad image? failed probe?), then kubectl logs --previous to see the crash output. Common causes: the app exits on startup (bad config/env), liveness probe too aggressive, or memory limit below what the app needs. Fix the cause, not the symptom \u2014 don't just raise the restart count.", "kw": ["describe", "logs", "--previous", "oomkilled", "probe"]}, {"track": "devops", "q": "Explain blue-green vs. canary deployments.", "model": "Blue-green runs two full environments: deploy to green, switch traffic over at once, keep blue as instant rollback. Canary rolls the new version to a small slice of traffic first and watches metrics before widening. Blue-green is simpler with fast rollback; canary catches issues with real traffic but needs traffic-splitting and good metrics.", "kw": ["two environments", "traffic", "rollback", "slice", "metrics"]}, {"track": "devops", "q": "A Jenkins pipeline fails intermittently. How do you approach it?", "model": "Flaky is the key word: check if failures correlate with anything (time of day, parallel runs, specific agents). Look for shared-state races, hardcoded sleeps, or resource exhaustion on agents. Quarantine the flaky test if it's blocking everyone, then fix determinism. Never just 'rerun until green' as policy \u2014 track the flake rate.", "kw": ["flaky", "correlate", "race", "quarantine", "determinism"]}, {"track": "devops", "q": "Terraform plan shows changes you didn't expect. What do you do?", "model": "Stop \u2014 never apply a surprising plan. Unexpected changes mean drift (someone changed infra by hand) or a module/provider change. Run plan with a saved file, diff it, find who/what changed. Reconcile deliberately: either import the drifted resource or revert the manual change. Applying blindly is how outages happen.", "kw": ["drift", "apply", "diff", "import", "manual change"]}, {"track": "devops", "q": "How do you safely roll a config change to 50 servers?", "model": "In batches with Ansible (serial: 5 or 10), health-checking each batch before continuing \u2014 or a canary group first. Keep the change idempotent so reruns are safe, and have the rollback (previous config version) ready before you start. Watch monitoring during the rollout, not after.", "kw": ["batches", "serial", "canary", "idempotent", "rollback"]}];
+    var TRACK_NAMES = {linux:"Linux", sql:"SQL", fix:"FIX Protocol", incidents:"Incidents", devops:"DevOps"};
+    var PER_Q = 90, N_Q = 5;
+    var picked = [], idx = 0, results = [], timerId = null, timeLeft = PER_Q;
+
+    function $(id) { return document.getElementById(id); }
+    function esc(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+    function show(id) { ["setup-screen","quiz-screen","feedback-screen","results-screen"].forEach(function (s) { $(s).classList.toggle("hidden", s !== id); }); }
+
+    function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+
+    function start(track) {
+        var pool = track === "mixed" ? QUESTIONS.slice() : QUESTIONS.filter(function (q) { return q.track === track; });
+        picked = shuffle(pool).slice(0, N_Q);
+        idx = 0; results = [];
+        renderQ();
+    }
+
+    function renderQ() {
+        show("quiz-screen");
+        var q = picked[idx];
+        $("q-text").textContent = q.q;
+        $("q-pos").textContent = "Question " + (idx + 1) + " of " + N_Q;
+        $("q-track").textContent = TRACK_NAMES[q.track] || "Mixed";
+        $("answer-box").value = "";
+        $("answer-box").focus();
+        timeLeft = PER_Q;
+        updateTimer();
+        clearInterval(timerId);
+        timerId = setInterval(function () {
+            timeLeft--;
+            updateTimer();
+            if (timeLeft <= 0) { submit(); }
+        }, 1000);
+    }
+
+    function updateTimer() {
+        $("q-timer-text").textContent = timeLeft + "s";
+        var fill = $("q-timer-fill");
+        fill.style.width = (timeLeft / PER_Q * 100) + "%";
+        fill.classList.toggle("low", timeLeft <= 15);
+    }
+
+    function scoreAnswer(text, q) {
+        var low = " " + text.toLowerCase() + " ";
+        var hits = [];
+        q.kw.forEach(function (k) {
+            var kk = k.toLowerCase();
+            if (low.indexOf(kk) !== -1) { hits.push(k); }
+        });
+        var score = Math.round(hits.length / q.kw.length * 10);
+        return { score: score, hits: hits };
+    }
+
+    function submit() {
+        clearInterval(timerId);
+        var q = picked[idx];
+        var text = $("answer-box").value.trim();
+        var r = scoreAnswer(text, q);
+        results.push({ q: q.q, track: q.track, score: r.score, hits: r.hits, total: q.kw.length, model: q.model, answer: text });
+        $("fb-score").textContent = r.score;
+        var kws = q.kw.map(function (k) {
+            return '<span class="' + (r.hits.indexOf(k) !== -1 ? "kw-hit" : "kw-miss") + '">' + esc(k) + "</span>";
+        }).join("");
+        $("fb-kws").innerHTML = kws;
+        $("fb-model").textContent = q.model;
+        $("next-btn").textContent = idx + 1 < N_Q ? "Next question \u2192" : "See results \u2192";
+        show("feedback-screen");
+    }
+
+    function finish() {
+        var total = results.reduce(function (s, r) { return s + r.score; }, 0);
+        $("r-total").textContent = total;
+        var grade, note;
+        if (total >= 40) { grade = "Strong hire \u{1F3AF}"; note = "Interview-ready. You hit the keywords and the reasoning — this is offer territory."; }
+        else if (total >= 30) { grade = "Hire \u2705"; note = "Solid. Tighten the answers that scored under 6 and run it again."; }
+        else if (total >= 20) { grade = "Maybe \u26A0\uFE0F"; note = "Foundations are there, but interviewers want the keywords. Review the model answers below."; }
+        else { grade = "No hire \u274C"; note = "Don't sweat it — that's what practice is for. Read each model answer, then go again."; }
+        $("r-grade").textContent = grade;
+        $("r-note").textContent = note;
+        $("r-review").innerHTML = results.map(function (r, i) {
+            return '<div class="review-item"><strong>Q' + (i + 1) + " (" + r.score + '/10)</strong><br><span style="color:var(--text-muted);">' + esc(r.q) + "</span></div>";
+        }).join("");
+        show("results-screen");
+        setScoreShareText("I scored " + total + "/50 on the Interview Simulator (" + grade.split(" ")[0] + " " + grade.split(" ")[1] + ") \u2014 can you beat me?");
+        if (window.PortalProgress) {
+            var best = window.PortalProgress.setHighScore("interview-sim", total);
+            if (best.isNew) window.PortalProgress.addXP(total >= 30 ? 50 : 25, "interview sim");
+        }
+    }
+
+    // share wiring (same pattern as other games)
+    window.copyTextPlain = function (t, btn) {
+        function done() { if (btn) { var o = btn.textContent; btn.textContent = "Copied!"; setTimeout(function () { btn.textContent = o; }, 1200); } }
+        if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(t).then(done, function () { prompt("Copy your score:", t); }); }
+        else { prompt("Copy your score:", t); }
+    };
+    window.setScoreShareText = function (t) {
+        var url = location.href.split("?")[0];
+        var txt = encodeURIComponent(t + " " + url);
+        document.querySelectorAll("[data-ss]").forEach(function (el) {
+            var k = el.getAttribute("data-ss");
+            if (k === "x") el.href = "https://twitter.com/intent/tweet?text=" + txt;
+            else if (k === "linkedin") el.href = "https://www.linkedin.com/sharing/share-offsite/?url=" + encodeURIComponent(url);
+            else if (k === "wa") el.href = "https://wa.me/?text=" + txt;
+            else if (k === "copy") el.onclick = function () { window.copyTextPlain(decodeURIComponent(txt), el); };
+        });
+    };
+    window.wireScoreShare = function () {};
+
+    document.querySelectorAll(".track-btn").forEach(function (b) {
+        b.addEventListener("click", function () { start(b.getAttribute("data-track")); });
+    });
+    $("submit-btn").addEventListener("click", submit);
+    $("next-btn").addEventListener("click", function () {
+        idx++;
+        if (idx < N_Q) renderQ(); else finish();
+    });
+    $("again-btn").addEventListener("click", function () { show("setup-screen"); });
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" && e.ctrlKey && !$("quiz-screen").classList.contains("hidden")) submit();
+    });
+})();
+</script>
+</body>
+</html>
