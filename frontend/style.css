@@ -1681,11 +1681,11 @@ img {
     overflow: hidden;
 }
 
-.fairy {
+.robo-bear {
     position: absolute;
 
-    width: 48px;
-    height: 48px;
+    width: 56px;
+    height: 74px;
 
     opacity: 0;
 
@@ -1693,69 +1693,279 @@ img {
 
     filter:
         drop-shadow(
-            0 0 12px rgba(103,232,249,0.8)
+            0 0 14px rgba(103,232,249,0.55)
         );
 }
 
-.fairy-body {
+/* spinning lift rotor */
+.bear-rotor {
     position: absolute;
 
-    left: 18px;
-    top: 17px;
+    left: 50%;
+    top: -6px;
 
-    width: 12px;
-    height: 18px;
+    width: 66px;
+    height: 6px;
+
+    margin-left: -33px;
+
+    border-radius: 3px;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(103,232,249,0.9),
+            transparent
+        );
+
+    animation: rotor-spin 0.22s linear infinite;
+}
+
+@keyframes rotor-spin {
+    0%   { transform: rotate(0deg) scaleX(1); }
+    50%  { transform: rotate(180deg) scaleX(0.2); }
+    100% { transform: rotate(360deg) scaleX(1); }
+}
+
+.bear-mast {
+    position: absolute;
+
+    left: 50%;
+    top: 0;
+
+    width: 4px;
+    height: 10px;
+
+    margin-left: -2px;
+
+    border-radius: 2px;
+
+    background: #64748b;
+}
+
+.bear-ear {
+    position: absolute;
+
+    top: 8px;
+
+    width: 13px;
+    height: 13px;
 
     border-radius: 50%;
 
     background:
         linear-gradient(
             180deg,
-            #fef3c7,
-            #f9a8d4
+            #94a3b8,
+            #64748b
         );
 
-    box-shadow:
-        0 0 12px rgba(250,204,21,0.8);
+    border: 2px solid #475569;
 }
 
-.fairy-wing {
+.bear-ear-left  { left: 7px; }
+.bear-ear-right { right: 7px; }
+
+.bear-head {
     position: absolute;
 
-    top: 10px;
+    left: 50%;
+    top: 12px;
 
-    width: 18px;
-    height: 25px;
+    width: 34px;
+    height: 30px;
 
-    border-radius:
-        70% 30% 70% 30%;
+    margin-left: -17px;
+
+    border-radius: 45%;
 
     background:
         linear-gradient(
-            135deg,
-            rgba(103,232,249,0.8),
-            rgba(167,139,250,0.55)
+            180deg,
+            #cbd5e1,
+            #94a3b8 60%,
+            #64748b
         );
 
-    opacity: 0.8;
+    border: 2px solid #475569;
 }
 
-.fairy-wing-left {
-    left: 1px;
+.bear-eye {
+    position: absolute;
 
-    transform:
-        rotate(-25deg);
+    top: 21px;
+
+    width: 6px;
+    height: 8px;
+
+    border-radius: 50%;
+
+    background: #22d3ee;
+
+    box-shadow:
+        0 0 8px #22d3ee;
+
+    animation: bear-blink 4.5s infinite;
 }
 
-.fairy-wing-right {
-    right: 1px;
+.bear-eye-left  { left: 19px; }
+.bear-eye-right { right: 19px; }
 
-    transform:
-        scaleX(-1)
-        rotate(-25deg);
+@keyframes bear-blink {
+    0%, 93%, 100% { transform: scaleY(1); }
+    96%           { transform: scaleY(0.1); }
 }
 
-.fairy-spark {
+.bear-snout {
+    position: absolute;
+
+    left: 50%;
+    top: 30px;
+
+    width: 14px;
+    height: 10px;
+
+    margin-left: -7px;
+
+    border-radius: 50%;
+
+    background: #e2e8f0;
+
+    border: 1px solid #94a3b8;
+}
+
+.bear-antenna {
+    position: absolute;
+
+    left: 13px;
+    top: 8px;
+
+    width: 3px;
+    height: 12px;
+
+    border-radius: 2px;
+
+    background: #64748b;
+}
+
+.bear-antenna::after {
+    content: '';
+
+    position: absolute;
+
+    left: 50%;
+    top: -6px;
+
+    width: 7px;
+    height: 7px;
+
+    margin-left: -3.5px;
+
+    border-radius: 50%;
+
+    background: #f472b6;
+
+    box-shadow:
+        0 0 10px #f472b6;
+
+    animation: bear-blink-light 1.2s ease-in-out infinite;
+}
+
+@keyframes bear-blink-light {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.25; }
+}
+
+.bear-body {
+    position: absolute;
+
+    left: 50%;
+    top: 40px;
+
+    width: 26px;
+    height: 24px;
+
+    margin-left: -13px;
+
+    border-radius: 35%;
+
+    background:
+        linear-gradient(
+            180deg,
+            #94a3b8,
+            #64748b
+        );
+
+    border: 2px solid #475569;
+}
+
+.bear-chest {
+    position: absolute;
+
+    left: 50%;
+    top: 47px;
+
+    width: 10px;
+    height: 10px;
+
+    margin-left: -5px;
+
+    border-radius: 50%;
+
+    background: #a78bfa;
+
+    box-shadow:
+        0 0 10px #a78bfa;
+
+    animation: bear-blink-light 1.7s ease-in-out infinite;
+}
+
+.bear-arm {
+    position: absolute;
+
+    top: 42px;
+
+    width: 8px;
+    height: 17px;
+
+    border-radius: 4px;
+
+    background:
+        linear-gradient(
+            180deg,
+            #94a3b8,
+            #64748b
+        );
+
+    border: 1px solid #475569;
+}
+
+.bear-arm-left  { left: 10px; transform: rotate(14deg); }
+.bear-arm-right { right: 10px; transform: rotate(-14deg); }
+
+.bear-leg {
+    position: absolute;
+
+    top: 60px;
+
+    width: 9px;
+    height: 12px;
+
+    border-radius: 4px;
+
+    background:
+        linear-gradient(
+            180deg,
+            #64748b,
+            #475569
+        );
+}
+
+.bear-leg-left  { left: 17px; }
+.bear-leg-right { right: 17px; }
+
+.robo-spark {
     position: absolute;
 
     width: 4px;
@@ -1763,10 +1973,10 @@ img {
 
     border-radius: 50%;
 
-    background: #fef08a;
+    background: #67e8f9;
 
     box-shadow:
-        0 0 10px #fef08a;
+        0 0 10px #67e8f9;
 }
 
 
@@ -1953,27 +2163,14 @@ textarea:focus-visible {
 
 
 /* ============================================================
-   FAIRY ANIMATION — motion
+   ROBO-BEAR — motion
    ============================================================ */
 
-.fairy {
+.robo-bear {
     left: 0;
     top: 0;
     transition: opacity 1.2s ease;
 }
-
-@keyframes fairy-flap-left {
-    0%, 100% { transform: rotate(-25deg); }
-    50%      { transform: rotate(-55deg); }
-}
-
-@keyframes fairy-flap-right {
-    0%, 100% { transform: scaleX(-1) rotate(-25deg); }
-    50%      { transform: scaleX(-1) rotate(-55deg); }
-}
-
-.fairy-wing-left  { animation: fairy-flap-left 0.35s ease-in-out infinite; }
-.fairy-wing-right { animation: fairy-flap-right 0.35s ease-in-out infinite; }
 
 /* ============================================================
    TUTORIAL LINKS + MEMORIES GALLERY
