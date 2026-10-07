@@ -78,6 +78,13 @@
 <div id="end-stats" class="end-stats"></div>
 <div id="end-rank" class="rank"></div>
 <button type="button" id="again-btn" class="btn">Deploy again</button>
+<div class="score-share" style="margin-top:14px; text-align:center;">
+    <p style="color:var(--text-muted); font-size:0.8rem; margin:0 0 8px;">Share your score</p>
+    <a class="share-btn" data-ss="x" target="_blank" rel="noopener" href="#">X</a>
+    <a class="share-btn" data-ss="linkedin" target="_blank" rel="noopener" href="#">LinkedIn</a>
+    <a class="share-btn" data-ss="wa" target="_blank" rel="noopener" href="#">WhatsApp</a>
+    <button class="share-btn" data-ss="copy" type="button">Copy</button>
+</div>
 </div>
 
 </div>
@@ -131,6 +138,7 @@
 <div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
 </div></footer>
 <script src="../app.js"></script>
+<script src="../js/progress.js"></script>
 <script>
 (function () {
     'use strict';
@@ -257,6 +265,11 @@
     function endGame() {
         running = false;
         var sc = Math.round(score);
+        if (window.PortalProgress) {
+            if (window.PortalProgress.setHighScore('deploy-dash', sc).isNew) {
+                window.PortalProgress.addXP(25, 'Deploy Dash');
+            }
+        }
         var rank = sc >= 5000 ? '🏆 10x Deployer'
             : sc >= 2500 ? '🥈 Release Train'
             : sc >= 1000 ? '🥉 Canary Keeper'
@@ -264,6 +277,7 @@
         $('end-stats').innerHTML = 'Score: <strong>' + sc + '</strong><br>' +
             'Distance: ' + Math.round(dist) + 'm &nbsp;•&nbsp; Passing tests: ' + pickups;
         $('end-rank').textContent = rank;
+        wireScoreShare(sc + ' points', 'Deploy Dash');
         show('end-screen');
     }
     function startGame() {
@@ -291,5 +305,51 @@
     show('start-screen');
 })();
 </script>
+
+<script>
+/* Score-share helper: "Share your score" virality (X / LinkedIn / WhatsApp / Copy) */
+(function () {
+    'use strict';
+    function pageUrl() { return window.location.href.split('?')[0].split('#')[0]; }
+    window.setScoreShareText = function (text) {
+        var enc = encodeURIComponent(text), encUrl = encodeURIComponent(pageUrl());
+        var x = document.querySelector('[data-ss="x"]');
+        if (x) x.href = 'https://twitter.com/intent/tweet?text=' + enc;
+        var li = document.querySelector('[data-ss="linkedin"]');
+        if (li) li.href = 'https://www.linkedin.com/sharing/share-offsite/?url=' + encUrl;
+        var wa = document.querySelector('[data-ss="wa"]');
+        if (wa) wa.href = 'https://wa.me/?text=' + enc;
+        var c = document.querySelector('[data-ss="copy"]');
+        if (c) {
+            c.setAttribute('data-copytext', text);
+            if (!c.__wired) {
+                c.__wired = true;
+                c.addEventListener('click', function () {
+                    var t = c.getAttribute('data-copytext') || text;
+                    function done(m) { c.textContent = m; setTimeout(function () { c.textContent = 'Copy'; }, 1500); }
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(t).then(function () { done('Copied!'); }, function () { done('Copy failed'); });
+                    } else {
+                        var ta = document.createElement('textarea');
+                        ta.value = t; document.body.appendChild(ta); ta.select();
+                        try { document.execCommand('copy'); done('Copied!'); } catch (e) { done('Copy failed'); }
+                        document.body.removeChild(ta);
+                    }
+                });
+            }
+        }
+    };
+    window.wireScoreShare = function (scoreText, gameName) {
+        window.setScoreShareText('I scored ' + scoreText + ' on ' + gameName + ' \u2014 can you beat me? ' + pageUrl());
+    };
+    window.copyTextPlain = function (t, btn, label) {
+        function done(m) { btn.textContent = m; setTimeout(function () { btn.textContent = label; }, 1500); }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(t).then(function () { done('Copied!'); }, function () { done('Copy failed'); });
+        } else { window.prompt('Copy this link:', t); }
+    };
+})();
+</script>
+
 </body>
 </html>

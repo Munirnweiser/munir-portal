@@ -380,6 +380,34 @@
 <p style="margin:0;font-size:0.9rem;color:#94a3b8"><strong style="color:#7dd3fc">About the author.</strong> Written by <strong>Munir Nweiser</strong> — 5 years L1–L3 Capital Markets production support (Morgan Stanley, Société Générale, Crédit Agricole CIB).</p>
 </div>
 
+<div class="complete-row" style="margin:26px 0; text-align:center;">
+    <button type="button" class="btn" id="mark-complete-btn">&check; Mark as complete &middot; +50 XP</button>
+    <p id="complete-msg" style="color:var(--text-muted); font-size:0.85rem; margin-top:8px;" aria-live="polite"></p>
+</div>
+<script>
+(function () {
+    'use strict';
+    var btn = document.getElementById('mark-complete-btn');
+    var msg = document.getElementById('complete-msg');
+    if (!btn || !window.PortalProgress) return;
+    var slug = (window.location.pathname.split('/').pop() || '').replace(/\.html$/, '');
+    function render(done) {
+        if (done) {
+            btn.disabled = true;
+            btn.textContent = '\u2713 Completed \u00b7 tutorial logged';
+            if (msg) msg.textContent = 'Nice work. +50 XP banked for this tutorial.';
+        }
+    }
+    if (window.PortalProgress.isTutorialDone(slug)) render(true);
+    btn.addEventListener('click', function () {
+        if (window.PortalProgress.markTutorialDone(slug)) {
+            window.PortalProgress.addXP(50, 'Tutorial complete: ' + slug);
+        }
+        render(true);
+    });
+})();
+</script>
+
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
 <script>
 (function () {
@@ -453,5 +481,6 @@
 </div></footer>
 <script src="../app.js"></script>
 <script src="../slides.js"></script>
+<script src="../js/progress.js"></script>
 </body>
 </html>

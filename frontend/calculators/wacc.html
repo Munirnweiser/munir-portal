@@ -89,7 +89,21 @@
 <div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
 <div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
 </div></footer>
-<script src="../app.js"></script>
+<script src="../js/progress.js"></script>
+<script>
+(function () {
+    'use strict';
+    if (!window.PortalProgress) return;
+    var slug = (window.location.pathname.split('/').pop() || '').replace(/\.html$/, '');
+    var form = document.querySelector('form');
+    if (!form) return;
+    form.addEventListener('submit', function () {
+        if (window.PortalProgress.firstCalcToday(slug)) {
+            window.PortalProgress.addXP(10, 'Calculator: ' + slug);
+        }
+    });
+})();
+</script>
 <script>
 (function () {
     'use strict';

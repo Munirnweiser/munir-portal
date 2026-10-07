@@ -150,6 +150,7 @@
 <div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
 </div></footer>
 <script src="../app.js"></script>
+<script src="../js/progress.js"></script>
 <script>
 (function () {
     'use strict';
@@ -272,6 +273,11 @@
         processStage();
     }
     function endGame() {
+        if (window.PortalProgress) {
+            if (window.PortalProgress.setHighScore('pipeline-panic', shipped).isNew) {
+                window.PortalProgress.addXP(25, 'Pipeline Panic');
+            }
+        }
         running = false;
         clearTimeout(stageTimer);
         clearTimeout(failTimer);

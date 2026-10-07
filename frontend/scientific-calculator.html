@@ -139,6 +139,27 @@
 <div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
 </div></footer>
 <script src="app.js"></script>
+<script src="js/progress.js"></script>
+<script>
+(function () {
+    'use strict';
+    if (!window.PortalProgress) return;
+    function bank() {
+        if (window.PortalProgress.firstCalcToday('scientific')) {
+            window.PortalProgress.addXP(10, 'Calculator: scientific');
+        }
+    }
+    function hook() {
+        var eq = document.querySelector('[data-k="eq"]');
+        if (eq) eq.addEventListener('click', bank);
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') bank();
+        });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', hook);
+    else hook();
+})();
+</script>
 <script>
 (function () {
     'use strict';

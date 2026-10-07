@@ -249,6 +249,7 @@
 </div></footer>
 
 <script src="../app.js"></script>
+<script src="../js/progress.js"></script>
 <script>
 (function () {
     'use strict';
@@ -502,6 +503,11 @@
         hide(quizScreen);
         show(resultScreen);
         var pct = Math.round(score / QUESTIONS.length * 100);
+        if (window.PortalProgress) {
+            var __pq = window.PortalProgress.setHighScore('quiz', pct);
+            if (__pq.isNew) window.PortalProgress.addXP(pct >= 80 ? 50 : 20, 'Markets Quiz');
+            if (pct >= 80) window.PortalProgress.award('quiz-whiz');
+        }
         el('result-score').textContent = score + ' / ' + QUESTIONS.length;
         el('result-pct').textContent = pct + '% correct';
         el('result-message').textContent = ratingMessage(score, QUESTIONS.length);

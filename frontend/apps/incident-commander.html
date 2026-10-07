@@ -247,6 +247,7 @@
 </div></footer>
 
 <script src="../app.js"></script>
+<script src="../js/progress.js"></script>
 <script>
 (function () {
     "use strict";
@@ -540,6 +541,11 @@
     }
 
     function showFinal() {
+        if (window.PortalProgress) {
+            if (window.PortalProgress.setHighScore('incident-commander', score).isNew) {
+                window.PortalProgress.addXP(25, 'Incident Commander');
+            }
+        }
         gameScreen.style.display = "none";
         finalScreen.style.display = "block";
         var r = rankFor(score);

@@ -260,6 +260,14 @@
             <div class="risk-tile"><div class="rl">VaR 95% 1d (€)</div><div class="rv" id="r-var">—</div></div>
             <div class="risk-tile"><div class="rl">Total PnL (€)</div><div class="rv" id="r-pnl">—</div></div>
         </div>
+        <div class="score-share" style="margin:10px 0 6px; display:flex; align-items:center; flex-wrap:wrap; gap:10px;">
+            <span style="color:var(--text-muted); font-size:0.8rem;">Share my session:</span>
+            <a class="share-btn" data-ss="x" target="_blank" rel="noopener" href="#">X</a>
+            <a class="share-btn" data-ss="linkedin" target="_blank" rel="noopener" href="#">LinkedIn</a>
+            <a class="share-btn" data-ss="wa" target="_blank" rel="noopener" href="#">WhatsApp</a>
+            <button class="share-btn" data-ss="copy" type="button">Copy</button>
+        </div>
+
         <div class="limit-row">
             <div class="ll"><span>Delta limit utilization</span><span id="lim-delta-pct">0%</span></div>
             <div class="limit-bar"><div class="limit-fill" id="lim-delta-fill"></div></div>
@@ -560,6 +568,9 @@
         $('r-var').textContent = fmtK(VaR);
         var pnlEl = $('r-pnl');
         pnlEl.textContent = fmtS(total, 0);
+        if (window.setScoreShareText) {
+            window.setScoreShareText("I'm " + pnlEl.textContent + ' on the X-One Simulator \u2014 can you beat me? ' + window.location.href.split('?')[0].split('#')[0]);
+        }
         pnlEl.className = 'rv ' + (total >= 0 ? 'pos-up' : 'pos-down');
 
         setLimit('delta', Math.abs(delta) / DELTA_LIMIT, 'Delta');
@@ -803,5 +814,51 @@
     }
 })();
 </script>
+
+<script>
+/* Score-share helper: "Share your score" virality (X / LinkedIn / WhatsApp / Copy) */
+(function () {
+    'use strict';
+    function pageUrl() { return window.location.href.split('?')[0].split('#')[0]; }
+    window.setScoreShareText = function (text) {
+        var enc = encodeURIComponent(text), encUrl = encodeURIComponent(pageUrl());
+        var x = document.querySelector('[data-ss="x"]');
+        if (x) x.href = 'https://twitter.com/intent/tweet?text=' + enc;
+        var li = document.querySelector('[data-ss="linkedin"]');
+        if (li) li.href = 'https://www.linkedin.com/sharing/share-offsite/?url=' + encUrl;
+        var wa = document.querySelector('[data-ss="wa"]');
+        if (wa) wa.href = 'https://wa.me/?text=' + enc;
+        var c = document.querySelector('[data-ss="copy"]');
+        if (c) {
+            c.setAttribute('data-copytext', text);
+            if (!c.__wired) {
+                c.__wired = true;
+                c.addEventListener('click', function () {
+                    var t = c.getAttribute('data-copytext') || text;
+                    function done(m) { c.textContent = m; setTimeout(function () { c.textContent = 'Copy'; }, 1500); }
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(t).then(function () { done('Copied!'); }, function () { done('Copy failed'); });
+                    } else {
+                        var ta = document.createElement('textarea');
+                        ta.value = t; document.body.appendChild(ta); ta.select();
+                        try { document.execCommand('copy'); done('Copied!'); } catch (e) { done('Copy failed'); }
+                        document.body.removeChild(ta);
+                    }
+                });
+            }
+        }
+    };
+    window.wireScoreShare = function (scoreText, gameName) {
+        window.setScoreShareText('I scored ' + scoreText + ' on ' + gameName + ' \u2014 can you beat me? ' + pageUrl());
+    };
+    window.copyTextPlain = function (t, btn, label) {
+        function done(m) { btn.textContent = m; setTimeout(function () { btn.textContent = label; }, 1500); }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(t).then(function () { done('Copied!'); }, function () { done('Copy failed'); });
+        } else { window.prompt('Copy this link:', t); }
+    };
+})();
+</script>
+
 </body>
 </html>

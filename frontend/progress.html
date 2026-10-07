@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="My Progress — XP, levels, streaks and badges earned across the Munir Portal learning lab.">
+    <title>My Progress | Munir Nweiser</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .xp-wrap { margin: 18px 0 6px; }
+        .xp-top { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; }
+        .xp-level { font-size: 1.6rem; font-weight: 800; color: var(--cyan); }
+        .xp-next { color: var(--text-muted); font-size: 0.85rem; }
+        .xp-bar { height: 12px; border-radius: 999px; background: rgba(148,163,184,0.15); overflow: hidden; margin-top: 10px; }
+        .xp-fill { height: 100%; width: 0%; border-radius: 999px; background: linear-gradient(90deg, var(--cyan), #a78bfa); transition: width 0.6s ease; }
+        .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin: 22px 0; }
+        .stat-card { border: 1px solid var(--border); border-radius: 14px; padding: 16px; text-align: center; background: rgba(15,23,42,0.55); }
+        .stat-num { font-size: 1.7rem; font-weight: 800; color: var(--text); }
+        .stat-label { color: var(--text-muted); font-size: 0.8rem; margin-top: 4px; }
+        .streak-flame { font-size: 2rem; }
+        .badge-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-top: 14px; }
+        .badge-card { border: 1px solid var(--border); border-radius: 14px; padding: 14px; text-align: center; background: rgba(15,23,42,0.55); transition: transform 0.15s ease; }
+        .badge-card.unlocked { border-color: var(--cyan); box-shadow: 0 0 18px rgba(34,211,238,0.15); }
+        .badge-card.locked { opacity: 0.45; filter: grayscale(0.8); }
+        .badge-icon { font-size: 1.9rem; }
+        .badge-name { font-weight: 700; margin-top: 6px; font-size: 0.92rem; }
+        .badge-desc { color: var(--text-muted); font-size: 0.78rem; margin-top: 4px; line-height: 1.45; }
+        .tut-list { margin-top: 14px; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+        .tut-row { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--border); }
+        .tut-row:last-child { border-bottom: none; }
+        .tut-row.done { background: rgba(52,211,153,0.06); }
+        .tut-row.done .tut-check { color: #34d399; }
+        .tut-check { font-size: 1.1rem; width: 22px; text-align: center; }
+        .tut-row a { color: var(--text); text-decoration: none; flex: 1; }
+        .tut-row a:hover { color: var(--cyan); }
+        .tut-xp { color: var(--text-muted); font-size: 0.75rem; white-space: nowrap; }
+        .score-list { margin-top: 14px; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+        .score-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--border); }
+        .score-row:last-child { border-bottom: none; }
+        .score-val { font-weight: 700; color: var(--cyan); font-variant-numeric: tabular-nums; }
+        .reset-row { margin-top: 26px; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div id="fairy-layer" aria-hidden="true"></div>
+
+<header class="site-header">
+
+        <div class="container nav-container">
+
+            <a href="#home" class="logo">
+                <span class="logo-mark">MN</span>
+
+                <span class="logo-text">
+                    Munir Nweiser
+                    <small>Capital Markets • Technology</small>
+                </span>
+            </a>
+
+
+            <nav class="main-nav" aria-label="Main navigation">
+
+                <a href="#home">Home</a>
+                <a href="resume.html">Resume</a>
+                <a href="scientific-calculator.html">Calculator</a>
+                <a href="#markets">Markets</a>
+                <a href="#trading">Trading</a>
+                <a href="#tutorials">Tutorials</a>
+                <a href="roadmap.html">Roadmap</a>
+                <a href="changelog.html">Changelog</a>
+                <a href="#games">Games</a>
+                <a href="#memories">Memories</a>
+
+            </nav>
+
+            <button
+                id="mobile-menu-button"
+                class="mobile-menu-button"
+                type="button"
+                aria-label="Open navigation menu"
+                aria-expanded="false"
+            >
+                ☰
+            </button>
+
+        </div>
+
+    </header>
+
+<main class="container" style="padding:120px 0 80px; max-width: 960px;">
+
+    <div class="section-heading">
+        <p class="eyebrow">Gamified</p>
+        <h2>My Progress</h2>
+        <p>Earn XP by finishing tutorials, beating game high scores and running calculators. Progress lives in this browser.</p>
+    </div>
+
+    <div class="resume-card" style="margin-bottom:22px;">
+        <div class="xp-wrap">
+            <div class="xp-top">
+                <span class="xp-level" id="xp-level">Level 1 · Rookie</span>
+                <span class="xp-next" id="xp-next">0 XP</span>
+            </div>
+            <div class="xp-bar" role="progressbar" aria-label="Progress to next level"><div class="xp-fill" id="xp-fill"></div></div>
+        </div>
+        <div class="stat-grid">
+            <div class="stat-card"><div class="stat-num" id="stat-xp">0</div><div class="stat-label">Total XP</div></div>
+            <div class="stat-card"><div class="streak-flame">🔥</div><div class="stat-num" id="stat-streak">0</div><div class="stat-label">Day streak</div></div>
+            <div class="stat-card"><div class="stat-num" id="stat-tuts">0/23</div><div class="stat-label">Tutorials done</div></div>
+            <div class="stat-card"><div class="stat-num" id="stat-badges">0/8</div><div class="stat-label">Badges</div></div>
+        </div>
+    </div>
+
+    <div class="section-heading" style="margin-top:34px;">
+        <h3 style="font-size:1.25rem;">Badges</h3>
+    </div>
+    <div class="badge-grid" id="badge-grid">
+            <div class="badge-card locked" data-badge="first-steps">
+                <div class="badge-icon">🌱</div>
+                <div class="badge-name">First Steps</div>
+                <div class="badge-desc">Complete your first tutorial</div>
+            </div>
+            <div class="badge-card locked" data-badge="tutorial-crusher">
+                <div class="badge-icon">🔥</div>
+                <div class="badge-name">Tutorial Crusher</div>
+                <div class="badge-desc">Complete 5 tutorials</div>
+            </div>
+            <div class="badge-card locked" data-badge="quiz-whiz">
+                <div class="badge-icon">🧠</div>
+                <div class="badge-name">Quiz Whiz</div>
+                <div class="badge-desc">Score 80%+ on the Markets Quiz</div>
+            </div>
+            <div class="badge-card locked" data-badge="bug-slayer">
+                <div class="badge-icon">🐛</div>
+                <div class="badge-name">Bug Slayer</div>
+                <div class="badge-desc">Score 2,500+ in kill -9</div>
+            </div>
+            <div class="badge-card locked" data-badge="speed-demon">
+                <div class="badge-icon">⚡</div>
+                <div class="badge-name">Speed Demon</div>
+                <div class="badge-desc">Score 800+ in Latency Racer</div>
+            </div>
+            <div class="badge-card locked" data-badge="night-owl">
+                <div class="badge-icon">🦉</div>
+                <div class="badge-name">Night Owl</div>
+                <div class="badge-desc">Visit between midnight and 5 AM</div>
+            </div>
+            <div class="badge-card locked" data-badge="explorer">
+                <div class="badge-icon">🗺️</div>
+                <div class="badge-name">Explorer</div>
+                <div class="badge-desc">Visit 10 different pages</div>
+            </div>
+            <div class="badge-card locked" data-badge="number-cruncher">
+                <div class="badge-icon">🧮</div>
+                <div class="badge-name">Number Cruncher</div>
+                <div class="badge-desc">Run 5 different calculators</div>
+            </div>
+    </div>
+
+    <div class="section-heading" style="margin-top:34px;">
+        <h3 style="font-size:1.25rem;">Tutorials</h3>
+    </div>
+    <div class="tut-list" id="tut-list">
+            <div class="tut-row" data-tut="ai-agents">
+                <span class="tut-check" aria-hidden="true">○</span>
+                <a href="tutorials/ai-agents.html">Building AI Agents</a>
+                <span class="tut-xp">+50 XP</span>
+            </div>
+            <div class="tut-row" data-tut="ansible">
+                <span class="tut-check" aria-hidden="true">○</span>
+                <a href="tutorials/ansible.html">Ansible</a>
+                <span class="tut-xp">+50 XP</span>
+            </div>
+            <div class="tut-row" data-tut="databases-oracle">
+                <span class="tut-check" aria-hidden="true">○</span>
+                <a href="tutorials/databases-oracle.html">Oracle for Production Support</a>
+                <span class="tut-xp">+50 XP</span>
+            </div>
+            <div class="tut-row" data-tut="databases-sql">
+                <span class="tut-check" aria-hidden="true">○</span>
+                <a href="tutorials/databases-sql.html">SQL for Production Support</a>
+                <span class="tut-xp">+50 XP</span>
+            </div>
+            <div class="tut-row" data-tut="databases-sqlserver">
+                <span class="tut-check" aria-hidden="true">○</span>
+                <a href="tutorials/databases-sqlserver.html">SQL Server for Production Support</a>
+                <span class="tut-xp">+50 XP</span>
+            </div>
+            <div class="tut-row" data-tut="docker">
+                <span class="tut-check" aria-hidden="true">○</span>
+                <a href="tutorials/docker.html">Docker for Production Support</a>
+                <span class="tut-xp">+50 XP</span>
+            </div>
+            <div class="tut-row" data-tut="fix-protocol">
+                <span class="tut-check" aria-hidden="true">○</span>
+                <a href="tutorials/fix-protocol.html">FIX Protocol Deep Dive</a>
+                <span class="tut-xp">+50 XP</span>
+            </div>
+            <div class="tut-row" data-tut="fixed-income">
+                <span class="tut-check" aria-hidden="true">○</span>
+                <a href="tutorials/fixed-income.html">Fixed Income Essentials</a>
+                <span class="tut-xp">+50 XP</span>
+            </div>
+            <div class="tut-row" data-tut="frontend-backend-middleware">
+                <span class="tut-check" aria-hidden="true">○</span>
+                <a href="tutorials/frontend-backend-middleware.html">Frontend / Backend / Middleware</a>
+                <span class="tut-xp">+50 XP</span>
+            </div>
+            <div class="tut-row" data-tut="futures-options">
+                <span class="tut-check" aria-hidden="true">○</span>
+                <a href="tutorials/futures-options.html">Futures &amp; Options</a>
+                <span class="tut-xp">+50 XP</span>
+            </div>
+            <div class="tut-row" data-tut="fx">
+                <span class="tut-check" aria-hidden="true">○</span>
+                <a href="tutorials/fx.html">FX Essentials</a>
+                <span class="tut-xp">+50 XP</span>
+            </div>
+            <div class="tut-row" data-tut="git-essentials">
+                <span class="tut-check" aria-hidden="true">○</span>
+                <a href="tutorials/git-essentials.html">Git Essentials</a>
+                <span class="tut-xp">+50 XP</span>
+            </div>
+            <div class="tut-row" data-tut="jenkins">
+                <span class="tut-check" aria-hidden="true">○</span>
+                <a href="tutorials/jenkins.html">Jenkins</a>
+                <span class="tut-xp">+50 XP</span>
+            </div>
+            <div class="tut-row" data-tut="kubernetes">
+                <span class="tut-check" aria-hidden="true">○</span>
+                <a href="tutorials/kubernetes.html">Kubernetes for Production Support</a>
+                <span class="tut-xp">+50 XP</span>
+            </div>
+            <div class="tut-row" data-tut="multi-asset-instruments">
+                <span class="tut-check" aria-hidden="true">○</span>
+                <a href="tutorials/multi-asset-instruments.html">Multi-Asset Instruments</a>
+                <span class="tut-xp">+50 XP</span>
+            </div>
+            <div class="tut-row" data-tut="risk-measures">
+                <span class="tut-check" aria-hidden="true">○</span>
+                <a href="tutorials/risk-measures.html">Risk Measures: VaR &amp; Stress</a>
+                <span class="tut-xp">+50 XP</span>
+            </div>
+            <div class="tut-row" data-tut="risk">
+                <span class="tut-check" aria-hidden="true">○</span>
+                <a href="tutorials/risk.html">Risk Measures</a>
+                <span class="tut-xp">+50 XP</span>
+            </div>
+            <div class="tut-row" data-tut="stp">
+                <span class="tut-check" aria-hidden="true">○</span>
+                <a href="tutorials/stp.html">Straight-Through Processing</a>
+                <span class="tut-xp">+50 XP</span>
+            </div>
+            <div class="tut-row" data-tut="terraform">
+                <span class="tut-check" aria-hidden="true">○</span>
+                <a href="tutorials/terraform.html">Terraform</a>
+                <span class="tut-xp">+50 XP</span>
+            </div>
+            <div class="tut-row" data-tut="trade-lifecycle">
+                <span class="tut-check" aria-hidden="true">○</span>
+                <a href="tutorials/trade-lifecycle.html">Trade Lifecycle Walkthrough</a>
+                <span class="tut-xp">+50 XP</span>
+            </div>
+            <div class="tut-row" data-tut="valuation">
+                <span class="tut-check" aria-hidden="true">○</span>
+                <a href="tutorials/valuation.html">Valuation Methods</a>
+                <span class="tut-xp">+50 XP</span>
+            </div>
+            <div class="tut-row" data-tut="vpn">
+                <span class="tut-check" aria-hidden="true">○</span>
+                <a href="tutorials/vpn.html">VPN</a>
+                <span class="tut-xp">+50 XP</span>
+            </div>
+            <div class="tut-row" data-tut="yaml-dockerfiles">
+                <span class="tut-check" aria-hidden="true">○</span>
+                <a href="tutorials/yaml-dockerfiles.html">YAML &amp; Dockerfiles</a>
+                <span class="tut-xp">+50 XP</span>
+            </div>
+    </div>
+
+    <div class="section-heading" style="margin-top:34px;">
+        <h3 style="font-size:1.25rem;">Game high scores</h3>
+    </div>
+    <div class="score-list" id="score-list">
+            <div class="score-row" data-game="quiz">
+                <span class="score-name">Markets Quiz</span>
+                <span class="score-val">—</span>
+            </div>
+            <div class="score-row" data-game="fix-match">
+                <span class="score-name">FIX Tag Match</span>
+                <span class="score-val">—</span>
+            </div>
+            <div class="score-row" data-game="incident-commander">
+                <span class="score-name">Incident Commander</span>
+                <span class="score-val">—</span>
+            </div>
+            <div class="score-row" data-game="kill-nine">
+                <span class="score-name">kill -9</span>
+                <span class="score-val">—</span>
+            </div>
+            <div class="score-row" data-game="latency-racer">
+                <span class="score-name">Latency Racer</span>
+                <span class="score-val">—</span>
+            </div>
+            <div class="score-row" data-game="pipeline-panic">
+                <span class="score-name">Pipeline Panic</span>
+                <span class="score-val">—</span>
+            </div>
+            <div class="score-row" data-game="log-hunter">
+                <span class="score-name">Log Hunter</span>
+                <span class="score-val">—</span>
+            </div>
+            <div class="score-row" data-game="deploy-dash">
+                <span class="score-name">Deploy Dash</span>
+                <span class="score-val">—</span>
+            </div>
+    </div>
+
+    <div class="reset-row">
+        <button type="button" class="btn btn-secondary" id="reset-progress">Reset all progress</button>
+    </div>
+
+</main>
+
+<footer class="site-footer">
+
+        <div class="container footer-content">
+
+            <div>
+
+                <strong>
+                    Munir Nweiser
+                </strong>
+
+                <p>
+                    Application Support • Capital Markets • Technology
+                </p>
+
+            </div>
+
+
+            <div class="footer-links">
+
+                <a href="#home">Home</a>
+                <a href="#resume">Resume</a>
+                <a href="#trading">Trading</a>
+                <a href="#tutorials">Tutorials</a>
+
+            </div>
+
+
+            <div>
+
+                <small>
+                    © <span id="current-year"></span>
+                    Munir Nweiser
+                </small>
+
+                <br>
+
+                <small class="visitor-count">
+                    <span id="visitor-count"></span>
+                </small>
+
+                <small class="site-credit">
+                    Designed &amp; built with Muse 🤖
+                </small>
+
+            </div>
+
+        </div>
+
+    </footer>
+
+<script src="app.js"></script>
+<script src="counter.js"></script>
+<script src="js/progress.js"></script>
+<script>
+(function () {
+    'use strict';
+    if (!window.PortalProgress) return;
+
+    function render() {
+        var s = window.PortalProgress.getState();
+        var snap = window.PortalProgress.snapshot();
+        document.getElementById('xp-level').textContent = 'Level ' + snap.level + ' \u00b7 ' + snap.levelName;
+        document.getElementById('xp-next').textContent = snap.xp + ' XP' +
+            (snap.nextLevelName ? ' \u00b7 ' + snap.xpForNext + ' XP to ' + snap.nextLevelName : ' \u00b7 max level');
+        document.getElementById('xp-fill').style.width = snap.pct + '%';
+        document.getElementById('stat-xp').textContent = snap.xp;
+        document.getElementById('stat-streak').textContent = snap.streak + ' (best ' + snap.longestStreak + ')';
+        document.getElementById('stat-tuts').textContent = snap.tutorialsDone + '/23';
+        document.getElementById('stat-badges').textContent = snap.badges.length + '/8';
+
+        document.querySelectorAll('#badge-grid .badge-card').forEach(function (card) {
+            var id = card.getAttribute('data-badge');
+            var unlocked = !!s.badges[id];
+            card.classList.toggle('unlocked', unlocked);
+            card.classList.toggle('locked', !unlocked);
+        });
+
+        document.querySelectorAll('#tut-list .tut-row').forEach(function (row) {
+            var slug = row.getAttribute('data-tut');
+            var done = !!s.tutorials[slug];
+            row.classList.toggle('done', done);
+            var chk = row.querySelector('.tut-check');
+            if (chk) chk.textContent = done ? '\u2713' : '\u25cb';
+        });
+
+        document.querySelectorAll('#score-list .score-row').forEach(function (row) {
+            var game = row.getAttribute('data-game');
+            var val = row.querySelector('.score-val');
+            var best = s.scores[game] || 0;
+            if (val) val.textContent = best > 0 ? String(best) : '\u2014';
+        });
+    }
+
+    document.addEventListener('progress', render);
+    render();
+
+    document.getElementById('reset-progress').addEventListener('click', function () {
+        if (window.confirm('Reset all XP, streaks, badges and high scores?')) {
+            try { window.localStorage.removeItem('munir-portal-progress-v1'); } catch (e) {}
+            window.location.reload();
+        }
+    });
+})();
+</script>
+</body>
+</html>
