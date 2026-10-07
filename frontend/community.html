@@ -604,6 +604,276 @@
 
         bindFeedEvents(feed);
     }
+
+    function renderPost(p) {
+        var seed = p.seed || null;
+        var id = esc(p.id);
+        var name = esc(p.name || 'Munir');
+        var time = esc(p.time || 'just now');
+        var liked = isLiked(p.id) ? ' liked' : '';
+        var count = seed ? likeCount(seed) : (state.likeDelta[p.id] || 0);
+        var comments = state.comments[p.id] || [];
+
+        var bodyHtml;
+        if (seed) {
+            bodyHtml = '<div class="post-body">' + seed.body + '</div>';
+        } else {
+            bodyHtml = '<div class="post-body">' + esc(p.text).replace(/\n/g, '<br>') + '</div>';
+        }
+
+        var visualHtml = '';
+        if (seed && seed.visual) {
+            visualHtml = '<div class="post-visual" data-like="' + id + '" style="background:' +
+                seed.visual.bg + '">' + seed.visual.emoji + '</div>';
+        }
+
+        var linkHtml = '';
+        if (seed && seed.link) {
+            linkHtml = '<a class="post-link tutorial-link" href="' + seed.link.href + '">' +
+                seed.link.label + ' →</a>';
+        }
+
+        var commentsHtml = '';
+        for (var i = 0; i < comments.length; i++) {
+            commentsHtml += '<div class="comment"><strong>' + esc(comments[i].name) +
+                '</strong> ' + esc(comments[i].text) + '</div>';
+        }
+        commentsHtml += '<div class="comment-form">' +
+            '<input type="text" placeholder="Write a comment…" maxlength="300" data-cinput="' + id + '" aria-label="Write a comment">' +
+            '<button class="btn btn-secondary" type="button" data-csend="' + id + '">Send</button>' +
+            '</div>';
+
+        return '<article class="resume-card post-card" data-post="' + id + '">' +
+            '<div class="post-head">' +
+            '<div class="post-avatar">MN</div>' +
+            '<div><strong>' + name + '</strong><small>' + time + '</small></div>' +
+            '</div>' +
+            bodyHtml + visualHtml + linkHtml +
+            '<div class="post-actions">' +
+            '<button class="like-btn' + liked + '" type="button" data-like="' + id + '" aria-label="Like">' +
+            '<span class="heart">♥</span><span data-lcount="' + id + '">' + count + '</span>' +
+            '</button>' +
+            '<button class="comment-toggle" type="button" data-ctoggle="' + id + '">💬 ' +
+            '<span data-ccount="' + id + '">' + comments.length + '</span> comments</button>' +
+            '</div>' +
+            '<div class="comments" data-comments="' + id + '">' + commentsHtml + '</div>' +
+            '</article>';
+    }
+
+    function bindFeedEvents(feed) {
+        feed.addEventListener('click', function (e) {
+            var likeBtn = e.target.closest('[data-like]');
+            if (likeBtn && likeBtn.classList.contains('like-btn')) {
+                toggleLike(likeBtn.getAttribute('data-like'), likeBtn);
+                return;
+            }
+            var ct = e.target.closest('[data-ctoggle]');
+            if (ct) {
+                var box = feed.querySelector('[data-comments="' + ct.getAttribute('data-ctoggle') + '"]');
+                if (box) box.classList.toggle('open');
+                return;
+            }
+            var send = e.target.closest('[data-csend]');
+            if (send) {
+                addComment(send.getAttribute('data-csend'));
+            }
+        });
+
+        feed.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                var input = e.target.closest('[data-cinput]');
+                if (input) addComment(input.getAttribute('data-cinput'));
+            }
+        });
+
+        feed.addEventListener('dblclick', function (e) {
+            var visual = e.target.closest('.post-visual');
+            if (visual) {
+                var id = visual.getAttribute('data-like');
+                var btn = feed.querySelector('.like-btn[data-like="' + id + '"]');
+                if (btn && !isLiked(id)) toggleLike(id, btn);
+                if (btn) {
+                    btn.classList.add('pop');
+                    setTimeout(function () { btn.classList.remove('pop'); }, 200);
+                }
+            }
+        });
+    }
+
+    function toggleLike(id, btn) {
+        if (isLiked(id)) {
+            delete state.liked[id];
+            state.likeDelta[id] = (state.likeDelta[id] || 0) - 1;
+            btn.classList.remove('liked');
+        } else {
+            state.liked[id] = true;
+            state.likeDelta[id] = (state.likeDelta[id] || 0) + 1;
+            btn.classList.add('liked');
+            btn.classList.add('pop');
+            setTimeout(function () { btn.classList.remove('pop'); }, 200);
+        }
+        var post = postById(id);
+        var n = post && post.baseLikes ? likeCount(post) : (state.likeDelta[id] || 0);
+        var label = document.querySelector('[data-lcount="' + id + '"]');
+        if (label) label.textContent = String(n);
+        saveState();
+    }
+
+    function addComment(id) {
+        var input = document.querySelector('[data-cinput="' + id + '"]');
+        if (!input) return;
+        var text = input.value.trim();
+        if (!text) return;
+        if (!state.comments[id]) state.comments[id] = [];
+        state.comments[id].push({ name: 'You', text: text, ts: Date.now() });
+        saveState();
+        renderFeed();
+        var box = document.querySelector('[data-comments="' + id + '"]');
+        if (box) box.classList.add('open');
+    }
+
+    /* ---------------- composer ---------------- */
+    document.getElementById('composer-post').addEventListener('click', function () {
+        var textEl = document.getElementById('composer-text');
+        var nameEl = document.getElementById('composer-name');
+        var text = textEl.value.trim();
+        if (!text) {
+            textEl.focus();
+            return;
+        }
+        var name = nameEl.value.trim() || 'Munir';
+        state.userPosts.unshift({
+            id: 'user-' + Date.now(),
+            name: name,
+            text: text,
+            ts: Date.now()
+        });
+        textEl.value = '';
+        saveState();
+        renderFeed();
+    });
+
+    /* ---------------- follow ---------------- */
+    var followBtn = document.getElementById('follow-btn');
+    var followersEl = document.getElementById('stat-followers');
+
+    function renderFollow() {
+        followersEl.textContent = String(state.followers);
+        followBtn.textContent = state.following ? 'Following ✓' : 'Follow';
+    }
+
+    followBtn.addEventListener('click', function () {
+        state.following = !state.following;
+        state.followers += state.following ? 1 : -1;
+        saveState();
+        renderFollow();
+    });
+
+    /* ---------------- stories ---------------- */
+    var storyTimer = null;
+    var storyIdx = 0;
+    var slideIdx = 0;
+
+    function renderStories() {
+        var row = document.getElementById('stories-row');
+        var html = '';
+        for (var i = 0; i < STORIES.length; i++) {
+            html += '<button class="story-item" type="button" data-story="' + i + '" aria-label="View story: ' +
+                esc(STORIES[i].label) + '">' +
+                '<div class="story-ring"><span>' + STORIES[i].emoji + '</span></div>' +
+                '<small>' + esc(STORIES[i].label) + '</small></button>';
+        }
+        row.innerHTML = html;
+        row.addEventListener('click', function (e) {
+            var item = e.target.closest('[data-story]');
+            if (item) openStory(parseInt(item.getAttribute('data-story'), 10));
+        });
+    }
+
+    function openStory(i) {
+        storyIdx = i;
+        slideIdx = 0;
+        showSlide();
+    }
+
+    function closeStory() {
+        if (storyTimer) { clearTimeout(storyTimer); storyTimer = null; }
+        var v = document.getElementById('story-viewer');
+        if (v) v.remove();
+    }
+
+    function showSlide() {
+        closeStory();
+        var story = STORIES[storyIdx];
+        var slide = story.slides[slideIdx];
+
+        var dots = '';
+        for (var d = 0; d < story.slides.length; d++) {
+            dots += '<i class="' + (d < slideIdx ? 'done' : '') + '"></i>';
+        }
+
+        var linkHtml = '';
+        if (slide.link) {
+            linkHtml = '<a class="btn" href="' + slide.link + '">' + esc(slide.linkLabel || 'Open') + '</a>';
+        }
+
+        var v = document.createElement('div');
+        v.className = 'story-viewer';
+        v.id = 'story-viewer';
+        v.innerHTML =
+            '<div class="story-progress">' + dots + '</div>' +
+            '<button class="story-close" type="button" aria-label="Close story">✕</button>' +
+            '<div class="story-card" style="background:linear-gradient(160deg, rgba(14,165,233,0.12), rgba(139,92,246,0.12))">' +
+            '<div class="story-emoji">' + slide.emoji + '</div>' +
+            '<h3>' + esc(slide.title) + '</h3>' +
+            '<p>' + esc(slide.text) + '</p>' +
+            linkHtml +
+            '</div>';
+
+        v.querySelector('.story-close').addEventListener('click', function (e) {
+            e.stopPropagation();
+            closeStory();
+        });
+        v.addEventListener('click', function (e) {
+            if (e.target === v) { nextSlide(); }
+        });
+        v.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeStory();
+        });
+
+        document.body.appendChild(v);
+        var card = v.querySelector('.story-card');
+        if (card) card.setAttribute('tabindex', '-1');
+
+        storyTimer = setTimeout(nextSlide, 4000);
+    }
+
+    function nextSlide() {
+        var story = STORIES[storyIdx];
+        if (slideIdx < story.slides.length - 1) {
+            slideIdx++;
+            showSlide();
+        } else if (storyIdx < STORIES.length - 1) {
+            storyIdx++;
+            slideIdx = 0;
+            showSlide();
+        } else {
+            closeStory();
+        }
+    }
+
+    document.addEventListener('keydown', function (e) {
+        var v = document.getElementById('story-viewer');
+        if (!v) return;
+        if (e.key === 'Escape') closeStory();
+        if (e.key === 'ArrowRight') nextSlide();
+    });
+
+    /* ---------------- init ---------------- */
+    renderFollow();
+    renderStories();
+    renderFeed();
+})();
 </script>
 </body>
 </html>
