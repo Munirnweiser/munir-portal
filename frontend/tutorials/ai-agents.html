@@ -44,6 +44,23 @@
         details.practice summary + p { margin: 10px 0 4px; }
         .practice-tier { color: #7dd3fc; font-size: 0.95rem; margin: 22px 0 6px; font-weight: 700; }
         .author-box { border-left: 3px solid #7dd3fc; }
+        /* AI interactive sections: agent run + ReAct demo */
+        .loop-stages { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0 6px; }
+        .loop-stage { padding: 8px 14px; border-radius: 999px; border: 1px solid rgba(125,211,252,.3); font-size: .82rem; color: #7dd3fc; background: rgba(125,211,252,.06); }
+        .run-log { display: flex; flex-direction: column; gap: 10px; margin: 16px 0; max-height: 560px; overflow-y: auto; }
+        .run-step { border: 1px solid rgba(125,211,252,.18); border-radius: 10px; padding: 12px 14px; background: rgba(15,23,42,.6); }
+        .run-step.run-done { border-color: rgba(74,222,128,.45); }
+        .stage-badge { display: inline-block; font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; margin-bottom: 8px; }
+        .stage-perceive { background: rgba(56,189,248,.15); color: #7dd3fc; }
+        .stage-reason { background: rgba(196,181,253,.15); color: #c4b5fd; }
+        .stage-act { background: rgba(74,222,128,.12); color: #4ade80; }
+        .stage-observe { background: rgba(251,191,36,.12); color: #fbbf24; }
+        .run-step p { margin: 6px 0 0; color: #cbd5e1; font-size: .9rem; line-height: 1.6; }
+        .tool-call, .tool-out { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .82rem; border-radius: 8px; padding: 10px 12px; margin-top: 8px; overflow-x: auto; white-space: pre-wrap; }
+        .tool-call { background: rgba(56,189,248,.08); border: 1px solid rgba(125,211,252,.25); color: #7dd3fc; }
+        .tool-out { background: rgba(15,23,42,.9); border: 1px solid rgba(148,163,184,.2); color: #e2e8f0; }
+        .react-thought { color: #c4b5fd; font-size: .9rem; line-height: 1.6; margin: 6px 0 0; }
+        .react-thought strong { color: #c4b5fd; }
 </style>
     <meta property="og:title" content="Building AI Agents | Munir Nweiser">
     <meta property="og:description" content="Building AI agents: the perceive-reason-act loop, tools and function calling, memory, the ReAct pattern, guardrails, and a worked alert-triage support bot design.">
@@ -328,6 +345,22 @@
 
 
 
+<div class="resume-card" id="mini-agent">
+<h3>Try it: a mini ReAct agent, running in this page</h3>
+<p>Type a goal (or keep the default) and watch a ReAct loop plan steps, call simulated tools, and narrate its reasoning &mdash; Thought &rarr; Action &rarr; Observation, one loop at a time. Everything is client-side and deterministic: the &ldquo;tools&rdquo; return scripted outputs, but the loop structure is exactly how production agents work.</p>
+<div class="chat-input-row" style="border:1px solid rgba(125,211,252,.18); border-radius:12px; margin:14px 0 4px;">
+    <input type="text" id="react-goal" value="find why orders are rejecting" maxlength="120" aria-label="Agent goal" style="flex:1; padding:10px 14px; border-radius:10px; border:1px solid rgba(125,211,252,.25); background:rgba(15,23,42,.8); color:#e8f0ff; font-size:.92rem;">
+    <button type="button" class="btn" id="react-run">&#9654; Run agent</button>
+</div>
+<div class="chip-row" id="react-chips" style="margin-top:10px;">
+    <button type="button" class="chip">find why orders are rejecting</button>
+    <button type="button" class="chip">diagnose the FIX session drop</button>
+    <button type="button" class="chip">investigate pricing latency</button>
+</div>
+<div id="react-log" class="run-log" aria-live="polite"></div>
+<p class="demo-note" style="color:#94a3b8; font-size:.8rem; margin-top:10px;">Deterministic demo &mdash; the same goal always produces the same trace. Try the three sample goals to see how the agent picks different tools for different problems.</p>
+</div>
+
 <div class="resume-card" id="practice">
 <h3>Practice: easy, medium, hard</h3>
 <p>Try these before moving on — click a question to reveal the answer.</p>
@@ -474,6 +507,191 @@
                 fb.hidden = false;
             });
             scoreEl.textContent = 'Score: ' + correct + ' / ' + questions.length;
+        });
+    }
+})();
+</script>
+<script>
+(function () {
+    "use strict";
+
+    var goalInput = document.getElementById("react-goal");
+    var runBtn = document.getElementById("react-run");
+    var reactLog = document.getElementById("react-log");
+    var chips = document.getElementById("react-chips");
+    if (!goalInput || !runBtn || !reactLog) return;
+
+    var SCENARIOS = [
+        {
+            keys: ["reject", "order"],
+            name: "Order rejections",
+            steps: [
+                { thought: "Goal: find why orders are rejecting. Start with the gateway logs \u2014 rejections leave a paper trail.",
+                  action: "query_logs(service=\"order-gateway\", minutes=15, level=\"ERROR\")",
+                  observation: "14 rejects in 15 min \u2014 all 35=j (BusinessReject)\ntag 58: \u201c44-Missing required tag for limit order\u201d" },
+                { thought: "Every reject is a limit order missing tag 44 (Price). Did this start with a recent change?",
+                  action: "list_recent_deploys(service=\"order-gateway\")",
+                  observation: "deploy v2.14.1, 22 min ago \u2014 \u201cFIX 4.4 upgrade\u201d" },
+                { thought: "Started right after the 4.4 upgrade. Check the runbook for known migration issues before paging anyone.",
+                  action: "check_runbook(query=\"fix 4.4 limit order price\")",
+                  observation: "RB-118: \u201c4.4 upgrade made tag 44 mandatory on limit orders; some clients still omit it.\u201d" },
+                { thought: "Root cause found: clients sending limit orders without tag 44 after the upgrade. This agent is read-only \u2014 it cannot change client configs, so it escalates with the full evidence bundle.",
+                  action: "page_human(summary=\"14 limit-order rejects: missing tag 44\", evidence=[\"deploy v2.14.1\", \"RB-118\"]) ",
+                  observation: "Paged on-call with the evidence bundle.\nNo auto-remediation taken (read-only agent).",
+                  done: true }
+            ]
+        },
+        {
+            keys: ["session", "fix", "drop", "disconnect"],
+            name: "FIX session drop",
+            steps: [
+                { thought: "Goal: diagnose the FIX session drop on fix-acceptor-01. Check session state first \u2014 sequence numbers tell the story.",
+                  action: "get_session_state(target=\"fix-acceptor-01\")",
+                  observation: "Session DOWN since 03:02\nLast seq 34=88120 \u2014 3 missed heartbeats" },
+                { thought: "Missed heartbeats point at the network, not the app. Look for socket-level evidence in the logs.",
+                  action: "query_logs(service=\"fix-acceptor-01\", minutes=30, pattern=\"heartbeat|socket\")",
+                  observation: "03:02:11 socket timeout\n03:02:14 reconnect attempt: reset by peer" },
+                { thought: "\u201cReset by peer\u201d on reconnect means something in the middle is killing it. Check for infrastructure changes in the window.",
+                  action: "list_recent_changes(scope=\"network\")",
+                  observation: "FW-2291 pushed 03:00 \u2014 blocks port 9876 (the FIX port)" },
+                { thought: "Found it: a firewall change at 03:00 killed the session at 03:02. Reverting firewall rules affects every desk \u2014 escalate, don't auto-fix.",
+                  action: "page_human(summary=\"FIX session killed by FW-2291\", evidence=[\"reset by peer\", \"port 9876 blocked\"]) ",
+                  observation: "Paged netops + on-call with evidence.\nSuggested action: roll back FW-2291.",
+                  done: true }
+            ]
+        },
+        {
+            keys: ["slow", "pricing", "latency", "lag"],
+            name: "Pricing latency",
+            steps: [
+                { thought: "Goal: investigate pricing latency. Confirm the symptom with metrics before theorizing.",
+                  action: "get_metric(host=\"pricing-engine-03\", metric=\"p99_latency_ms\")",
+                  observation: "p99 = 812ms (baseline 120ms)\nDegraded for ~18 min" },
+                { thought: "7x baseline. Check GC and CPU \u2014 is the box sick, or just busy?",
+                  action: "get_metric(host=\"pricing-engine-03\", metric=\"gc_pause_ms\")",
+                  observation: "Full GC every 40s, pauses ~900ms\nHeap at 95%" },
+                { thought: "GC thrashing explains the latency exactly. Correlate with message volume to find the trigger.",
+                  action: "get_metric(host=\"pricing-engine-03\", metric=\"msgs_per_sec\")",
+                  observation: "42k/s vs 18k/s baseline \u2014 volume spike after the Tokyo open" },
+                { thought: "Heap too small for the new volume. Restarting with a bigger heap is state-changing \u2014 this needs one-click approval.",
+                  action: "request_approval(action=\"restart with -Xmx8g\", rollback=\"previous heap\")",
+                  observation: "\u2705 Approved. Executing\u2026\np99 back to 118ms. Full trail in audit log.",
+                  done: true }
+            ]
+        }
+    ];
+
+    var GENERIC = {
+        name: "Stale market data",
+        steps: [
+            { thought: "No specific scenario matched, so I'll run the generic triage: confirm the symptom, check the freshest data source, then escalate.",
+              action: "get_metric(feed=\"market-data\", metric=\"last_tick_age_sec\")",
+              observation: "Oldest tick 47s (SLA: 5s) \u2014 feed is stale" },
+            { thought: "Stale feed confirmed. Check whether the consumer or the publisher is at fault.",
+              action: "query_logs(service=\"feed-handler\", minutes=10, pattern=\"gap|reconnect\")",
+              observation: "3 multicast gaps in 10 min \u2014 publisher side" },
+            { thought: "Gaps are on the publisher side \u2014 outside this agent's control. Escalate to the market-data team with the gap log.",
+              action: "page_human(summary=\"stale feed: multicast gaps\", evidence=[\"47s oldest tick\"]) ",
+              observation: "Paged market-data team. Agent stands down.",
+              done: true }
+        ]
+    };
+
+    var timers = [];
+    var running = false;
+
+    function pickScenario(goal) {
+        var lower = goal.toLowerCase();
+        for (var i = 0; i < SCENARIOS.length; i++) {
+            var sc = SCENARIOS[i];
+            for (var j = 0; j < sc.keys.length; j++) {
+                if (lower.indexOf(sc.keys[j]) !== -1) return sc;
+            }
+        }
+        return GENERIC;
+    }
+
+    function addStep(step, n) {
+        var card = document.createElement("div");
+        card.className = "run-step" + (step.done ? " run-done" : "");
+
+        var badge = document.createElement("span");
+        badge.className = "stage-badge stage-reason";
+        badge.textContent = "iteration " + n + " \u00b7 thought";
+        card.appendChild(badge);
+
+        var th = document.createElement("p");
+        th.className = "react-thought";
+        th.textContent = step.thought;
+        card.appendChild(th);
+
+        var badge2 = document.createElement("span");
+        badge2.className = "stage-badge stage-act";
+        badge2.textContent = "action";
+        card.appendChild(badge2);
+
+        var tc = document.createElement("div");
+        tc.className = "tool-call";
+        tc.textContent = "\u2699 " + step.action;
+        card.appendChild(tc);
+
+        var badge3 = document.createElement("span");
+        badge3.className = "stage-badge stage-observe";
+        badge3.textContent = "observation";
+        card.appendChild(badge3);
+
+        var to = document.createElement("div");
+        to.className = "tool-out";
+        to.textContent = step.observation;
+        card.appendChild(to);
+
+        reactLog.appendChild(card);
+        reactLog.scrollTop = reactLog.scrollHeight;
+    }
+
+    function run() {
+        if (running) return;
+        var goal = goalInput.value.trim() || "find why orders are rejecting";
+        var sc = pickScenario(goal);
+        running = true;
+        runBtn.disabled = true;
+        runBtn.style.opacity = "0.5";
+        reactLog.innerHTML = "";
+
+        var head = document.createElement("div");
+        head.className = "run-step";
+        var hb = document.createElement("span");
+        hb.className = "stage-badge stage-perceive";
+        hb.textContent = "goal";
+        head.appendChild(hb);
+        var hp = document.createElement("p");
+        hp.innerHTML = "<strong style=\"color:#f8fafc;\">Scenario: " + sc.name.replace(/&/g, "&amp;").replace(/</g, "&lt;") + "</strong><br>Goal: \u201c" + goal.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") + "\u201d";
+        head.appendChild(hp);
+        reactLog.appendChild(head);
+
+        sc.steps.forEach(function (step, i) {
+            timers.push(setTimeout(function () {
+                addStep(step, i + 1);
+                if (i === sc.steps.length - 1) {
+                    running = false;
+                    runBtn.disabled = false;
+                    runBtn.style.opacity = "1";
+                }
+            }, 400 + i * 1100));
+        });
+    }
+
+    runBtn.addEventListener("click", run);
+    goalInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") run();
+    });
+    if (chips) {
+        chips.addEventListener("click", function (e) {
+            var t = e.target;
+            if (t && t.classList && t.classList.contains("chip")) {
+                goalInput.value = t.textContent;
+                run();
+            }
         });
     }
 })();

@@ -100,6 +100,23 @@
             color: #94a3b8;
             font-size: 0.8rem;
         }
+            /* AI interactive sections: agent run + ReAct demo */
+        .loop-stages { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0 6px; }
+        .loop-stage { padding: 8px 14px; border-radius: 999px; border: 1px solid rgba(125,211,252,.3); font-size: .82rem; color: #7dd3fc; background: rgba(125,211,252,.06); }
+        .run-log { display: flex; flex-direction: column; gap: 10px; margin: 16px 0; max-height: 560px; overflow-y: auto; }
+        .run-step { border: 1px solid rgba(125,211,252,.18); border-radius: 10px; padding: 12px 14px; background: rgba(15,23,42,.6); }
+        .run-step.run-done { border-color: rgba(74,222,128,.45); }
+        .stage-badge { display: inline-block; font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; margin-bottom: 8px; }
+        .stage-perceive { background: rgba(56,189,248,.15); color: #7dd3fc; }
+        .stage-reason { background: rgba(196,181,253,.15); color: #c4b5fd; }
+        .stage-act { background: rgba(74,222,128,.12); color: #4ade80; }
+        .stage-observe { background: rgba(251,191,36,.12); color: #fbbf24; }
+        .run-step p { margin: 6px 0 0; color: #cbd5e1; font-size: .9rem; line-height: 1.6; }
+        .tool-call, .tool-out { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .82rem; border-radius: 8px; padding: 10px 12px; margin-top: 8px; overflow-x: auto; white-space: pre-wrap; }
+        .tool-call { background: rgba(56,189,248,.08); border: 1px solid rgba(125,211,252,.25); color: #7dd3fc; }
+        .tool-out { background: rgba(15,23,42,.9); border: 1px solid rgba(148,163,184,.2); color: #e2e8f0; }
+        .react-thought { color: #c4b5fd; font-size: .9rem; line-height: 1.6; margin: 6px 0 0; }
+        .react-thought strong { color: #c4b5fd; }
     </style>
     <meta property="og:title" content="AI Lab | Munir Nweiser">
     <meta property="og:description" content="AI Lab — how AI agents are built, and a demo desk agent that answers questions about Munir and this site.">
@@ -157,6 +174,27 @@
         <p style="color:#cbd5e1; line-height:1.7; margin-top:14px;">Want the full breakdown — agent architectures, tool design, memory patterns, and guardrails for production? <a href="../tutorials/ai-agents.html" class="tutorial-link">Read the AI Agents tutorial →</a></p>
     </div>
 
+        <div class="resume-card" style="margin-top:24px;">
+        <h3>How agents work, live <span class="tag" style="margin-left:8px;">interactive</span></h3>
+        <p style="color:#cbd5e1; line-height:1.7;">Watch a support agent work the perceive &rarr; reason &rarr; act loop on a real scenario: <strong>&ldquo;Disk full on the FIX engine host.&rdquo;</strong> Press run and follow each step &mdash; the tools are simulated, but the loop is the real thing.</p>
+
+        <div class="loop-stages" aria-hidden="true">
+            <span class="loop-stage">&#128065; Perceive</span>
+            <span class="loop-stage">&#129504; Reason</span>
+            <span class="loop-stage">&#128736; Act</span>
+            <span class="loop-stage">&#128229; Observe</span>
+        </div>
+
+        <div id="agent-run-log" class="run-log" aria-live="polite"></div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button type="button" class="btn" id="agent-run">&#9654; Run the agent</button>
+            <button type="button" class="btn" id="agent-reset" style="opacity:.75;">Reset</button>
+        </div>
+
+        <p class="demo-note">Deterministic simulation &mdash; every tool call is scripted. In production these would be real SSH commands, log queries and approval gates, with a full audit trail.</p>
+    </div>
+
     <div class="resume-card" style="margin-top:24px;">
         <h3>Ask the desk agent <span class="tag" style="margin-left:8px;">live demo</span></h3>
         <p style="color:#cbd5e1; line-height:1.7;">A rule-based agent that answers questions about Munir and this site. Try a suggestion, or ask your own:</p>
@@ -172,8 +210,14 @@
         <div class="chip-row" id="chip-row">
             <button type="button" class="chip">Who is Munir?</button>
             <button type="button" class="chip">What is the trading app?</button>
+            <button type="button" class="chip">What is X-One?</button>
+            <button type="button" class="chip">Who is Munibot?</button>
+            <button type="button" class="chip">What games exist?</button>
             <button type="button" class="chip">Where are the tutorials?</button>
             <button type="button" class="chip">What calculators exist?</button>
+            <button type="button" class="chip">How do I prepare for interviews?</button>
+            <button type="button" class="chip">Show me learning paths</button>
+            <button type="button" class="chip">What is my progress?</button>
             <button type="button" class="chip">How do I contact him?</button>
         </div>
 
@@ -237,108 +281,335 @@
 (function () {
     "use strict";
 
+    var runLog = document.getElementById("agent-run-log");
+    var runBtn = document.getElementById("agent-run");
+    var resetBtn = document.getElementById("agent-reset");
+    if (!runLog || !runBtn) return;
+
+    var STEPS = [
+        { stage: "perceive", title: "Alert ingested",
+          body: "02:14 \u2014 PagerDuty: \u201cDisk usage 97% on fix-engine-02\u201d. The agent pulls the host, the alert age, and recent deploys before doing anything else." },
+        { stage: "reason", title: "Triage hypothesis",
+          body: "97% on a FIX engine host is almost always log growth, not data. Rule one: verify with df before touching anything \u2014 never act on an alert alone." },
+        { stage: "act", title: "Tool call",
+          tool: "ssh.exec(host=\"fix-engine-02\", cmd=\"df -h /var\")",
+          out: "/dev/sda1   97% used\n/var/log/fix   41G" },
+        { stage: "reason", title: "Reading the evidence",
+          body: "41G sitting in /var/log/fix. Session logs should rotate daily \u2014 find the largest files and check their ages." },
+        { stage: "act", title: "Tool call",
+          tool: "find_large_files(path=\"/var/log/fix\", top=5)",
+          out: "session-2026-10-06.log   28G   (uncompressed)\nsession-2026-10-05.log   11G   (uncompressed)\nboth older than the 7-day retention policy" },
+        { stage: "reason", title: "Decision point",
+          body: "Logs older than retention can be compressed safely. But compression changes state \u2014 this crosses into the one-click approval tier. The agent does not proceed alone." },
+        { stage: "act", title: "Tool call",
+          tool: "request_approval(action=\"gzip logs older than 7 days\", rollback=\"gunzip\")",
+          out: "\u2705 Approved by on-call (one-click, expires in 10 min)" },
+        { stage: "act", title: "Tool call",
+          tool: "compress_logs(path=\"/var/log/fix\", older_than=\"7d\")",
+          out: "28G \u2192 1.9G\nDisk now at 61%" },
+        { stage: "perceive", title: "Verify the fix",
+          body: "Re-run df to confirm \u2014 /dev/sda1 at 61%. Recovery verified, not assumed." },
+        { stage: "reason", title: "Close-out", done: true,
+          body: "Write the full reasoning trail to the audit log, resolve the alert with a summary, and file a follow-up: fix the logrotate config so this doesn't page anyone again at 2 AM. Incident resolved in 10 loop iterations." }
+    ];
+
+    var timers = [];
+    var running = false;
+
+    function clearTimers() {
+        timers.forEach(function (t) { clearTimeout(t); });
+        timers = [];
+    }
+
+    function addStep(step) {
+        var card = document.createElement("div");
+        card.className = "run-step" + (step.done ? " run-done" : "");
+
+        var badge = document.createElement("span");
+        badge.className = "stage-badge stage-" + step.stage;
+        badge.textContent = step.stage;
+        card.appendChild(badge);
+
+        var title = document.createElement("strong");
+        title.style.cssText = "display:block;color:#f8fafc;margin-bottom:2px;";
+        title.textContent = step.title;
+        card.appendChild(title);
+
+        if (step.tool) {
+            var tc = document.createElement("div");
+            tc.className = "tool-call";
+            tc.textContent = "\u2699 " + step.tool;
+            card.appendChild(tc);
+        }
+        if (step.out) {
+            var to = document.createElement("div");
+            to.className = "tool-out";
+            to.textContent = step.out;
+            card.appendChild(to);
+        }
+        if (step.body) {
+            var p = document.createElement("p");
+            p.textContent = step.body;
+            card.appendChild(p);
+        }
+        runLog.appendChild(card);
+        runLog.scrollTop = runLog.scrollHeight;
+    }
+
+    runBtn.addEventListener("click", function () {
+        if (running) return;
+        running = true;
+        runBtn.disabled = true;
+        runBtn.style.opacity = "0.5";
+        runLog.innerHTML = "";
+        STEPS.forEach(function (step, i) {
+            timers.push(setTimeout(function () {
+                addStep(step);
+                if (i === STEPS.length - 1) {
+                    running = false;
+                    runBtn.disabled = false;
+                    runBtn.style.opacity = "1";
+                }
+            }, 350 + i * 950));
+        });
+    });
+
+    if (resetBtn) {
+        resetBtn.addEventListener("click", function () {
+            clearTimers();
+            running = false;
+            runBtn.disabled = false;
+            runBtn.style.opacity = "1";
+            runLog.innerHTML = "";
+        });
+    }
+})();
+</script>
+<script>
+(function () {
+    "use strict";
+
     var log = document.getElementById("chat-log");
     var input = document.getElementById("chat-input");
     var sendBtn = document.getElementById("chat-send");
 
     var RULES = [
         {
-            keys: ["who is munir", "about munir", "munir background", "his background"],
-            answer: "Munir Nweiser is a Senior Production Support Analyst in Capital Markets with 5 years of L1–L3 experience at Morgan Stanley, Société Générale CIB, and Crédit Agricole CIB. His stack: Linux, SQL (Oracle / SQL Server), FIX protocol, Dynatrace, Autosys, and trading platforms. Full details are on the Resume page."
+            keys: ["who is munir", "about munir", "munir background", "his background", "who built", "who made"],
+            topic: "Munir's background",
+            answer: "Munir Nweiser is a Senior Production Support Analyst in Capital Markets with 5 years of L1\u2013L3 experience at Morgan Stanley, Soci\u00e9t\u00e9 G\u00e9n\u00e9rale CIB, and Cr\u00e9dit Agricole CIB. His stack: Linux, SQL (Oracle / SQL Server), FIX protocol, Dynatrace, Autosys, and trading platforms. Full details are on the <a href=\"../resume.html\">Resume page</a>.",
+            followup: "He's on the market now and built this whole site as his portfolio \u2014 interviewers get the resume plus working proof. The <a href=\"../apps/interview-bank.html\">Interview Bank</a> has flashcards of the exact skills interviewers ask about."
         },
         {
-            keys: ["skill", "stack", "technologies", "tools he", "what can he"],
-            answer: "Core skills: Linux/Unix, Python & Bash, SQL (Oracle, MS SQL Server), FIX 4.2/4.4/5.0, ITIL v4, ServiceNow, Splunk, Geneos, Grafana, Dynatrace, Autosys, Control-M, and trading systems like Orchestrade and DealHub. The Resume page has the complete list."
+            keys: ["skill", "stack", "technologies", "what can he do"],
+            topic: "his skills",
+            answer: "Core skills: Linux/Unix, Python & Bash, SQL (Oracle, MS SQL Server), FIX 4.2/4.4/5.0, ITIL v4, ServiceNow, Splunk, Geneos, Grafana, Dynatrace, Autosys, Control-M, and trading systems like Orchestrade and DealHub. The <a href=\"../resume.html\">Resume page</a> has the complete list.",
+            followup: "The <a href=\"../linux-commands.html\">Linux 300 reference</a> and the <a href=\"../tutorials/databases-sql.html\">SQL tutorial</a> are the hands-on proof \u2014 searchable, with copy-pasteable examples from real production work."
         },
         {
             keys: ["trading app", "trade lifecycle app", "workstation", "trading simulator"],
-            answer: "The Trading App is a full simulated workstation: live market data for 4 symbols, an order ticket (market/limit), a matching engine with partial fills, and every order walking the complete 11-stage trade lifecycle — entry, validation, risk check, routing, execution, capture, enrichment, allocation, confirmation, clearing, settlement — with real FIX 4.4 messages at each stage. Find it under Games on the home page."
+            topic: "the trading app",
+            answer: "The <a href=\"trading-app.html\">Trading App</a> is a full simulated workstation: live market data for 4 symbols, an order ticket (market/limit), a matching engine with partial fills, and every order walking the complete 11-stage trade lifecycle \u2014 entry, validation, risk check, routing, execution, capture, enrichment, allocation, confirmation, clearing, settlement \u2014 with real FIX 4.4 messages at each stage.",
+            followup: "Want the pro version? The <a href=\"x-one-simulator.html\">X-One Terminal</a> adds 8 multi-asset instruments, a risk panel with VaR, and an intraday P&L chart \u2014 keyboard shortcuts included."
         },
         {
-            keys: ["tutorial", "learn", "course", "guide"],
-            answer: "Tutorials cover markets (FX, fixed income, futures & options, FIX protocol, STP, risk, trade lifecycle, valuation), databases (SQL, Oracle, SQL Server), and DevOps (Docker, Kubernetes). Open Tutorials on the home page — each one is written from a production-support angle."
+            keys: ["x-one", "xone", "socgen", "soci\u00e9t\u00e9 g\u00e9n\u00e9rale terminal", "multi-asset terminal"],
+            topic: "X-One",
+            answer: "The <a href=\"x-one-simulator.html\">X-One Terminal</a> is a Soci\u00e9t\u00e9 G\u00e9n\u00e9rale-style multi-asset trading terminal: 8 instruments, live bid/ask, positions, an order blotter with a full sent \u2192 acked \u2192 filled flow, and a risk panel showing delta, gamma, vega, DV01 and parametric VaR.",
+            followup: "It's a training simulation \u2014 not affiliated with Soci\u00e9t\u00e9 G\u00e9n\u00e9rale \u2014 but the workflows (blotter, risk limits, FIX messages) mirror the real desk."
         },
         {
-            keys: ["calculator", "cfa", "tvm", "npv", "bond"],
-            answer: "The CFA Calculator Lab has 11 tools: a full scientific calculator plus TVM, NPV/IRR, bond price & YTM, duration & convexity, CAPM, WACC, two-asset portfolio, Sharpe ratio, FX forwards, and option payoff charts. Hit 'CFA Calculator Lab' on the home page."
+            keys: ["fix builder", "build a fix", "decode fix", "newordersingle", "construct fix"],
+            topic: "the FIX builder",
+            answer: "The <a href=\"fix-builder.html\">FIX Builder</a> builds a NewOrderSingle from a form and shows the raw FIX message assembling live \u2014 tag-colored, with a real checksum \u2014 and it can also decode a FIX message you paste in.",
+            followup: "Pair it with the <a href=\"../tutorials/fix-protocol.html\">FIX protocol tutorial</a> for session management and sequence-gap recovery, or drill tags in <a href=\"fix-match.html\">FIX Tag Match</a>."
         },
         {
             keys: ["fix", "tag 35", "protocol"],
-            answer: "The FIX protocol tutorial covers session management, message anatomy (tags 8/9/35/49/56/34/52/10), NewOrderSingle and ExecutionReport flows, and sequence-gap recovery. And if you want to drill the tags, play FIX Tag Match under Games."
+            topic: "FIX protocol",
+            answer: "The <a href=\"../tutorials/fix-protocol.html\">FIX protocol tutorial</a> covers session management, message anatomy (tags 8/9/35/49/56/34/52/10), NewOrderSingle and ExecutionReport flows, and sequence-gap recovery. And if you want to drill the tags, play <a href=\"fix-match.html\">FIX Tag Match</a> under Games.",
+            followup: "The <a href=\"fix-builder.html\">FIX Builder</a> app is the hands-on companion \u2014 build a NewOrderSingle and watch the checksum compute."
         },
         {
-            keys: ["dynatrace", "monitor", "incident", "production issue"],
-            answer: "Two ways to train here: the Dynatrace Simulator (Explore section) lets you inject CPU spikes, memory leaks, DB slowdowns and crash loops into a live dashboard, and Incident Commander (Games) tests your first-action instincts against 10 timed production incidents."
+            keys: ["tutorial", "learn", "guide", "learning path", "track", "where do i start", "start here", "course"],
+            topic: "tutorials",
+            answer: "Tutorials cover markets (FX, fixed income, futures & options, FIX, STP, risk, trade lifecycle, valuation), databases (SQL, Oracle, SQL Server), DevOps (Docker, Kubernetes, Jenkins, Git, Terraform, Ansible, YAML), plus VPN and AI agents \u2014 23 in total, each written from a production-support angle.",
+            followup: "Start at <a href=\"../tutorials/index.html\">Learning Tracks</a> \u2014 it orders all 23 into 5 paths (Markets, FIX, Databases, DevOps, AI) with Previous/Next chapter buttons, like a course. Every tutorial also has a presentation-slides mode."
+        },
+        {
+            keys: ["calculator", "cfa", "tvm", "npv", "bond", "statistic"],
+            topic: "calculators",
+            answer: "The <a href=\"../calculators.html\">CFA Calculator Lab</a> has a scientific calculator plus TVM, NPV/IRR, bond price & YTM, duration & convexity, CAPM, WACC, two-asset portfolio, Sharpe ratio, FX forwards, option payoff charts, a statistics calculator, and a Canada salary (gross\u2192net) calculator.",
+            followup: "The statistics calculator takes pasted data and returns mean, quartiles, std dev, z-scores and a histogram \u2014 and the salary one uses verified 2026 federal and provincial brackets."
+        },
+        {
+            keys: ["dynatrace", "monitor", "incident", "production issue", "sev-1", "sev1", "outage"],
+            topic: "monitoring",
+            answer: "Two ways to train here: the <a href=\"dynatrace-simulator.html\">Dynatrace Simulator</a> lets you inject CPU spikes, memory leaks, DB slowdowns and crash loops into a live dashboard, and <a href=\"incident-commander.html\">Incident Commander</a> tests your first-action instincts against 10 timed production incidents.",
+            followup: "There's also a full <a href=\"../tutorials/kubernetes.html\">Kubernetes tutorial</a> section on CrashLoopBackOff triage, and the AI tutorial's alert-triage agent design."
+        },
+        {
+            keys: ["game", "play", "quiz", "leaderboard"],
+            topic: "games",
+            answer: "Games: <a href=\"quiz.html\">Markets Quiz</a>, <a href=\"fix-match.html\">FIX Tag Match</a>, <a href=\"incident-commander.html\">Incident Commander</a>, <a href=\"kill-nine.html\">kill -9</a>, <a href=\"latency-racer.html\">Latency Racer</a>, <a href=\"pipeline-panic.html\">Pipeline Panic</a>, <a href=\"log-hunter.html\">Log Hunter</a>, <a href=\"deploy-dash.html\">Deploy Dash</a> \u2014 plus the Trading Simulator.",
+            followup: "Every game-over screen has share-your-score buttons, the quiz has a challenge-a-friend mode, and all your scores feed the XP progress system."
+        },
+        {
+            keys: ["xp", "progress", "badge", "streak", "level", "my progress"],
+            topic: "the progress system",
+            answer: "The <a href=\"../progress.html\">My Progress</a> page tracks XP, levels (Rookie \u2192 Legend), daily streaks and 8 badges. You earn XP by completing tutorials (+50), scoring in games, and using calculators.",
+            followup: "Badges to hunt: Tutorial Crusher (5 tutorials), Quiz Whiz (80%+ on the quiz), Bug Slayer, Speed Demon, and Night Owl \u2014 awarded for visiting between midnight and 5 AM."
+        },
+        {
+            keys: ["interview", "flashcard", "prepare", "job hunt"],
+            topic: "interview prep",
+            answer: "The <a href=\"interview-bank.html\">Interview Bank</a> has 38 flashcards with model answers across Linux (10), SQL (8), FIX (5), trade lifecycle (4), incidents (4) and DevOps (5) \u2014 with Know/Miss scoring saved in your browser.",
+            followup: "Pair it with the tutorials: each one now ends with interview-style Q&A, and the <a href=\"../tutorials/index.html\">Learning Tracks</a> order them like a course."
+        },
+        {
+            keys: ["linux", "command", "cheat sheet", "bash"],
+            topic: "the Linux reference",
+            answer: "The <a href=\"../linux-commands.html\">Linux 300</a> page is a searchable reference of 300 commands with examples, topic filters and copy buttons \u2014 the full set Munir drilled for interviews.",
+            followup: "It pairs well with the <a href=\"../tutorials/docker.html\">Docker</a> and <a href=\"../tutorials/kubernetes.html\">Kubernetes</a> tutorials for the DevOps side."
+        },
+        {
+            keys: ["salary", "paycheck", "net pay", "take-home", "tax"],
+            topic: "the salary calculator",
+            answer: "The <a href=\"../calculators/salary-ca.html\">Canada Salary calculator</a> converts gross salary to net pay using verified 2026 federal and provincial tax brackets \u2014 pick Ontario, Quebec, BC or Alberta.",
+            followup: "Handy for offer season: punch in the number and see what actually lands in the account."
+        },
+        {
+            keys: ["munibot", "robot bear", "bear", "mascot", "movie", "film", "song"],
+            topic: "Munibot",
+            answer: "Munibot is the site's robot bear mascot \u2014 metal bear, glowing cyan eyes, spinning rotor. He flies across every page about every 3 minutes. His <a href=\"../munir-bot.html\">page</a> has the full origin story (the MOTHER farewell), a songbook, and his short film.",
+            followup: "The film's first 80-second cut is preserved as a keepsake \u2014 a 3-minute version with new scenes and an extended score is in production."
+        },
+        {
+            keys: ["community", "social", "instagram", "facebook", "feed", "stories", "post"],
+            topic: "community",
+            answer: "The <a href=\"../community.html\">Community page</a> is the site's social layer: story highlights, a feed with likes and comments, and a post composer. Your Instagram is connected, so the Munibot film can go out as a reel.",
+            followup: "Posts live in the browser for now \u2014 the backend phase will make likes, comments and follows shared between visitors."
         },
         {
             keys: ["weather"],
-            answer: "The Weather page (Explore section) shows live conditions and a 7-day forecast for any city, powered by the free Open-Meteo API — no key needed."
+            topic: "weather",
+            answer: "The <a href=\"../weather.html\">Weather page</a> shows live conditions and a 7-day forecast for any city, powered by the free Open-Meteo API \u2014 no key needed.",
+            followup: "Try searching a few cities \u2014 the 7-day strip and the current-conditions card update instantly."
         },
         {
-            keys: ["comment", "guestbook", "message him", "leave"],
-            answer: "The Guestbook (Explore section) lets visitors leave a comment — every comment goes through moderation before it appears publicly."
+            keys: ["comment", "guestbook", "leave a message", "feedback"],
+            topic: "guestbook",
+            answer: "The <a href=\"../guestbook.html\">Guestbook</a> lets visitors leave a comment \u2014 every comment goes through moderation before it appears publicly.",
+            followup: "Moderation is browser-local for now; the backend phase will make it a real shared, moderated guestbook."
         },
         {
-            keys: ["contact", "email", "hire", "reach", "resume", "cv"],
-            answer: "The Resume page has Munir's full professional background and contact details. This site itself is his portfolio — interviewers get the resume plus working proof of the skills on it."
+            keys: ["health", "bmi", "bmr"],
+            topic: "health lab",
+            answer: "The <a href=\"../health.html\">Health Lab</a> has a BMI calculator (metric/imperial, WHO categories) plus BMR and TDEE. It's a calculator, not medical advice.",
+            followup: null
         },
         {
-            keys: ["ai agent", "how are you built", "how do you work", "agent"],
-            answer: "I'm a demo: a rule-based agent that matches keywords in your question to answers about this site. Real agents add tools (shell, database, APIs), memory across sessions, and a planning loop — the three building blocks explained above, and in the AI Agents tutorial."
+            keys: ["news", "headlines", "world news"],
+            topic: "world news",
+            answer: "The <a href=\"../news.html\">World News</a> page pulls live headlines with tech, finance and science tabs \u2014 no API key needed.",
+            followup: null
         },
         {
-            keys: ["hello", "hi", "hey", "good morning", "good evening"],
-            answer: "Hello! I'm the desk agent. Ask me about Munir's background, the trading app, the tutorials, the calculators — or try one of the suggestion chips below."
+            keys: ["changelog", "roadmap", "what's new", "whats new", "new feature", "plan"],
+            topic: "changelog & roadmap",
+            answer: "The <a href=\"../changelog.html\">Changelog</a> logs everything built on the site, night by night \u2014 and the <a href=\"../roadmap.html\">Roadmap</a> lists the 50-idea plan it's all working through.",
+            followup: null
         },
         {
-            keys: ["thank", "thanks", "great", "cool", "nice"],
-            answer: "You're welcome! Anything else — the games, the Dynatrace simulator, the databases tutorials?"
+            keys: ["contact", "email", "hire", "reach him", "resume", "cv"],
+            topic: "contact",
+            answer: "The <a href=\"../resume.html\">Resume page</a> has Munir's full professional background and contact details \u2014 plus a clean print stylesheet if you want the PDF. This site itself is his portfolio: interviewers get the resume plus working proof of the skills on it.",
+            followup: "There's also a \"Hire me\" section on the home page with the 5-year pitch in one paragraph."
+        },
+        {
+            keys: ["ai agent", "how are you built", "how do you work", "are you real ai", "language model"],
+            topic: "how this demo works",
+            answer: "I'm a demo: a rule-based agent that matches keywords in your question to answers about this site \u2014 no data leaves your browser. Real agents add tools (shell, database, APIs), memory across sessions, and a planning loop. Try the interactive agent run below to watch the loop work.",
+            followup: "The <a href=\"../tutorials/ai-agents.html\">AI Agents tutorial</a> goes deep: the perceive \u2192 reason \u2192 act loop, ReAct, tool schemas, guardrails, and a runnable mini-agent in the page."
+        },
+        {
+            keys: ["what can you do", "what do you know", "help", "your abilities", "abilities", "what else"],
+            topic: "my capabilities",
+            answer: "I can brief you on: Munir's background and skills, the trading app, X-One terminal, all 23 tutorials and learning tracks, the 12 calculators, 8 games, the Dynatrace simulator, the Interview Bank, the Linux 300 reference, the FIX Builder, Community, Munibot, and the progress system. Ask away \u2014 or tap a chip.",
+            followup: null
+        },
+        {
+            keys: ["hello", "hey", "good morning", "good evening", "good afternoon"],
+            topic: "greeting",
+            answer: "Hello! I'm the desk agent. Ask me about Munir's background, the trading app, X-One, the tutorials, the games, Munibot \u2014 or try a suggestion chip.",
+            followup: null
+        },
+        {
+            keys: ["thank", "great", "cool", "nice", "awesome", "amazing"],
+            topic: "thanks",
+            answer: "You're welcome! Anything else \u2014 the games, the Dynatrace simulator, the interview bank?",
+            followup: null
         }
     ];
 
-    var FALLBACK = "I can answer questions about Munir's background and skills, the trading app, tutorials, calculators, games, and how to contact him. Try rephrasing, or tap a suggestion chip.";
+    var FALLBACK = "I can brief you on Munir's background and skills, the trading app, X-One, tutorials, calculators, games, the Interview Bank, Munibot, and more. Try rephrasing \u2014 or tap a suggestion chip.";
+
+    var lastRule = null;
+    var FOLLOWUP_RE = /^(tell me more|more( info)?|what about|how about|why\??|details?|go on|explain|and\?)/;
 
     function escapeHtml(s) {
         return s.replace(/&/g, "&amp;").replace(/</g, "&lt;")
                 .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
     }
 
-    function addMsg(text, who) {
+    function addMsg(text, who, isHtml) {
         var div = document.createElement("div");
         div.className = "chat-msg " + who;
-        div.innerHTML = escapeHtml(text);
+        if (isHtml) {
+            div.innerHTML = text;
+        } else {
+            div.textContent = text;
+        }
         log.appendChild(div);
         log.scrollTop = log.scrollHeight;
         return div;
     }
 
     function findAnswer(q) {
-        var lower = q.toLowerCase();
+        var lower = q.trim().toLowerCase();
+        if (FOLLOWUP_RE.test(lower) && lastRule) {
+            if (lastRule.followup) return lastRule.followup;
+            return "Anything specific about " + lastRule.topic + "? Ask away and I'll go deeper.";
+        }
         for (var i = 0; i < RULES.length; i++) {
             var rule = RULES[i];
             for (var j = 0; j < rule.keys.length; j++) {
-                if (lower.indexOf(rule.keys[j]) !== -1) return rule.answer;
+                if (lower.indexOf(rule.keys[j]) !== -1) {
+                    lastRule = rule;
+                    return rule.answer;
+                }
             }
         }
+        lastRule = null;
         return FALLBACK;
     }
 
     function respond(userText) {
         var typing = document.createElement("div");
         typing.className = "chat-msg agent typing";
-        typing.textContent = "Desk agent is thinking…";
+        typing.textContent = "Desk agent is thinking\u2026";
         log.appendChild(typing);
         log.scrollTop = log.scrollHeight;
         setTimeout(function () {
             typing.remove();
-            addMsg(findAnswer(userText), "agent");
+            addMsg(findAnswer(userText), "agent", true);
         }, 450);
     }
 
     function send() {
         var text = input.value.trim();
         if (!text) return;
-        addMsg(text, "user");
+        addMsg(text, "user", false);
         input.value = "";
         respond(text);
     }
@@ -351,13 +622,13 @@
     document.getElementById("chip-row").addEventListener("click", function (e) {
         var t = e.target;
         if (t && t.classList && t.classList.contains("chip")) {
-            addMsg(t.textContent, "user");
+            addMsg(t.textContent, "user", false);
             respond(t.textContent);
         }
     });
 
     // Greeting on load
-    addMsg("Hello! I'm the desk agent — a small demo AI that knows this site inside out. Ask me anything about Munir or what's on here.", "agent");
+    addMsg("Hello! I'm the desk agent \u2014 a small demo AI that knows this site inside out. Ask me about Munir, the trading app, X-One, the tutorials, the games, or Munibot.", "agent", false);
 })();
 </script>
 </body>
