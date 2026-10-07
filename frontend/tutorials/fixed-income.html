@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Fixed income essentials: bonds, the price-yield relationship, yield curves, with a worked bond pricing example.">
+    <title>Fixed Income Essentials | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .back-link { display:inline-block; margin-bottom:30px; color:#7dd3fc; text-decoration:none; }
+        .back-link:hover { text-decoration:underline; }
+        .tutorial-body p { color:#cbd5e1; line-height:1.75; margin-bottom:16px; }
+        .tutorial-body ul { color:#cbd5e1; padding-left:22px; margin-bottom:16px; }
+        .tutorial-body li { line-height:1.65; margin-bottom:8px; }
+        .tutorial-body h3 { color:#f8fafc; margin:28px 0 12px; font-size:1.3rem; }
+        .tutorial-body h4 { color:#7dd3fc; margin:20px 0 10px; font-size:1.05rem; }
+        .example-box { margin:18px 0; padding:18px 20px; border-left:3px solid #7dd3fc; background:rgba(30,41,59,.5); border-radius:10px; }
+        .example-box p { margin-bottom:8px; }
+        .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container tutorial-body" style="padding:120px 0 80px">
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+
+<div class="section-heading">
+<p class="eyebrow">Tutorials • Fixed Income</p>
+<h2>Fixed Income Essentials</h2>
+<p>Bonds, the price-yield seesaw, and yield curves — the math behind the biggest asset class on earth.</p>
+</div>
+
+<div class="resume-card">
+<h3>Anatomy of a bond</h3>
+<p>A bond is a loan from the investor to the issuer. Four terms define it: <strong>face value</strong> (usually 100 or 1,000, repaid at maturity), <strong>coupon</strong> (the annual interest rate, paid semi-annually or annually), <strong>maturity</strong> (when principal is repaid), and <strong>yield</strong> (the market's required return, which moves every day). The coupon is fixed at issuance; the yield is set by the market — and the market price adjusts so that the two reconcile.</p>
+</div>
+
+<div class="resume-card">
+<h3>Price vs yield: the seesaw</h3>
+<p>A bond's price is the present value of all its future cash flows, discounted at the yield:</p>
+<p class="formula">Price = Σ Coupon<sub>t</sub> / (1 + y)<sup>t</sup> + Face / (1 + y)<sup>n</sup></p>
+<p>When yields rise, the discount rate rises, and the price <em>falls</em> — the two always move in opposite directions. A bond bought at par (price 100) with a 4% coupon falls below 100 the moment market yields climb above 4%.</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> A 5-year bond, face value 100, 4% annual coupon, market yield 5%:</p>
+<p class="formula">P = 4/1.05 + 4/1.05² + 4/1.05³ + 4/1.05⁴ + 104/1.05⁵ ≈ 95.67</p>
+<p>The bond trades at a <em>discount</em> (95.67 &lt; 100) because its 4% coupon is below the 5% the market demands. If yield fell to 3%, the same math gives ≈ 104.58 — a <em>premium</em>.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Yield curves: the market's forecast</h3>
+<p>Plotting yields against maturities gives the <strong>yield curve</strong>. Its shape matters:</p>
+<ul>
+<li><strong>Normal (upward sloping)</strong> — longer maturities pay more; investors expect growth and are compensated for time risk.</li>
+<li><strong>Inverted</strong> — short rates above long rates; historically a reliable recession warning, because the market expects central banks to cut rates later.</li>
+<li><strong>Flat</strong> — transition state; the market is undecided.</li>
+</ul>
+<p>Support teams watch curve feeds closely: a missing or stale curve breaks pricing for <em>every</em> bond on the desk, since yields are interpolated from it.</p>
+</div>
+
+<div class="resume-card">
+<h3>Duration and convexity in one paragraph each</h3>
+<p><strong>Duration</strong> measures price sensitivity: a duration of 7 means a 1% rise in yield drops the price roughly 7%. Longer maturities and lower coupons both increase duration. <strong>Convexity</strong> is the curvature — the correction term because the price-yield relationship is curved, not straight; it matters most for large yield moves and long-dated bonds.</p>
+</div>
+
+<div class="resume-card">
+<h3>Credit spreads</h3>
+<p>Corporate bonds yield more than government bonds of the same maturity. The difference is the <strong>credit spread</strong> — compensation for default risk. A bond yielding 6% against a 4% government benchmark trades at a 200bp spread. When spreads widen, corporate bond prices fall even if government yields do not move — a frequent source of "why did my bond drop?" tickets.</p>
+<div class="tag-list" style="margin-top:16px">
+<span class="tag">Coupon</span><span class="tag">YTM</span><span class="tag">Duration</span><span class="tag">Yield curve</span><span class="tag">Credit spread</span>
+</div>
+</div>
+
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+</body>
+</html>

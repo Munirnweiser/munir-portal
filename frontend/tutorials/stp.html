@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Straight-through processing explained: what STP means, why trades break, and the typical break points support teams monitor.">
+    <title>Straight-Through Processing | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .back-link { display:inline-block; margin-bottom:30px; color:#7dd3fc; text-decoration:none; }
+        .back-link:hover { text-decoration:underline; }
+        .tutorial-body p { color:#cbd5e1; line-height:1.75; margin-bottom:16px; }
+        .tutorial-body ul { color:#cbd5e1; padding-left:22px; margin-bottom:16px; }
+        .tutorial-body li { line-height:1.65; margin-bottom:8px; }
+        .tutorial-body h3 { color:#f8fafc; margin:28px 0 12px; font-size:1.3rem; }
+        .tutorial-body h4 { color:#7dd3fc; margin:20px 0 10px; font-size:1.05rem; }
+        .example-box { margin:18px 0; padding:18px 20px; border-left:3px solid #7dd3fc; background:rgba(30,41,59,.5); border-radius:10px; }
+        .example-box p { margin-bottom:8px; }
+        .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container tutorial-body" style="padding:120px 0 80px">
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+
+<div class="section-heading">
+<p class="eyebrow">Tutorials • Operations</p>
+<h2>Straight-Through Processing</h2>
+<p>What STP really means, why trades break, and where support teams spend their mornings.</p>
+</div>
+
+<div class="resume-card">
+<h3>What STP means</h3>
+<p><strong>Straight-through processing</strong> means a trade flows from order entry to settlement with <em>zero manual intervention</em> — no retyping, no spreadsheets, no phone calls. Every system in the chain reads the same electronic message and acts on it. A high STP rate (95%+ is the industry target) means lower cost, fewer errors, and faster settlement. A low one means an operations team doing by hand what machines should do.</p>
+<p>STP is not one system; it is a property of the whole chain: execution → booking → confirmation → clearing → settlement → reconciliation. One weak link breaks the chain for that trade.</p>
+</div>
+
+<div class="resume-card">
+<h3>Why breaks happen</h3>
+<p>Almost every STP break is a <strong>data mismatch</strong> between two systems that each believe they are right. The usual suspects:</p>
+<ul>
+<li><strong>Economics mismatch</strong> — price, quantity or value date differs between counterparties' confirmations. A 1-cent price difference on a block trade is a break.</li>
+<li><strong>SSI mismatch</strong> — standing settlement instructions disagree: wrong custodian account, wrong agent bank, outdated details after a client migration.</li>
+<li><strong>Reference data gaps</strong> — unknown counterparty code, missing security static, unmapped account. New clients and new products break here first.</li>
+<li><strong>Booking errors</strong> — wrong trade date, wrong book, fat-fingered quantity; the front office booked it, the back office cannot recognize it.</li>
+<li><strong>Cutoff misses</strong> — instructions arriving after the custodian or CSD cutoff roll to the next cycle and age as fails.</li>
+</ul>
+<div class="example-box">
+<p><strong>Worked example.</strong> Desk A sells EUR 10M of a bond to Counterparty B at 98.50, value T+2. B's confirmation says 98.51 — a one-cent difference, about EUR 1,000 on the notional. Matching fails, both sides' operations teams investigate, and the trade sits unmatched until someone concedes or amends. Multiply by hundreds of trades on a busy day.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>The break lifecycle</h3>
+<p>Breaks age in buckets — T+0, T+1, T+2, older — and each bucket has an owner and an escalation path. <strong>Affirmation platforms</strong> (and matching utilities) auto-match what they can; the residue lands in break queues. Support's job is triage: is this a one-off data issue, a systematic feed problem, or a counterparty outage? A single systematic cause can hide behind fifty individual breaks.</p>
+</div>
+
+<div class="resume-card">
+<h3>What production support watches</h3>
+<ul class="clean-list">
+<li><strong>STP rate dashboards</strong> — a sudden dip is the earliest signal of a feed, reference-data or counterparty problem.</li>
+<li><strong>Aging breaks</strong> — breaks older than T+2 approaching settlement need active chasing; fails cost money and regulatory attention.</li>
+<li><strong>Matching engine health</strong> — queue depth, match latency, and exception rates on the confirmation/matching platforms.</li>
+<li><strong>Reference data loads</strong> — the overnight static-data batch is the foundation of the next day's STP; a failed load means a morning of breaks.</li>
+</ul>
+<div class="tag-list" style="margin-top:16px">
+<span class="tag">STP</span><span class="tag">Breaks</span><span class="tag">SSI</span><span class="tag">Affirmation</span><span class="tag">Settlement fails</span>
+</div>
+</div>
+
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+</body>
+</html>

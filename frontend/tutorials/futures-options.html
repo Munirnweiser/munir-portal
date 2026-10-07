@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Futures vs options explained: obligations vs rights, calls and puts, payoff intuition with worked examples.">
+    <title>Futures &amp; Options | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .back-link { display:inline-block; margin-bottom:30px; color:#7dd3fc; text-decoration:none; }
+        .back-link:hover { text-decoration:underline; }
+        .tutorial-body p { color:#cbd5e1; line-height:1.75; margin-bottom:16px; }
+        .tutorial-body ul { color:#cbd5e1; padding-left:22px; margin-bottom:16px; }
+        .tutorial-body li { line-height:1.65; margin-bottom:8px; }
+        .tutorial-body h3 { color:#f8fafc; margin:28px 0 12px; font-size:1.3rem; }
+        .tutorial-body h4 { color:#7dd3fc; margin:20px 0 10px; font-size:1.05rem; }
+        .example-box { margin:18px 0; padding:18px 20px; border-left:3px solid #7dd3fc; background:rgba(30,41,59,.5); border-radius:10px; }
+        .example-box p { margin-bottom:8px; }
+        .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container tutorial-body" style="padding:120px 0 80px">
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+
+<div class="section-heading">
+<p class="eyebrow">Tutorials • Derivatives</p>
+<h2>Futures &amp; Options</h2>
+<p>Obligation versus right — the single distinction that explains both instruments.</p>
+</div>
+
+<div class="resume-card">
+<h3>Futures: a binding obligation</h3>
+<p>A futures contract <em>obliges</em> both sides to transact at a set price on a set date. Buy one crude-oil future at $80 and you must take delivery (or cash-settle) at $80 — no backing out. Because the obligation is symmetric, no premium changes hands upfront; instead both sides post <strong>margin</strong>, and gains and losses are settled <strong>daily</strong> (mark-to-market).</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> You buy 1 S&amp;P 500 future at 5,000 (contract multiplier $50, so $250,000 notional). The index closes at 5,050 — you are credited $50 × 50 = <strong>$2,500</strong> that evening. If it had closed at 4,950, you would pay $2,500. There is nowhere to hide from a futures loss.</p>
+</div>
+<p>Futures exist on indices, commodities, bonds and currencies. Expiries follow quarterly cycles (March, June, September, December — the "IMM dates"), when the entire market rolls positions forward and volumes explode.</p>
+</div>
+
+<div class="resume-card">
+<h3>Options: a right, not an obligation</h3>
+<p>An option gives the buyer the <em>right</em> — never the obligation — to buy or sell at a set <strong>strike price</strong> before <strong>expiry</strong>. That asymmetry is why the buyer pays a <strong>premium</strong> upfront, and why the buyer's loss is capped at the premium while the upside can be large.</p>
+<ul>
+<li><strong>Call</strong> — the right to <em>buy</em>. Profits when the underlying rises above the strike.</li>
+<li><strong>Put</strong> — the right to <em>sell</em>. Profits when the underlying falls below the strike.</li>
+</ul>
+<p>The premium has two parts: <strong>intrinsic value</strong> (how much the option is already in-the-money) and <strong>time value</strong> (what the remaining time <em>might</em> deliver — this decays every day, "theta decay").</p>
+<div class="example-box">
+<p><strong>Worked example — long call.</strong> You buy a call on XYZ, strike 100, premium 5. At expiry XYZ is at 110: you exercise, buy at 100, the share is worth 110 — payoff 10, minus the 5 premium = <strong>+5 profit</strong>. If XYZ closes at 95, you walk away: loss capped at the <strong>5 premium</strong>.</p>
+<p><strong>Worked example — long put.</strong> You buy a put, strike 100, premium 4. XYZ crashes to 80: you sell at 100 what is worth 80 — payoff 20, minus 4 = <strong>+16 profit</strong>. Puts are the classic portfolio insurance.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Payoff intuition in one picture</h3>
+<p>A long future's P&amp;L is a straight diagonal line through the entry price — symmetric. A long call's P&amp;L is flat (at −premium) below the strike, then rises diagonally above it — the "hockey stick". A long put is the mirror image. Every exotic option payoff is just these sticks combined and repackaged.</p>
+</div>
+
+<div class="resume-card">
+<h3>What production support watches</h3>
+<ul class="clean-list">
+<li><strong>Expiry processing</strong> — exercise, assignment and expiry jobs run on tight schedules; a stuck job leaves wrong positions overnight.</li>
+<li><strong>Margin calls</strong> — volatile days trigger intraday margin calls; downstream feeds must carry them to clients without delay.</li>
+<li><strong>Corporate actions</strong> — splits and dividends adjust strikes and multipliers; a missed adjustment corrupts every downstream valuation.</li>
+<li><strong>Volatility surfaces</strong> — option pricing needs the vol surface feed; a stale surface means every quote on the desk is wrong.</li>
+</ul>
+<div class="tag-list" style="margin-top:16px">
+<span class="tag">Futures</span><span class="tag">Calls</span><span class="tag">Puts</span><span class="tag">Premium</span><span class="tag">Margin</span><span class="tag">Expiry</span>
+</div>
+</div>
+
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="FX essentials for production support: spot, forwards, swaps and NDFs, with a worked forward-rate example.">
+    <title>FX Essentials | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .back-link { display:inline-block; margin-bottom:30px; color:#7dd3fc; text-decoration:none; }
+        .back-link:hover { text-decoration:underline; }
+        .tutorial-body p { color:#cbd5e1; line-height:1.75; margin-bottom:16px; }
+        .tutorial-body ul { color:#cbd5e1; padding-left:22px; margin-bottom:16px; }
+        .tutorial-body li { line-height:1.65; margin-bottom:8px; }
+        .tutorial-body h3 { color:#f8fafc; margin:28px 0 12px; font-size:1.3rem; }
+        .tutorial-body h4 { color:#7dd3fc; margin:20px 0 10px; font-size:1.05rem; }
+        .example-box { margin:18px 0; padding:18px 20px; border-left:3px solid #7dd3fc; background:rgba(30,41,59,.5); border-radius:10px; }
+        .example-box p { margin-bottom:8px; }
+        .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container tutorial-body" style="padding:120px 0 80px">
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+
+<div class="section-heading">
+<p class="eyebrow">Tutorials • Foreign Exchange</p>
+<h2>FX Essentials</h2>
+<p>Spot, forwards, swaps and NDFs — the four instruments behind almost every FX support ticket.</p>
+</div>
+
+<div class="resume-card">
+<h3>Spot: buying currency for immediate delivery</h3>
+<p>A spot trade exchanges two currencies with settlement two business days later (T+2; T+1 for USD/CAD and some pairs). Prices are quoted as pairs: <strong>EUR/USD 1.0850 / 1.0852</strong>. The first currency (EUR) is the base, the second (USD) is the quote. The bank buys at the bid (1.0850) and sells at the ask (1.0852); the 2-pip spread is its margin.</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> A client buys EUR 1,000,000 against USD at 1.0852. The client pays USD 1,085,200 and receives EUR 1,000,000 on value date. If the trader's book was flat, the desk is now short EUR 1M / long USD 1.0852M and will hedge it in the interbank market.</p>
+</div>
+<p>A <em>pip</em> is the smallest quoted move — 0.0001 for most pairs, 0.01 for JPY pairs. A 50-pip move on a EUR 10M position is roughly USD 5,000 of P&amp;L, which is why traders watch spot ladders tick by tick.</p>
+</div>
+
+<div class="resume-card">
+<h3>Forwards: locking in a rate for a future date</h3>
+<p>An FX forward agrees today on an exchange rate for settlement on a future date — 1 month, 3 months, 1 year out. The forward rate is not a forecast; it is mechanically derived from the spot rate and the interest-rate differential between the two currencies (covered interest parity):</p>
+<p class="formula">F = S × (1 + r<sub>d</sub> × t) / (1 + r<sub>f</sub> × t)</p>
+<p>where S is spot, r<sub>d</sub> the domestic rate, r<sub>f</sub> the foreign rate, and t the time in years. The difference between forward and spot is quoted in <em>forward points</em> (pips added to or subtracted from spot).</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> USD/JPY spot is 150.00. USD 3-month rate is 5.00%, JPY 3-month rate is 0.10%, t = 90/360 = 0.25.</p>
+<p class="formula">F = 150.00 × (1 + 0.05 × 0.25) / (1 + 0.001 × 0.25) ≈ 151.83</p>
+<p>The forward trades about 183 pips <em>above</em> spot — the higher-yielding currency (USD) is at a forward discount, the lower-yielding one (JPY) at a premium. An importer needing JPY in 3 months locks in 151.83 today and has no FX uncertainty left.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Swaps: rolling positions forward</h3>
+<p>An FX swap is two trades in one ticket: a spot (or near-dated) leg and a forward leg in the opposite direction. The classic use is <em>rolling</em> a position — a trader long EUR/USD spot who wants to keep the position sells spot and buys the 1-week forward simultaneously. The price difference between the legs is the <em>swap points</em>, and the P&amp;L on the roll reflects the interest differential earned or paid.</p>
+<p>Support teams see swaps constantly around month-ends and IMM dates, when the whole street rolls positions at once and volumes spike.</p>
+</div>
+
+<div class="resume-card">
+<h3>NDFs: when the currency cannot leave the country</h3>
+<p>Some currencies (BRL, INR, KRW, CNY onshore restrictions) are not freely convertible, so forwards cannot physically settle. A <em>non-deliverable forward</em> settles in a convertible currency — usually USD — for the cash difference between the agreed rate and the official fixing rate on maturity.</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> A fund buys a 3-month USD/BRL NDF at 5.0000 for USD 10M notional. At maturity the central-bank fixing prints 5.2000 (BRL weaker). The fund is owed (5.2000 − 5.0000) / 5.2000 × USD 10M ≈ USD 384,615, paid in USD. No reais ever change hands.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>What production support watches</h3>
+<ul class="clean-list">
+<li><strong>Fixing failures</strong> — NDF and corporate hedging flows depend on official fixings publishing on time; a late fixing delays valuation and settlement.</li>
+<li><strong>CLS cutoffs</strong> — spot and forward settlement runs through CLS Bank on strict deadlines; a missed pay-in creates a settlement fail and funding cost.</li>
+<li><strong>Forward-point spikes</strong> — around central-bank meetings, forward points can gap; stale pricing engines show off-market rates and traders complain within minutes.</li>
+<li><strong>Value-date validation</strong> — forwards booked on currency holidays fail downstream; calendars are reference data, and bad calendars are a classic break source.</li>
+</ul>
+<div class="tag-list" style="margin-top:16px">
+<span class="tag">Spot</span><span class="tag">Forwards</span><span class="tag">Swaps</span><span class="tag">NDF</span><span class="tag">Forward points</span><span class="tag">CLS</span>
+</div>
+</div>
+
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+</body>
+</html>

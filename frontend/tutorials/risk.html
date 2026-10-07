@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Risk measures explained: Delta, Gamma, Vega and Value at Risk, with worked numerical examples.">
+    <title>Risk Measures | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .back-link { display:inline-block; margin-bottom:30px; color:#7dd3fc; text-decoration:none; }
+        .back-link:hover { text-decoration:underline; }
+        .tutorial-body p { color:#cbd5e1; line-height:1.75; margin-bottom:16px; }
+        .tutorial-body ul { color:#cbd5e1; padding-left:22px; margin-bottom:16px; }
+        .tutorial-body li { line-height:1.65; margin-bottom:8px; }
+        .tutorial-body h3 { color:#f8fafc; margin:28px 0 12px; font-size:1.3rem; }
+        .tutorial-body h4 { color:#7dd3fc; margin:20px 0 10px; font-size:1.05rem; }
+        .example-box { margin:18px 0; padding:18px 20px; border-left:3px solid #7dd3fc; background:rgba(30,41,59,.5); border-radius:10px; }
+        .example-box p { margin-bottom:8px; }
+        .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container tutorial-body" style="padding:120px 0 80px">
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+
+<div class="section-heading">
+<p class="eyebrow">Tutorials • Risk</p>
+<h2>Risk Measures</h2>
+<p>Delta, Gamma, Vega and VaR — the numbers risk engines compute all day, with worked examples.</p>
+</div>
+
+<div class="resume-card">
+<h3>Delta: directional exposure</h3>
+<p><strong>Delta</strong> is how much a position's value moves when the underlying moves by 1 unit. A long call with delta 0.60 gains about $0.60 per $1 rise in the stock. Portfolio delta is additive, which makes it the first number every risk report shows.</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> A desk holds options with total delta +2,500 shares equivalent. The trader sells 2,500 shares of the underlying — portfolio delta becomes ~0 ("delta neutral"). If the stock jumps $2, the unhedged book would have made $5,000; hedged, the option gains and the short stock loses roughly offset.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Gamma: how delta itself moves</h3>
+<p><strong>Gamma</strong> is the rate of change of delta — the curvature. High gamma means delta changes fast, so a "delta neutral" book does not stay neutral for long. Gamma is highest for at-the-money options near expiry, which is why expiry days see frantic hedging: market makers chase deltas as the underlying whipsaws.</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> A call has delta 0.50 and gamma 0.08. The stock rises $1: new delta ≈ 0.50 + 0.08 × 1 = <strong>0.58</strong>. The hedge that was correct a minute ago is now 8 deltas light per contract — on 10,000 contracts that is 800 shares to buy, <em>now</em>.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Vega: sensitivity to volatility</h3>
+<p><strong>Vega</strong> measures value change per 1-point move in implied volatility. Long options are long vega — they gain when volatility rises. A book with vega of $50,000 makes roughly $50,000 if implied vol rises one point across the board. Vega is why option desks care as much about the <em>vol surface feed</em> as the price feed: a stale surface misprices every option on the book.</p>
+</div>
+
+<div class="resume-card">
+<h3>Value at Risk: "how bad could tomorrow be?"</h3>
+<p><strong>VaR</strong> answers: the maximum expected loss over a horizon at a given confidence. "1-day 95% VaR of $200k" means losses should exceed $200k only about 1 day in 20. Two ways to compute it:</p>
+<ul>
+<li><strong>Parametric VaR</strong> — assumes returns are roughly normal: VaR = 1.65 × σ × portfolio value (1.65 is the 95% normal quantile).</li>
+<li><strong>Historical VaR</strong> — replay the last N days of actual market moves through today's portfolio and take the 5th-percentile worst outcome. No normality assumption, but hostage to whatever history contains.</li>
+</ul>
+<div class="example-box">
+<p><strong>Worked example (parametric).</strong> A $10M equity portfolio with 1.2% daily volatility: 1-day 95% VaR = 1.65 × 0.012 × $10,000,000 ≈ <strong>$198,000</strong>. Scale to 10 days with the square-root-of-time rule: $198,000 × √10 ≈ <strong>$626,000</strong>.</p>
+</div>
+<p>VaR's blind spot: it says nothing about <em>how bad</em> the worst 5% gets — that is what <strong>Expected Shortfall</strong> (average loss beyond VaR) addresses, and why stress scenarios exist alongside it.</p>
+</div>
+
+<div class="resume-card">
+<h3>What production support watches</h3>
+<ul class="clean-list">
+<li><strong>Risk batch windows</strong> — overnight VaR and sensitivity batches must finish before traders arrive; a delayed batch means trading blind.</li>
+<li><strong>Feed staleness</strong> — vol surfaces, curves and spot feeds timestamped; anything older than tolerance invalidates the Greeks.</li>
+<li><strong>Limit breaches</strong> — VaR or delta limit alerts must reach the desk in real time; a silent alerting pipeline is a finding in every audit.</li>
+</ul>
+<div class="tag-list" style="margin-top:16px">
+<span class="tag">Delta</span><span class="tag">Gamma</span><span class="tag">Vega</span><span class="tag">VaR</span><span class="tag">Expected Shortfall</span>
+</div>
+</div>
+
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Oracle for production support: v$ views, tablespace pressure, blocking sessions and the incident queries that matter.">
+    <title>Oracle for Production Support | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .back-link { display:inline-block; margin-bottom:30px; color:#7dd3fc; text-decoration:none; }
+        .back-link:hover { text-decoration:underline; }
+        .tutorial-body p { color:#cbd5e1; line-height:1.75; margin-bottom:16px; }
+        .tutorial-body ul { color:#cbd5e1; padding-left:22px; margin-bottom:16px; }
+        .tutorial-body li { line-height:1.65; margin-bottom:8px; }
+        .tutorial-body h3 { color:#f8fafc; margin:28px 0 12px; font-size:1.3rem; }
+        .tutorial-body h4 { color:#7dd3fc; margin:20px 0 10px; font-size:1.05rem; }
+        .example-box { margin:18px 0; padding:18px 20px; border-left:3px solid #7dd3fc; background:rgba(30,41,59,.5); border-radius:10px; }
+        .example-box p { margin-bottom:8px; }
+        .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
+        .sql { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.88rem; color:#e2e8f0;
+               background:rgba(2,6,23,.7); border:1px solid rgba(125,211,252,.15); border-radius:10px;
+               padding:14px 16px; overflow-x:auto; white-space:pre; margin:14px 0; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container tutorial-body" style="padding:120px 0 80px">
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+
+<div class="section-heading">
+<p class="eyebrow">Tutorials • Databases</p>
+<h2>Oracle for Production Support</h2>
+<p>The Oracle concepts and queries behind real trading-system incidents: sessions, tablespaces, blocking locks and the v$ views that expose them.</p>
+</div>
+
+<div class="resume-card">
+<h3>Instance vs database: the distinction that matters at 3 AM</h3>
+<p>The <em>database</em> is the files on disk (datafiles, redo logs, control files). The <em>instance</em> is the running memory plus background processes (SGA + PMON, SMON, DBWn, LGWR). When a trader says "the database is down", the first question is which one: if the instance crashed, the datafiles are fine and a restart recovers; if the storage is gone, you have a very different night ahead. Check instance status with:</p>
+<div class="sql">SELECT instance_name, status, database_status
+FROM v$instance;</div>
+<p>Status should be OPEN. Anything else — STARTED, MOUNTED — means the database is not serving applications yet.</p>
+</div>
+
+<div class="resume-card">
+<h3>v$ views: the database watching itself</h3>
+<p>The v$ dynamic performance views are Oracle's live telemetry. The four support analysts query most:</p>
+<ul>
+<li><span class="formula">v$session</span> — every connected session: who, from where, what it is doing, and what it is <em>waiting on</em>.</li>
+<li><span class="formula">v$sql</span> — SQL currently or recently in the shared pool, with executions and elapsed time. Your top-offenders list lives here.</li>
+<li><span class="formula">v$process</span> — OS processes backing the sessions.</li>
+<li><span class="formula">v$sysstat / v$system_event</span> — instance-wide counters and wait events.</li>
+</ul>
+<div class="example-box">
+<p><strong>Incident query.</strong> Sessions that are not idle, with what they are waiting for:</p>
+<div class="sql">SELECT s.sid, s.serial#, s.username, s.program,
+       s.status, s.event AS wait_event, s.seconds_in_wait
+FROM v$session s
+WHERE s.status = 'ACTIVE'
+  AND s.username IS NOT NULL
+ORDER BY s.seconds_in_wait DESC;</div>
+<p>If twenty sessions all wait on the same event — <span class="formula">enq: TX - row lock contention</span>, say — you have found your bottleneck, not twenty separate problems.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Blocking locks: who is holding whom up</h3>
+<p>One session holding a row lock while a batch job waits on it is the classic "everything is slow" root cause. This finds the chain:</p>
+<div class="sql">SELECT blocking_session, sid AS waiting_session,
+       seconds_in_wait, event
+FROM v$session
+WHERE blocking_session IS NOT NULL
+ORDER BY seconds_in_wait DESC;</div>
+<p>The fix is rarely "kill the blocker" — the blocker is usually a legitimate long transaction. The real questions: why is the transaction open so long, and is the application committing in a loop?</p>
+</div>
+
+<div class="resume-card">
+<h3>Tablespace pressure: the disk-full of databases</h3>
+<p>When a tablespace hits 100%, inserts fail and the application throws errors that look like a bug but are pure capacity:</p>
+<div class="sql">SELECT tablespace_name,
+       ROUND(used_space * 8192 / 1024 / 1024) AS used_mb,
+       ROUND(tablespace_size * 8192 / 1024 / 1024) AS total_mb,
+       ROUND(used_percent, 1) AS pct_used
+FROM dba_tablespace_usage_metrics
+ORDER BY pct_used DESC;</div>
+<div class="example-box">
+<p><strong>What support watches.</strong> Alert at 85%, page at 95%. Know which tablespaces are autoextensible and which have a hard datafile limit — the fix is either adding a datafile or enabling autoextend, and only the DBA team can do it, so your job is the precise diagnosis, not the fix.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>AWR and ASH: the flight recorder</h3>
+<p>AWR (Automatic Workload Repository) takes hourly snapshots of performance statistics; ASH (Active Session History) samples what every session was doing every second. After an incident, ASH answers "what exactly was the database doing at 14:32?" — top SQL, top wait events, top sessions — without anyone having been logged in at the time. For support, the takeaway is simple: when the DBA asks for the incident window, give the exact timestamps, because that is what they will query ASH against.</p>
+</div>
+
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+</body>
+</html>

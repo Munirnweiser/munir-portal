@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="The full trade lifecycle from order entry to reconciliation, with what production support monitors at every stage.">
+    <title>Trade Lifecycle Walkthrough | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .back-link { display:inline-block; margin-bottom:30px; color:#7dd3fc; text-decoration:none; }
+        .back-link:hover { text-decoration:underline; }
+        .tutorial-body p { color:#cbd5e1; line-height:1.75; margin-bottom:16px; }
+        .tutorial-body ul { color:#cbd5e1; padding-left:22px; margin-bottom:16px; }
+        .tutorial-body li { line-height:1.65; margin-bottom:8px; }
+        .tutorial-body h3 { color:#f8fafc; margin:28px 0 12px; font-size:1.3rem; }
+        .tutorial-body h4 { color:#7dd3fc; margin:20px 0 10px; font-size:1.05rem; }
+        .example-box { margin:18px 0; padding:18px 20px; border-left:3px solid #7dd3fc; background:rgba(30,41,59,.5); border-radius:10px; }
+        .example-box p { margin-bottom:8px; }
+        .watch { color:#a5b4fc; font-size:.85rem; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container tutorial-body" style="padding:120px 0 80px">
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+
+<div class="section-heading">
+<p class="eyebrow">Tutorials • Operations</p>
+<h2>Trade Lifecycle Walkthrough</h2>
+<p>From order entry to reconciliation — every stage of a trade's life, and what production support watches at each one.</p>
+</div>
+
+<div class="resume-card">
+<h3>1. Order entry</h3>
+<p>It starts with intent: a trader (or an algorithm) stages an order in the execution management system — instrument, side, quantity, price, order type. Pre-trade risk checks run here: credit limits, fat-finger checks (is this quantity sane?), and short-sale validations.</p>
+<p class="watch"><strong>Support watches:</strong> order-entry latency, pre-trade risk engine health, and rejected-order rates — a spike usually means a limit or reference-data problem, not a trader problem.</p>
+</div>
+
+<div class="resume-card">
+<h3>2. Routing</h3>
+<p>The order is routed to the chosen venue — exchange, MTF, dark pool, or a dealer — often via FIX. Smart order routers split large orders across venues to minimize market impact.</p>
+<p class="watch"><strong>Support watches:</strong> FIX session health to each venue, drop-copy feeds, and routing-rule configuration after venue maintenance.</p>
+</div>
+
+<div class="resume-card">
+<h3>3. Execution</h3>
+<p>The venue matches the order and reports fills back, usually as FIX ExecutionReports. Partial fills are normal; the order stays "working" until filled, cancelled, or expired.</p>
+<p class="watch"><strong>Support watches:</strong> execution-report flow and sequencing — a missing ExecutionReport means the booking system and reality disagree, which is the most dangerous state in the chain.</p>
+</div>
+
+<div class="resume-card">
+<h3>4. Trade capture &amp; booking</h3>
+<p>Executions are captured into the booking system (the position-keeping "book of record") with economics: price, quantity, value date, counterparty, trader, book. This is where the trade becomes official internally.</p>
+<p class="watch"><strong>Support watches:</strong> booking queues and reject queues — unbooked executions age fast and corrupt intraday P&amp;L.</p>
+</div>
+
+<div class="resume-card">
+<h3>5. Matching</h3>
+<p>Both sides compare their versions of the trade on affirmation/matching platforms. Economics must agree exactly — price, quantity, value date.</p>
+<p class="watch"><strong>Support watches:</strong> match rates and the break queue; systematic mismatches point to a feed or mapping defect, not fifty individual errors.</p>
+</div>
+
+<div class="resume-card">
+<h3>6. Enrichment</h3>
+<p>The bare trade is enriched with everything downstream needs: settlement instructions (SSI), custodian details, fees, taxes, account mappings. Most enrichment is automatic reference-data lookup.</p>
+<p class="watch"><strong>Support watches:</strong> the overnight reference-data batch — a failed static-data load guarantees a morning full of enrichment breaks.</p>
+</div>
+
+<div class="resume-card">
+<h3>7. Allocation</h3>
+<p>Block trades are split across the underlying client accounts or funds, each with its own economics. Allocations must net back to the block exactly.</p>
+<p class="watch"><strong>Support watches:</strong> allocation mismatches and late allocations — a block that does not fully allocate cannot settle.</p>
+</div>
+
+<div class="resume-card">
+<h3>8. Confirmation</h3>
+<p>Formal confirmations (SWIFT MT5xx, electronic platforms) are exchanged with the counterparty. For derivatives, this is a legal event under ISDA documentation.</p>
+<p class="watch"><strong>Support watches:</strong> confirmation aging — unconfirmed trades past T+1 escalate, because unconfirmed means undisputed-nothing.</p>
+</div>
+
+<div class="resume-card">
+<h3>9. Clearing</h3>
+<p>Eligible trades are novated to a central counterparty (CCP), which becomes buyer to every seller and seller to every buyer. Margin is calculated and called — initial margin upfront, variation margin daily.</p>
+<p class="watch"><strong>Support watches:</strong> CCP margin-call feeds and clearing-eligibility flags; a misflagged trade bypasses clearing and breaches mandate.</p>
+</div>
+
+<div class="resume-card">
+<h3>10. Settlement</h3>
+<p>On value date, cash and securities actually move — via CSDs for securities, CLS for FX, correspondent banks for cash. Delivery-versus-payment (DvP) ensures neither leg moves without the other.</p>
+<p class="watch"><strong>Support watches:</strong> cutoff times and fail queues; every fail has a funding cost and, under CSDR, a potential buy-in.</p>
+</div>
+
+<div class="resume-card">
+<h3>11. Reconciliation</h3>
+<p>The day closes by reconciling everything against everything: front-office vs back-office positions, custodian statements vs internal records, cash vs expected. Breaks here are found money or found risk.</p>
+<p class="watch"><strong>Support watches:</strong> recon break counts by category and the auto-match rate — the morning recon meeting runs on these numbers.</p>
+<div class="tag-list" style="margin-top:16px">
+<span class="tag">Order</span><span class="tag">Execution</span><span class="tag">Booking</span><span class="tag">Matching</span><span class="tag">Clearing</span><span class="tag">Settlement</span><span class="tag">Reconciliation</span>
+</div>
+</div>
+
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+</body>
+</html>

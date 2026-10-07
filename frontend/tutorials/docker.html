@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Docker for production support: images vs containers, debugging crash loops, logs, resources and cleanup.">
+    <title>Docker for Production Support | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .back-link { display:inline-block; margin-bottom:30px; color:#7dd3fc; text-decoration:none; }
+        .back-link:hover { text-decoration:underline; }
+        .tutorial-body p { color:#cbd5e1; line-height:1.75; margin-bottom:16px; }
+        .tutorial-body ul { color:#cbd5e1; padding-left:22px; margin-bottom:16px; }
+        .tutorial-body li { line-height:1.65; margin-bottom:8px; }
+        .tutorial-body h3 { color:#f8fafc; margin:28px 0 12px; font-size:1.3rem; }
+        .tutorial-body h4 { color:#7dd3fc; margin:20px 0 10px; font-size:1.05rem; }
+        .example-box { margin:18px 0; padding:18px 20px; border-left:3px solid #7dd3fc; background:rgba(30,41,59,.5); border-radius:10px; }
+        .example-box p { margin-bottom:8px; }
+        .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
+        .cmd { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.88rem; color:#e2e8f0;
+               background:rgba(2,6,23,.7); border:1px solid rgba(125,211,252,.15); border-radius:10px;
+               padding:14px 16px; overflow-x:auto; white-space:pre; margin:14px 0; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container tutorial-body" style="padding:120px 0 80px">
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+
+<div class="section-heading">
+<p class="eyebrow">Tutorials • Engineering</p>
+<h2>Docker for Production Support</h2>
+<p>The Docker knowledge that actually gets used on shift: what is running, why it died, where its logs are, and how to clean up safely.</p>
+</div>
+
+<div class="resume-card">
+<h3>Images vs containers: the one distinction</h3>
+<p>An <em>image</em> is the read-only blueprint (your application plus its runtime, built from a Dockerfile). A <em>container</em> is a running instance of that image. Deleting a container does not delete the image; deleting the image does not stop running containers — but you cannot delete an image while a container still references it. That dependency order is the source of half of all Docker cleanup confusion:</p>
+<div class="cmd">docker ps                  # running containers
+docker ps -a                # including stopped ones
+docker images               # local images
+docker inspect &lt;name&gt;     # full JSON: mounts, env, network, health</div>
+</div>
+
+<div class="resume-card">
+<h3>The triage sequence for a dead container</h3>
+<p>When a service container is down, run these in order before touching anything:</p>
+<div class="cmd">docker ps -a --filter "name=trade-api"   # what state is it in? Exited (1)? OOMKilled?
+docker logs --tail 100 trade-api             # last 100 lines: the actual error
+docker logs --since 30m trade-api            # only the incident window
+docker stats --no-stream                     # CPU/mem per container right now</div>
+<p>The exit code tells the story: <span class="formula">137</span> means killed by OOM (out of memory — check the memory limit), <span class="formula">1</span> means the application itself exited with an error (read the logs), <span class="formula">125/126/127</span> mean Docker-level failures (bad flags, permission, command not found).</p>
+<div class="example-box">
+<p><strong>What support watches.</strong> A container restarting every few minutes with exit code 137 and climbing memory in <span class="formula">docker stats</span> is a memory leak hitting its cgroup limit. The short-term fix is raising the limit or restarting; the long-term fix belongs to development. Document the pattern either way.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Getting inside: exec and copying files</h3>
+<div class="cmd">docker exec -it trade-api sh             # shell inside the running container
+docker exec trade-api env | sort          # environment variables it actually sees
+docker cp trade-api:/app/logs/app.log ./ # pull a log file out for analysis</div>
+<p>Note the environment check: most "it works on my machine" container bugs are a missing or wrong environment variable inside the container, not a code bug. Compare <span class="formula">docker exec ... env</span> against the deployment manifest.</p>
+</div>
+
+<div class="resume-card">
+<h3>Volumes and networks: where data and traffic live</h3>
+<p>Containers are ephemeral — anything written to the container filesystem disappears when it is removed. Persistent data lives in <em>volumes</em> or bind mounts. If a database container lost its data after a recreate, the volume was not mounted: <span class="formula">docker inspect</span> shows the mounts, and an empty mounts list on a stateful service is the finding.</p>
+<p>On networking: containers on the default bridge network reach each other by IP but not by name; user-defined networks give DNS by container name. "Connection refused between services" is very often two containers on different networks, or the target listening on <span class="formula">localhost</span> inside its own container instead of <span class="formula">0.0.0.0</span>.</p>
+</div>
+
+<div class="resume-card">
+<h3>Cleanup without tears</h3>
+<div class="cmd">docker container prune              # remove STOPPED containers only
+docker image prune                  # remove dangling (untagged) images only
+docker image prune -a               # remove ALL unused images — careful on shared hosts
+docker volume prune                 # remove unused volumes — DATA LOSS risk, confirm first
+docker system df                    # what is actually consuming disk</div>
+<p>"No space left on device" on a Docker host is almost always old images and stopped containers. Run <span class="formula">docker system df</span> first so you clean what is actually big, and never prune volumes on a host carrying a database you have not backed up.</p>
+</div>
+
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+</body>
+</html>

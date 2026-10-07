@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Valuation methods explained: DCF, multiples, bond valuation and option pricing intuition, with worked examples.">
+    <title>Valuation Methods | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .back-link { display:inline-block; margin-bottom:30px; color:#7dd3fc; text-decoration:none; }
+        .back-link:hover { text-decoration:underline; }
+        .tutorial-body p { color:#cbd5e1; line-height:1.75; margin-bottom:16px; }
+        .tutorial-body ul { color:#cbd5e1; padding-left:22px; margin-bottom:16px; }
+        .tutorial-body li { line-height:1.65; margin-bottom:8px; }
+        .tutorial-body h3 { color:#f8fafc; margin:28px 0 12px; font-size:1.3rem; }
+        .tutorial-body h4 { color:#7dd3fc; margin:20px 0 10px; font-size:1.05rem; }
+        .example-box { margin:18px 0; padding:18px 20px; border-left:3px solid #7dd3fc; background:rgba(30,41,59,.5); border-radius:10px; }
+        .example-box p { margin-bottom:8px; }
+        .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container tutorial-body" style="padding:120px 0 80px">
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+
+<div class="section-heading">
+<p class="eyebrow">Tutorials • Valuation</p>
+<h2>Valuation Methods</h2>
+<p>DCF, multiples, bond and option valuation — how the market decides what something is worth, with the math kept honest.</p>
+</div>
+
+<div class="resume-card">
+<h3>DCF: value is future cash, discounted</h3>
+<p>Discounted cash flow values an asset as the present value of the cash it will generate. The simplest form — a perpetuity growing at rate g, discounted at r — is the Gordon growth formula:</p>
+<p class="formula">Value = CF₁ / (r − g)</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> A business generates $100M free cash flow next year, growing 3% annually, discount rate 8%:</p>
+<p class="formula">Value = 100 / (0.08 − 0.03) = <strong>$2,000M</strong></p>
+<p>Note the sensitivity: raise the discount rate to 9% and value falls to $1,667M — a one-point move costs 17%. Valuation is an opinion about r and g wearing a formula's clothes.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Multiples: value by comparison</h3>
+<p>Instead of forecasting cash flows, multiples price an asset relative to peers: <strong>P/E</strong> (price per dollar of earnings), <strong>EV/EBITDA</strong> (enterprise value per dollar of operating profit). If comparable banks trade at 12× earnings and yours earns $5/share, the multiple implies $60/share.</p>
+<p>Multiples are fast and market-grounded, but they inherit the market's mood — in a bubble, every multiple says "fair value" right up until it doesn't. Good analysts use multiples to <em>check</em> a DCF, never to replace one.</p>
+</div>
+
+<div class="resume-card">
+<h3>Bond valuation: discount the coupons</h3>
+<p>A bond is worth the present value of its coupons plus principal, discounted at the market yield — the same seesaw from the fixed-income tutorial. The practical wrinkle is <em>which</em> yield: each cash flow is really discounted at its own point on the curve (bootstrapped spot rates), though a single yield-to-maturity is the market's shorthand quote.</p>
+</div>
+
+<div class="resume-card">
+<h3>Option valuation: Black-Scholes intuition, no heavy math</h3>
+<p>The Black-Scholes model prices an option from five inputs — and the intuition for each is straightforward:</p>
+<ul>
+<li><strong>Underlying price</strong> — higher spot, more valuable call, less valuable put.</li>
+<li><strong>Strike</strong> — further out-of-the-money, cheaper.</li>
+<li><strong>Time to expiry</strong> — more time, more chance, higher premium (theta decay eats it daily).</li>
+<li><strong>Volatility</strong> — the big one; higher expected wiggle means higher option value in both directions.</li>
+<li><strong>Interest rates</strong> — higher rates lift call values slightly (deferred payment is cheaper).</li>
+</ul>
+<p>The model assumes lognormal prices and constant volatility — both false, both useful. The market's real quote is <strong>implied volatility</strong>: the vol number that makes the model reproduce the traded price. When traders say "vol is bid," they mean options are expensive relative to history.</p>
+<div class="example-box">
+<p><strong>Worked example (intuition).</strong> A 1-month at-the-money call on a $100 stock with 20% implied vol costs roughly $2.30. Double the vol to 40% and the same call costs roughly $4.60 — option value scales almost linearly with volatility for short-dated at-the-money options. That is vega in action.</p>
+</div>
+<div class="tag-list" style="margin-top:16px">
+<span class="tag">DCF</span><span class="tag">Multiples</span><span class="tag">YTM</span><span class="tag">Black-Scholes</span><span class="tag">Implied vol</span>
+</div>
+</div>
+
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+</body>
+</html>

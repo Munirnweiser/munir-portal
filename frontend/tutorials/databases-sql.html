@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SQL for production support: the SELECT/JOIN patterns, aggregations and window functions behind real incident triage.">
+    <title>SQL for Production Support | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .back-link { display:inline-block; margin-bottom:30px; color:#7dd3fc; text-decoration:none; }
+        .back-link:hover { text-decoration:underline; }
+        .tutorial-body p { color:#cbd5e1; line-height:1.75; margin-bottom:16px; }
+        .tutorial-body ul { color:#cbd5e1; padding-left:22px; margin-bottom:16px; }
+        .tutorial-body li { line-height:1.65; margin-bottom:8px; }
+        .tutorial-body h3 { color:#f8fafc; margin:28px 0 12px; font-size:1.3rem; }
+        .tutorial-body h4 { color:#7dd3fc; margin:20px 0 10px; font-size:1.05rem; }
+        .example-box { margin:18px 0; padding:18px 20px; border-left:3px solid #7dd3fc; background:rgba(30,41,59,.5); border-radius:10px; }
+        .example-box p { margin-bottom:8px; }
+        .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
+        .sql { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.88rem; color:#e2e8f0;
+               background:rgba(2,6,23,.7); border:1px solid rgba(125,211,252,.15); border-radius:10px;
+               padding:14px 16px; overflow-x:auto; white-space:pre; margin:14px 0; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container tutorial-body" style="padding:120px 0 80px">
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+
+<div class="section-heading">
+<p class="eyebrow">Tutorials • Databases</p>
+<h2>SQL for Production Support</h2>
+<p>The queries that actually get run during incidents: filtering trade data, joining it to reference data, and spotting the anomaly before the trader does.</p>
+</div>
+
+<div class="resume-card">
+<h3>SELECT with intent: filter first, join second</h3>
+<p>In support you rarely query whole tables. You start from a symptom — a trade ID, a book, a time window — and you filter hard before you join anything. A typical first query during a booking incident:</p>
+<div class="sql">SELECT trade_id, book, status, ccy_pair, notional, created_ts
+FROM trades
+WHERE created_ts &gt;= SYSDATE - INTERVAL '2' HOUR
+  AND status = 'PENDING'
+ORDER BY created_ts DESC
+FETCH FIRST 50 ROWS ONLY;</div>
+<p>Only after the suspect rows are isolated do you join to reference data (counterparties, books, static data). Joining first and filtering later is how a "quick check" becomes a full table scan that pages the DBA.</p>
+</div>
+
+<div class="resume-card">
+<h3>JOINs: the three you use daily</h3>
+<ul>
+<li><strong>INNER JOIN</strong> — trades to their static data. Rows without a match are dropped, which is exactly what you want when hunting orphaned records.</li>
+<li><strong>LEFT JOIN</strong> — master to detail, e.g. all orders and their fills. Orders with no fills show NULLs: those are your unexecuted orders.</li>
+<li><strong>Self join</strong> — comparing a row to another row in the same table, e.g. a trade and its amendment history.</li>
+</ul>
+<div class="example-box">
+<p><strong>What support watches.</strong> A LEFT JOIN from orders to executions where the execution side is NULL, filtered to the last hour, is the fastest way to answer "did my orders actually reach the market?"</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Aggregations: counting what is broken</h3>
+<p>GROUP BY turns a million-row mess into a five-line answer:</p>
+<div class="sql">SELECT status, COUNT(*) AS n, SUM(notional) AS total_notional
+FROM trades
+WHERE trade_date = TRUNC(SYSDATE)
+GROUP BY status
+HAVING COUNT(*) &gt; 0
+ORDER BY n DESC;</div>
+<p>Run this on settlement-date trades and you instantly see how many are stuck in each state — the same shape as an STP-rate dashboard, built ad hoc in thirty seconds.</p>
+</div>
+
+<div class="resume-card">
+<h3>Window functions: queue and spike analysis</h3>
+<p>When a feed slows down, you need row-by-row context, not just totals. <span class="formula">LAG()</span> compares each event to the previous one:</p>
+<div class="sql">SELECT event_ts,
+       LAG(event_ts) OVER (ORDER BY event_ts) AS prev_ts,
+       EXTRACT(SECOND FROM (event_ts - LAG(event_ts) OVER (ORDER BY event_ts))) AS gap_sec
+FROM market_data_events
+WHERE symbol = 'EURUSD'
+  AND event_ts &gt;= SYSDATE - INTERVAL '1' HOUR;</div>
+<p>Sort by <span class="formula">gap_sec</span> descending and the feed gaps jump out. <span class="formula">ROW_NUMBER() OVER (PARTITION BY trade_id ORDER BY version DESC)</span> is the standard trick for keeping only the latest version of an amended trade.</p>
+</div>
+
+<div class="resume-card">
+<h3>Reading an execution plan</h3>
+<p>A slow query is a plan problem. The two things to read first:</p>
+<ul>
+<li><strong>Access path</strong> — is it using the index you expect, or doing a FULL TABLE SCAN? A full scan on a billion-row trade history table is your smoking gun.</li>
+<li><strong>Cardinality estimates vs actuals</strong> — if the optimizer expected 10 rows and got 10 million, the statistics are stale and the plan is wrong.</li>
+</ul>
+<div class="example-box">
+<p><strong>Slow-query triage checklist.</strong> 1) Is there a missing index on the filter/join columns? 2) Are statistics stale (last analyzed date)? 3) Is a function wrapping an indexed column (<span class="formula">TRUNC(created_ts)</span> kills index use — use a range instead)? 4) Is the query pulling columns it never displays? Fix these four before escalating.</p>
+</div>
+</div>
+
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+</body>
+</html>

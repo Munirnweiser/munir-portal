@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Kubernetes for production support: kubectl triage, CrashLoopBackOff diagnosis, probes and a full incident walkthrough.">
+    <title>Kubernetes for Production Support | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .back-link { display:inline-block; margin-bottom:30px; color:#7dd3fc; text-decoration:none; }
+        .back-link:hover { text-decoration:underline; }
+        .tutorial-body p { color:#cbd5e1; line-height:1.75; margin-bottom:16px; }
+        .tutorial-body ul { color:#cbd5e1; padding-left:22px; margin-bottom:16px; }
+        .tutorial-body li { line-height:1.65; margin-bottom:8px; }
+        .tutorial-body h3 { color:#f8fafc; margin:28px 0 12px; font-size:1.3rem; }
+        .tutorial-body h4 { color:#7dd3fc; margin:20px 0 10px; font-size:1.05rem; }
+        .example-box { margin:18px 0; padding:18px 20px; border-left:3px solid #7dd3fc; background:rgba(30,41,59,.5); border-radius:10px; }
+        .example-box p { margin-bottom:8px; }
+        .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
+        .cmd { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.88rem; color:#e2e8f0;
+               background:rgba(2,6,23,.7); border:1px solid rgba(125,211,252,.15); border-radius:10px;
+               padding:14px 16px; overflow-x:auto; white-space:pre; margin:14px 0; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container tutorial-body" style="padding:120px 0 80px">
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+
+<div class="section-heading">
+<p class="eyebrow">Tutorials • Engineering</p>
+<h2>Kubernetes for Production Support</h2>
+<p>The kubectl commands and mental models for triaging Kubernetes incidents: what is unhealthy, why a pod will not start, and how to read the story the cluster is telling.</p>
+</div>
+
+<div class="resume-card">
+<h3>Pods, Deployments, Services: the three layers</h3>
+<p>A <em>Pod</em> is the smallest unit — one or more containers that live and die together. You almost never manage pods directly: a <em>Deployment</em> owns a set of identical pods (a ReplicaSet) and keeps the desired count running. A <em>Service</em> is the stable network endpoint in front of those pods, because pod IPs change on every restart. When support hears "the app is down", the check order is: Service → Deployment → Pods → container logs. Skipping straight to logs wastes the first ten minutes.</p>
+<div class="cmd">kubectl get pods -n trading             # pod states: Running? CrashLoopBackOff? Pending?
+kubectl get deployments -n trading     # desired vs available replicas
+kubectl get services -n trading        # cluster IPs and ports
+kubectl top pods -n trading            # live CPU/memory per pod</div>
+</div>
+
+<div class="resume-card">
+<h3>The triage pair: describe and logs</h3>
+<p><span class="formula">kubectl describe pod</span> shows the pod's recent history — restarts, the last termination reason, and the Events section at the bottom, which is the cluster's own incident log. <span class="formula">kubectl logs</span> shows what the application said:</p>
+<div class="cmd">kubectl describe pod trade-api-7d9f8c6b5-x2k4p -n trading
+kubectl logs trade-api-7d9f8c6b5-x2k4p -n trading --tail=100
+kubectl logs trade-api-7d9f8c6b5-x2k4p -n trading --previous   # logs of the LAST, crashed instance</div>
+<p>The <span class="formula">--previous</span> flag is the one people forget: without it you read the fresh container's logs, which say nothing, while the crash evidence died with the previous instance.</p>
+</div>
+
+<div class="resume-card">
+<h3>CrashLoopBackOff: reading the loop</h3>
+<p>CrashLoopBackOff means the container starts, dies, and Kubernetes retries with increasing backoff. The diagnosis is in the <em>previous</em> logs plus the last termination state in describe output:</p>
+<ul>
+<li><strong>Exit 137 / OOMKilled</strong> — memory limit too low or a leak. Check <span class="formula">kubectl top</span> and the memory request/limit in the deployment.</li>
+<li><strong>Exit 1 with a stack trace</strong> — application bug or bad config. Look for missing env vars or unreachable dependencies in the first log lines.</li>
+<li><strong>Liveness probe failures</strong> — the app starts but the probe kills it. Often the probe path is wrong or the startup takes longer than the initial delay.</li>
+</ul>
+<div class="example-box">
+<p><strong>What support watches.</strong> A deployment that worked yesterday and CrashLoops today after a release is a bad image until proven otherwise. <span class="formula">kubectl rollout history deployment/trade-api -n trading</span> shows revisions; <span class="formula">kubectl rollout undo</span> rolls back. Knowing the rollback command before the incident is the difference between a 5-minute and a 50-minute outage.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>ImagePullBackOff and Pending: the other two states</h3>
+<p><em>ImagePullBackOff</em> — the node cannot fetch the image. Causes in order of likelihood: typo in the image tag, missing imagePullSecret for a private registry, or the registry itself being down. <span class="formula">kubectl describe pod</span> names the exact failure.</p>
+<p><em>Pending</em> — the pod was never scheduled. Usually insufficient CPU/memory on the nodes, or a PersistentVolumeClaim that cannot be satisfied. <span class="formula">kubectl describe pod</span> events say plainly: "0/3 nodes are available: 3 Insufficient memory."</p>
+</div>
+
+<div class="resume-card">
+<h3>Probes and HPA: the guardrails</h3>
+<p><em>Liveness probes</em> decide whether to restart a stuck container; <em>readiness probes</em> decide whether it receives traffic. A readiness probe failing across all pods means the Service has no endpoints — the app looks "up" in pod listings while serving nothing. Check with <span class="formula">kubectl get endpoints</span>.</p>
+<p>The <em>HorizontalPodAutoscaler</em> scales replicas on CPU or custom metrics. During a traffic spike, verify the HPA is actually scaling (<span class="formula">kubectl get hpa</span>) and that the deployment's max replicas and the nodes' capacity can absorb the load — autoscaling into an unschedulable state just creates Pending pods faster.</p>
+</div>
+
+<div class="resume-card">
+<h3>Incident walkthrough: pricing service down</h3>
+<p>Alert: pricing API returning 503s. The sequence:</p>
+<ul>
+<li><span class="formula">kubectl get pods -n pricing</span> — 2 of 4 pods in CrashLoopBackOff, restarts climbing.</li>
+<li><span class="formula">kubectl logs --previous</span> on a crashed pod — OutOfMemoryError in the first 40 lines, exit 137 in describe.</li>
+<li><span class="formula">kubectl top pods</span> — surviving pods near their memory limit too: a leak, not a one-off.</li>
+<li>Check the deployment: memory limit unchanged for months, but today's release doubled the cache size (from the rollout history).</li>
+<li>Mitigate: <span class="formula">kubectl rollout undo</span> to the previous revision; service recovers. Root cause goes to development with the OOM evidence attached.</li>
+</ul>
+<p>Total time with this sequence: minutes. The pattern is always the same — states, previous logs, describe events, recent changes — and it works for nearly every Kubernetes incident.</p>
+</div>
+
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+</body>
+</html>

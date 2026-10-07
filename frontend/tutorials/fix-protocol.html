@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="FIX protocol deep dive: session management, message anatomy, and a NewOrderSingle walkthrough. Written from production support experience.">
+    <title>FIX Protocol Deep Dive | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .back-link { display:inline-block; margin-bottom:30px; color:#7dd3fc; text-decoration:none; }
+        .back-link:hover { text-decoration:underline; }
+        .tutorial-body p { color:#cbd5e1; line-height:1.75; margin-bottom:16px; }
+        .tutorial-body ul { color:#cbd5e1; padding-left:22px; margin-bottom:16px; }
+        .tutorial-body li { line-height:1.65; margin-bottom:8px; }
+        .tutorial-body h3 { color:#f8fafc; margin:28px 0 12px; font-size:1.3rem; }
+        .tutorial-body h4 { color:#7dd3fc; margin:20px 0 10px; font-size:1.05rem; }
+        .example-box { margin:18px 0; padding:18px 20px; border-left:3px solid #7dd3fc; background:rgba(30,41,59,.5); border-radius:10px; }
+        .example-box p { margin-bottom:8px; }
+        .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; word-break:break-all; }
+        .tag-table { width:100%; border-collapse:collapse; margin:14px 0; }
+        .tag-table th { text-align:left; color:#7dd3fc; font-size:.8rem; padding:8px 10px; border-bottom:1px solid rgba(148,163,184,.2); }
+        .tag-table td { color:#cbd5e1; font-size:.85rem; padding:8px 10px; border-bottom:1px solid rgba(148,163,184,.08); }
+        .tag-table td:first-child { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; white-space:nowrap; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container tutorial-body" style="padding:120px 0 80px">
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+
+<div class="section-heading">
+<p class="eyebrow">Tutorials • Connectivity — my specialty</p>
+<h2>FIX Protocol Deep Dive</h2>
+<p>Session management, message anatomy, and a NewOrderSingle dissected tag by tag — from years of onboarding clients and chasing session drops.</p>
+</div>
+
+<div class="resume-card">
+<h3>What FIX is</h3>
+<p>The <strong>Financial Information eXchange</strong> protocol is the messaging standard for electronic trading — orders, executions, market data and allocations all travel as FIX messages over TCP. The common dialects are <strong>FIX 4.2</strong> (still everywhere in equities), <strong>FIX 4.4</strong> (adds more asset classes), and <strong>FIX 5.0 / 5.0 SP2</strong>, which splits the session layer out into <strong>FIXT</strong> so the application version can evolve independently. Every production support analyst in trading eventually learns to read raw FIX the way a mechanic reads an engine.</p>
+</div>
+
+<div class="resume-card">
+<h3>Session management: the heartbeat of connectivity</h3>
+<p>Before any order flows, the two sides establish a <strong>FIX session</strong> — a persistent, sequenced, acknowledged conversation. The session messages (all identified by tag 35):</p>
+<ul>
+<li><strong>Logon (35=A)</strong> — opens the session; carries 98=0 (encryption: none) and 108=30 (heartbeat interval in seconds).</li>
+<li><strong>Heartbeat (35=0)</strong> — sent every <em>HeartBtInt</em> seconds; silence means trouble.</li>
+<li><strong>TestRequest (35=1)</strong> — "are you alive?"; the other side must answer with a Heartbeat echoing 112=test request ID.</li>
+<li><strong>ResendRequest (35=2)</strong> — asks for missed messages by sequence range; the engine of gap recovery.</li>
+<li><strong>SequenceReset (35=4)</strong> — fills gaps administratively (GapFillFlag 123=Y) or resets numbering.</li>
+<li><strong>Logout (35=5)</strong> — orderly close; both sides should expect sequence numbers to continue next session.</li>
+</ul>
+<p>Every message carries <strong>34=MsgSeqNum</strong>, incrementing per sender. If you receive 34=105 right after 34=103, message 104 is missing — you issue a ResendRequest for 104–104. This gap detection is the entire reliability model of FIX, and most session incidents are sequence-number incidents.</p>
+</div>
+
+<div class="resume-card">
+<h3>Message anatomy</h3>
+<p>A FIX message is tag=value pairs separated by a delimiter (shown here as |, really 0x01 SOH). Three tags form the envelope of <em>every</em> message:</p>
+<table class="tag-table">
+<tr><th>Tag</th><th>Name</th><th>Role</th></tr>
+<tr><td>8</td><td>BeginString</td><td>Protocol version, e.g. FIX.4.2 — always first</td></tr>
+<tr><td>9</td><td>BodyLength</td><td>Byte count up to tag 10 — integrity check</td></tr>
+<tr><td>35</td><td>MsgType</td><td>What kind of message this is (D, 8, 0, A…)</td></tr>
+<tr><td>49</td><td>SenderCompID</td><td>Who sent it</td></tr>
+<tr><td>56</td><td>TargetCompID</td><td>Who it is for</td></tr>
+<tr><td>34</td><td>MsgSeqNum</td><td>Sequence number</td></tr>
+<tr><td>52</td><td>SendingTime</td><td>UTC timestamp YYYYMMDD-HH:MM:SS</td></tr>
+<tr><td>10</td><td>CheckSum</td><td>3-digit checksum — always last</td></tr>
+</table>
+</div>
+
+<div class="resume-card">
+<h3>NewOrderSingle (35=D), dissected</h3>
+<p>Here is a buy-side limit order for 500 AAPL at 150.50, walked through tag by tag:</p>
+<p class="formula">8=FIX.4.2|9=176|35=D|49=BUYSIDE|56=BROKER|34=2|52=20261006-14:30:00|11=ORDER123|21=1|40=2|44=150.50|54=1|55=AAPL|59=0|10=128|</p>
+<table class="tag-table">
+<tr><th>Tag</th><th>Value</th><th>Meaning</th></tr>
+<tr><td>11</td><td>ORDER123</td><td>ClOrdID — the client's unique order ID (never reuse within a session)</td></tr>
+<tr><td>21</td><td>1</td><td>HandlInst = automated execution, no broker intervention</td></tr>
+<tr><td>40</td><td>2</td><td>OrdType = 2 → Limit order</td></tr>
+<tr><td>44</td><td>150.50</td><td>Price — required for limit orders</td></tr>
+<tr><td>54</td><td>1</td><td>Side = 1 → Buy (2 = Sell)</td></tr>
+<tr><td>55</td><td>AAPL</td><td>Symbol</td></tr>
+<tr><td>59</td><td>0</td><td>TimeInForce = 0 → Day order</td></tr>
+</table>
+<p>The broker answers with an <strong>ExecutionReport (35=8)</strong>: first 39=0 (New), then 39=1 (Partial fill) / 39=2 (Filled) as the order works, each carrying 14=CumQty, 6=AvgPx and 150=ExecType. The order's full state machine lives in tag 39 — support analysts trace "where is my order?" by grepping 11=ORDER123 and reading the 39s.</p>
+</div>
+
+<div class="resume-card">
+<h3>What production support watches</h3>
+<ul class="clean-list">
+<li><strong>Session drops</strong> — heartbeat timeouts at 108-second multiples; first check is always network, second is the counterparty's engine.</li>
+<li><strong>Sequence gaps</strong> — a ResendRequest storm after a failover can flood the engine; throttle and monitor queue depth.</li>
+<li><strong>Reject storms</strong> — a burst of 35=3 (Reject) or 35=j (BusinessReject) usually means a spec mismatch after a counterparty upgrade.</li>
+<li><strong>Certification</strong> — every new client runs scripted FIX certification in UAT: logon, order, cancel, replace, reject cases. Nothing reaches production uncertified.</li>
+<li><strong>Clock sync</strong> — 52=SendingTime drift beyond tolerance gets messages rejected; NTP issues masquerade as application bugs.</li>
+</ul>
+<div class="tag-list" style="margin-top:16px">
+<span class="tag">FIX 4.2</span><span class="tag">FIX 4.4</span><span class="tag">FIX 5.0</span><span class="tag">35=D</span><span class="tag">35=8</span><span class="tag">Session management</span>
+</div>
+</div>
+
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+</body>
+</html>

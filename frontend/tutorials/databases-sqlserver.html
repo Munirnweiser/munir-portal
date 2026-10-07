@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SQL Server for production support: DMVs, blocking chains, deadlocks, Agent job failures and wait stats.">
+    <title>SQL Server for Production Support | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .back-link { display:inline-block; margin-bottom:30px; color:#7dd3fc; text-decoration:none; }
+        .back-link:hover { text-decoration:underline; }
+        .tutorial-body p { color:#cbd5e1; line-height:1.75; margin-bottom:16px; }
+        .tutorial-body ul { color:#cbd5e1; padding-left:22px; margin-bottom:16px; }
+        .tutorial-body li { line-height:1.65; margin-bottom:8px; }
+        .tutorial-body h3 { color:#f8fafc; margin:28px 0 12px; font-size:1.3rem; }
+        .tutorial-body h4 { color:#7dd3fc; margin:20px 0 10px; font-size:1.05rem; }
+        .example-box { margin:18px 0; padding:18px 20px; border-left:3px solid #7dd3fc; background:rgba(30,41,59,.5); border-radius:10px; }
+        .example-box p { margin-bottom:8px; }
+        .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
+        .sql { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.88rem; color:#e2e8f0;
+               background:rgba(2,6,23,.7); border:1px solid rgba(125,211,252,.15); border-radius:10px;
+               padding:14px 16px; overflow-x:auto; white-space:pre; margin:14px 0; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container tutorial-body" style="padding:120px 0 80px">
+<a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+
+<div class="section-heading">
+<p class="eyebrow">Tutorials • Databases</p>
+<h2>SQL Server for Production Support</h2>
+<p>The DMVs and checks behind SQL Server incidents: what is running now, what is blocked, which job failed, and where the server is spending its time.</p>
+</div>
+
+<div class="resume-card">
+<h3>DMVs: asking the server what it is doing</h3>
+<p>Dynamic Management Views are SQL Server's live telemetry — the equivalent of Oracle's v$ views. The essential triage query shows every executing request with its wait:</p>
+<div class="sql">SELECT r.session_id, s.login_name, s.program_name,
+       r.status, r.command,
+       r.wait_type, r.wait_time,
+       t.text AS sql_text
+FROM sys.dm_exec_requests r
+JOIN sys.dm_exec_sessions s ON r.session_id = s.session_id
+CROSS APPLY sys.dm_exec_sql_text(r.sql_handle) t
+WHERE r.session_id &gt; 50
+ORDER BY r.wait_time DESC;</div>
+<p>The <span class="formula">wait_type</span> column is the diagnosis: <span class="formula">LCK_M_X</span> means blocked on a lock, <span class="formula">PAGEIOLATCH_SH</span> means waiting on disk I/O, <span class="formula">CXPACKET</span> points at parallelism. Read the wait type before anything else.</p>
+</div>
+
+<div class="resume-card">
+<h3>Blocking chains: finding the head blocker</h3>
+<p><span class="formula">sys.dm_exec_requests.blocking_session_id</span> tells you who each session waits on. The head blocker is the session with a non-zero value in others' rows but zero in its own — it is not waiting, everyone else waits on it:</p>
+<div class="sql">SELECT session_id, blocking_session_id,
+       wait_type, wait_time, last_wait_type
+FROM sys.dm_exec_requests
+WHERE blocking_session_id &lt;&gt; 0
+   OR session_id IN (SELECT DISTINCT blocking_session_id
+                     FROM sys.dm_exec_requests
+                     WHERE blocking_session_id &lt;&gt; 0);</div>
+<div class="example-box">
+<p><strong>What support watches.</strong> A blocking chain that grows during the end-of-day batch usually means an uncommitted transaction — an application bug holding a lock open across a long loop. The head blocker's <span class="formula">sql_text</span> and <span class="formula">program_name</span> identify the culprit process to escalate.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Deadlocks: the error 1205</h3>
+<p>A deadlock is two sessions each holding a lock the other wants; SQL Server picks a victim and kills it with error 1205. Unlike blocking, you cannot wait it out. The deadlock graph in the SQL Server error log (or Extended Events) shows the two statements and their lock order. Support's role: capture the victim's query and timestamp, identify the pattern (two processes updating the same tables in opposite order is the classic), and hand it to development — the fix is consistent lock ordering or shorter transactions, not a server setting.</p>
+</div>
+
+<div class="resume-card">
+<h3>SQL Agent jobs: the batch that did not run</h3>
+<p>End-of-day pricing, reconciliations and report loads usually run as SQL Agent jobs. When downstream data is missing, check job history before assuming a database problem:</p>
+<div class="sql">SELECT j.name AS job_name, h.step_name, h.run_status,
+       msdb.dbo.agent_datetime(h.run_date, h.run_time) AS run_ts,
+       h.message
+FROM msdb.dbo.sysjobs j
+JOIN msdb.dbo.sysjobhistory h ON j.job_id = h.job_id
+WHERE msdb.dbo.agent_datetime(h.run_date, h.run_time) &gt;= DATEADD(HOUR, -12, GETDATE())
+  AND h.run_status &lt;&gt; 1
+ORDER BY run_ts DESC;</div>
+<p><span class="formula">run_status</span> 0 = failed, 2 = retry, 3 = cancelled. The <span class="formula">message</span> column usually names the failing step. Also verify the SQL Server Agent service itself is running — a stopped Agent means <em>no</em> jobs ran, and every downstream alert fires at once.</p>
+</div>
+
+<div class="resume-card">
+<h3>Wait stats and backups: the two health checks</h3>
+<p><span class="formula">sys.dm_os_wait_stats</span> aggregated since the last restart shows where the server spends its waiting time. A sudden spike in <span class="formula">PAGEIOLATCH_*</span> means the storage layer is struggling; <span class="formula">LCK_*</span> spikes mean concurrency pain. Compare against a known-good baseline, not against zero.</p>
+<p>And the check nobody runs until it is too late — when was the last successful backup?</p>
+<div class="sql">SELECT d.name AS database_name,
+       MAX(b.backup_finish_date) AS last_backup
+FROM sys.databases d
+LEFT JOIN msdb.dbo.backupset b ON d.name = b.database_name
+GROUP BY d.name
+ORDER BY last_backup;</div>
+<p>A production database with no recent backup turns every incident into a potential data-loss incident. Verify this <em>before</em> the crisis.</p>
+</div>
+
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+</body>
+</html>
