@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Full simulated trading workstation: live market data, order ticket, and the complete trade lifecycle from order entry to T+1 settlement.">
+    <title>Trading App — Munir Portal</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .back-link { display:inline-block; margin-bottom:30px; color:#7dd3fc; text-decoration:none; }
+        .back-link:hover { text-decoration:underline; }
+
+        .app-controls { display:flex; flex-wrap:wrap; align-items:center; gap:14px; }
+        .feed-dot { width:10px; height:10px; border-radius:50%; background:#22c55e; box-shadow:0 0 10px #22c55e; animation:pulse 1.6s infinite; display:inline-block; }
+        .feed-dot.paused { background:#64748b; box-shadow:none; animation:none; }
+        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.35; } }
+        .feed-label { font-size:0.8rem; letter-spacing:0.12em; color:#cbd5e1; font-weight:700; }
+        .controls-spacer { flex:1; }
+
+        .q-sym { font-weight:800; color:#f8fafc; font-size:1.05rem; letter-spacing:0.04em; }
+        .q-name { font-size:0.72rem; color:#94a3b8; margin-bottom:10px; }
+        .q-price { font-size:1.5rem; font-weight:800; color:#f8fafc; font-variant-numeric:tabular-nums; }
+        .q-chg { font-size:0.85rem; font-weight:700; margin:4px 0 10px; font-variant-numeric:tabular-nums; }
+        .q-chg.up { color:#22c55e; } .q-chg.down { color:#f87171; }
+        .q-ba { font-size:0.75rem; color:#94a3b8; font-variant-numeric:tabular-nums; }
+        .q-ba b { color:#cbd5e1; font-weight:600; }
+        .market-card.selected { border-color:rgba(125,211,252,0.55); box-shadow:0 0 0 1px rgba(125,211,252,0.35); }
+        .market-card { cursor:pointer; }
+
+        .chart-wrap canvas { width:100%; height:320px; display:block; }
+        .chart-head { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom:14px; }
+        .chart-head h3 { margin:0; color:white; font-size:1rem; }
+        .chart-meta { font-size:0.8rem; color:#94a3b8; font-variant-numeric:tabular-nums; }
+
+        .form-row { display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:14px; margin-bottom:16px; }
+        .field label { display:block; font-size:0.72rem; letter-spacing:0.1em; text-transform:uppercase; color:#94a3b8; margin-bottom:6px; font-weight:700; }
+        .field input, .field select {
+            width:100%; padding:11px 12px; border-radius:10px;
+            border:1px solid rgba(148,163,184,0.25); background:rgba(2,6,23,0.6);
+            color:#f8fafc; font-size:0.95rem; font-variant-numeric:tabular-nums;
+        }
+        .field input:focus, .field select:focus { outline:none; border-color:rgba(125,211,252,0.6); }
+        .field input:disabled { opacity:0.4; cursor:not-allowed; }
+        .seg { display:flex; gap:8px; }
+        .seg button {
+            flex:1; padding:11px; border-radius:10px; cursor:pointer; font-weight:800; font-size:0.9rem;
+            border:1px solid rgba(148,163,184,0.25); background:rgba(2,6,23,0.6); color:#94a3b8;
+        }
+        .seg button.on-buy { background:rgba(34,197,94,0.18); border-color:#22c55e; color:#4ade80; }
+        .seg button.on-sell { background:rgba(248,113,113,0.15); border-color:#f87171; color:#fca5a5; }
+        .ticket-msg { min-height:22px; font-size:0.85rem; margin-top:4px; }
+        .ticket-msg.err { color:#f87171; } .ticket-msg.ok { color:#4ade80; }
+
+        .table-scroll { overflow-x:auto; }
+        table.blotter { width:100%; border-collapse:collapse; font-size:0.82rem; font-variant-numeric:tabular-nums; }
+        table.blotter th {
+            text-align:left; padding:10px 12px; color:#94a3b8; font-size:0.7rem;
+            letter-spacing:0.1em; text-transform:uppercase; border-bottom:1px solid rgba(148,163,184,0.2);
+            white-space:nowrap;
+        }
+        table.blotter td { padding:10px 12px; border-bottom:1px solid rgba(148,163,184,0.08); color:#cbd5e1; white-space:nowrap; }
+        table.blotter tbody tr.clickable { cursor:pointer; }
+        table.blotter tbody tr.clickable:hover td { background:rgba(125,211,252,0.05); }
+        .side-buy { color:#4ade80; font-weight:700; } .side-sell { color:#fca5a5; font-weight:700; }
+
+        .badge {
+            display:inline-block; padding:3px 10px; border-radius:999px;
+            font-size:0.68rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase;
+        }
+        .b-pending { background:rgba(148,163,184,0.15); color:#94a3b8; }
+        .b-working { background:rgba(251,191,36,0.15); color:#fbbf24; }
+        .b-partial { background:rgba(125,211,252,0.15); color:#7dd3fc; }
+        .b-filled  { background:rgba(34,197,94,0.15); color:#4ade80; }
+        .b-settled { background:rgba(45,212,191,0.15); color:#2dd4bf; }
+        .b-rejected,.b-failed { background:rgba(248,113,113,0.15); color:#f87171; }
+        .b-done { background:rgba(34,197,94,0.12); color:#4ade80; }
+        .b-active { background:rgba(125,211,252,0.15); color:#7dd3fc; }
+
+        .timeline { position:relative; margin:18px 0 6px; padding-left:26px; }
+        .timeline::before {
+            content:""; position:absolute; left:8px; top:8px; bottom:8px; width:2px;
+            background:rgba(148,163,184,0.2);
+        }
+        .tl-item { position:relative; padding:0 0 18px 8px; }
+        .tl-dot {
+            position:absolute; left:-24px; top:4px; width:14px; height:14px; border-radius:50%;
+            border:2px solid #475569; background:#0f172a;
+        }
+        .tl-dot.done { border-color:#22c55e; background:#22c55e; }
+        .tl-dot.active { border-color:#7dd3fc; background:#7dd3fc; animation:pulse 1.2s infinite; }
+        .tl-dot.failed { border-color:#f87171; background:#f87171; }
+        .tl-head { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+        .tl-name { font-weight:700; color:#f8fafc; font-size:0.9rem; }
+        .tl-ts { font-size:0.75rem; color:#94a3b8; font-variant-numeric:tabular-nums; }
+        .tl-note { font-size:0.8rem; color:#94a3b8; margin-top:4px; }
+
+        .fix-box {
+            font-family:ui-monospace,Menlo,Consolas,monospace; font-size:0.72rem; line-height:1.6;
+            color:#a5f3fc; background:rgba(2,6,23,0.75); border:1px solid rgba(125,211,252,0.2);
+            border-radius:8px; padding:10px 12px; margin-top:8px; word-break:break-all;
+        }
+        .fix-tag { color:#7dd3fc; font-size:0.68rem; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:2px; }
+
+        .detail-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:10px; margin-bottom:6px; }
+        .detail-grid div { font-size:0.82rem; color:#94a3b8; }
+        .detail-grid b { display:block; color:#f8fafc; font-size:0.95rem; margin-top:2px; font-variant-numeric:tabular-nums; }
+        .detail-head { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+        .detail-head h3 { margin:0; color:white; }
+        .reject-box {
+            margin-top:12px; padding:12px 14px; border-radius:10px;
+            background:rgba(248,113,113,0.08); border:1px solid rgba(248,113,113,0.35);
+            color:#fca5a5; font-size:0.85rem;
+        }
+        .empty-note { color:#64748b; font-size:0.85rem; padding:14px 4px; }
+        .pnl-pos { color:#4ade80; } .pnl-neg { color:#f87171; }
+
+        @media (max-width:700px) {
+            .chart-wrap canvas { height:230px; }
+        }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../calculators.html">Calculators</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#markets">Trading</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container" style="padding:120px 0 80px">
+<a href="../index.html#markets" class="back-link">← Back to Markets</a>
+
+<div class="section-heading">
+<p class="eyebrow">Markets • Interactive Workstation</p>
+<h2>Trading App</h2>
+<p>A full simulated trading workstation: live market data, an order ticket, and every order tracked through the complete trade lifecycle — entry, risk, routing, execution, clearing and T&thinsp;+&thinsp;1 settlement. Click any order or fill to inspect its lifecycle timeline and raw FIX messages.</p>
+</div>
+
+<div class="resume-card" style="margin-bottom:28px">
+<div class="app-controls">
+<span class="feed-dot" id="feed-dot"></span>
+<span class="feed-label" id="feed-label">MARKET FEED · LIVE</span>
+<span class="controls-spacer"></span>
+<button class="btn btn-secondary" id="btn-pause">Pause feed</button>
+<button class="btn btn-secondary" id="btn-reset">Reset session</button>
+</div>
+</div>
+
+<div class="section-heading" style="margin-bottom:24px">
+<p class="eyebrow">Market Data</p>
+<h2 style="font-size:1.6rem">Live Quotes</h2>
+</div>
+<div class="market-grid" id="quote-grid" style="margin-bottom:28px"></div>
+
+<div class="resume-card chart-wrap" style="margin-bottom:28px">
+<div class="chart-head">
+<h3>Price Chart</h3>
+<select id="chart-sym" aria-label="Chart symbol" style="padding:8px 10px;border-radius:8px;background:rgba(2,6,23,.6);color:#f8fafc;border:1px solid rgba(148,163,184,.25)"></select>
+<span class="chart-meta" id="chart-meta"></span>
+</div>
+<canvas id="price-chart"></canvas>
+</div>
+
+<div class="section-heading" style="margin-bottom:24px">
+<p class="eyebrow">Order Entry</p>
+<h2 style="font-size:1.6rem">Order Ticket</h2>
+</div>
+<div class="resume-card" style="margin-bottom:28px">
+<div class="form-row">
+<div class="field"><label for="t-symbol">Symbol</label><select id="t-symbol"></select></div>
+<div class="field"><label>Side</label><div class="seg">
+<button type="button" id="side-buy" class="on-buy">BUY</button><button type="button" id="side-sell">SELL</button>
+</div></div>
+<div class="field"><label for="t-qty">Quantity</label><input id="t-qty" type="number" min="1" step="1" value="100"></div>
+<div class="field"><label for="t-type">Order type</label><select id="t-type"><option value="Market">Market</option><option value="Limit">Limit</option></select></div>
+<div class="field"><label for="t-limit">Limit price</label><input id="t-limit" type="number" min="0" step="0.01" placeholder="—" disabled></div>
+</div>
+<button class="btn btn-primary" id="btn-submit">Submit order</button>
+<div class="ticket-msg" id="ticket-msg"></div>
+<p style="margin-top:10px;font-size:0.75rem;color:#64748b">Risk limits: $500,000 max notional per order · 5,000 shares max per symbol · no shorting. Limit buys rest when above the ask; limit sells rest when below the bid.</p>
+</div>
+
+<div class="section-heading" style="margin-bottom:24px">
+<p class="eyebrow">Portfolio</p>
+<h2 style="font-size:1.6rem">Positions &amp; P&amp;L</h2>
+</div>
+<div class="market-grid" style="margin-bottom:20px">
+<div class="market-card"><div class="q-name">Cash</div><div class="q-price" id="stat-cash">$1,000,000.00</div></div>
+<div class="market-card"><div class="q-name">Positions value</div><div class="q-price" id="stat-positions">$0.00</div></div>
+<div class="market-card"><div class="q-name">Portfolio value</div><div class="q-price" id="stat-portfolio">$1,000,000.00</div></div>
+<div class="market-card"><div class="q-name">Unrealized P&amp;L</div><div class="q-price" id="stat-unreal">$0.00</div></div>
+</div>
+<div class="resume-card" style="margin-bottom:28px">
+<h3>Positions</h3>
+<div class="table-scroll"><table class="blotter">
+<thead><tr><th>Symbol</th><th>Qty</th><th>Avg cost</th><th>Mark</th><th>Unrealized P&amp;L</th></tr></thead>
+<tbody id="positions-body"><tr><td colspan="5" class="empty-note">No positions yet — submit an order above.</td></tr></tbody>
+</table></div>
+<div style="margin-top:14px;font-size:0.85rem;color:#94a3b8">Realized P&amp;L: <b id="stat-realized" style="color:#f8fafc">$0.00</b></div>
+</div>
+
+<div class="section-heading" style="margin-bottom:24px">
+<p class="eyebrow">Blotters</p>
+<h2 style="font-size:1.6rem">Orders &amp; Fills</h2>
+</div>
+<div class="resume-card" style="margin-bottom:20px">
+<h3>Orders <span style="color:#64748b;font-weight:400" id="orders-count"></span></h3>
+<div class="table-scroll"><table class="blotter">
+<thead><tr><th>Order</th><th>Time</th><th>Symbol</th><th>Side</th><th>Qty</th><th>Type</th><th>Limit</th><th>Status</th></tr></thead>
+<tbody id="orders-body"><tr><td colspan="8" class="empty-note">No orders yet.</td></tr></tbody>
+</table></div>
+</div>
+<div class="resume-card" style="margin-bottom:28px">
+<h3>Fills / Trades <span style="color:#64748b;font-weight:400" id="fills-count"></span></h3>
+<div class="table-scroll"><table class="blotter">
+<thead><tr><th>Trade</th><th>Order</th><th>Time</th><th>Symbol</th><th>Side</th><th>Qty</th><th>Price</th><th>Lifecycle stage</th></tr></thead>
+<tbody id="fills-body"><tr><td colspan="8" class="empty-note">No fills yet.</td></tr></tbody>
+</table></div>
+</div>
+
+<div class="resume-card" id="detail" hidden>
+<div class="detail-head">
+<h3 id="detail-title">Order detail</h3>
+<span style="flex:1"></span>
+<button class="btn btn-secondary" id="detail-close">Close</button>
+</div>
+<div id="detail-body"></div>
+</div>
+
+<a href="../index.html#markets" class="back-link" style="margin-top:30px">← Back to Markets</a>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+<script>
+'use strict';
+
+/* ============================================================
+   TRADING APP — pure logic layer.
+   No DOM access in this section: it is unit-testable in Node
+   (see the module.exports guard at the bottom of the script).
+   ============================================================ */
+
+/* The 11 lifecycle stages every order flows through. */
+const STAGES = [
+    'Order Entry', 'Validation', 'Risk Check', 'Routing', 'Execution',
+    'Trade Capture', 'Enrichment', 'Allocation', 'Confirmation',
+    'Clearing', 'Settlement'
+];
+
+const SYMBOLS = [
+    { symbol: 'AAPL', name: 'Apple Inc.',      start: 232.50, prevClose: 230.10 },
+    { symbol: 'MSFT', name: 'Microsoft Corp.', start: 428.00, prevClose: 431.25 },
+    { symbol: 'TSLA', name: 'Tesla Inc.',      start: 248.00, prevClose: 251.40 },
+    { symbol: 'JPM',  name: 'JPMorgan Chase',  start: 225.00, prevClose: 223.80 }
+];
+
+/* Risk / session constants. */
+const MAX_ORDER_NOTIONAL = 500000;  /* per-order notional limit */
+const MAX_POSITION_QTY   = 5000;    /* per-symbol position limit */
+const START_CASH         = 1000000;
+const HISTORY_LEN        = 90;
+const VENUE              = 'MNSIM-EXCH';
+const DESK               = 'EQ-DESK';
+const TRADER             = 'MNWEISER';
+const COUNTERPARTY       = 'SIM-BROKER';
+const CCP                = 'SIM-CCP';
+const SUB_ACCOUNTS = [
+    { acct: 'MN-GROWTH', pct: 0.60 },
+    { acct: 'MN-INCOME', pct: 0.40 }
+];
+
+let orderSeq = 0, execSeq = 0, tradeSeq = 0, fixSeq = 0;
+
+function nextOrderId() { orderSeq += 1; return 'O-' + String(orderSeq).padStart(4, '0'); }
+function nextExecId()  { execSeq  += 1; return 'E-' + String(execSeq).padStart(5, '0'); }
+function nextTradeId() { tradeSeq += 1; return 'T-' + String(tradeSeq).padStart(4, '0'); }
+
+/* ---- formatting helpers ---- */
+function fmtMoney(n) {
+    return '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmtNum(n) { return Number(n).toLocaleString('en-US'); }
+function fmtPx(n) {
+    return Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmtPct(n) {
+    const v = Number(n);
+    return (v >= 0 ? '+' : '') + v.toFixed(2) + '%';
+}
+function fmtTime(d) { return d.toLocaleTimeString('en-US', { hour12: false }); }
+function settleDateISO(d) {
+    /* T+1 settlement date, ISO calendar day. */
+    const s = new Date(d.getTime());
+    s.setDate(s.getDate() + 1);
+    return s.toISOString().slice(0, 10);
+}
+
+/* ---- market data ---- */
+function makeMarketState(rand) {
+    const m = {};
+    for (const c of SYMBOLS) {
+        const st = { symbol: c.symbol, name: c.name, price: c.start, prevClose: c.prevClose, bid: 0, ask: 0, history: [] };
+        let p = c.start * (1 - 0.008 * rand());
+        for (let i = 0; i < HISTORY_LEN; i++) {
+            p = p * (1 + (rand() - 0.5) * 0.004);
+            st.history.push(p);
+        }
+        st.price = st.history[st.history.length - 1];
+        m[c.symbol] = quote(st);
+    }
+    return m;
+}
+
+function quote(st) {
+    const spread = Math.max(0.02, st.price * 0.0002);
+    st.bid = st.price - spread / 2;
+    st.ask = st.price + spread / 2;
+    return st;
+}
+
+function tickSymbol(st, rand) {
+    st.price = Math.max(1, st.price * (1 + (rand() - 0.499) * 0.004));
+    st.history.push(st.price);
+    if (st.history.length > HISTORY_LEN) st.history.shift();
+    return quote(st);
+}
+
+function dayChangePct(st) { return (st.price - st.prevClose) / st.prevClose * 100; }
+
+/* ---- portfolio ---- */
+function newPortfolio() { return { cash: START_CASH, positions: {}, realized: 0 }; }
+
+/* Risk check: returns { pass, reasons[] }. Failed orders stop at Risk Check. */
+function riskCheck(order, portfolio, market) {
+    const reasons = [];
+    const q = market[order.symbol];
+    if (!q) {
+        reasons.push('Unknown symbol ' + order.symbol);
+        return { pass: false, reasons };
+    }
+    const refPx = order.type === 'Limit' ? order.limit : (order.side === 'Buy' ? q.ask : q.bid);
+    const notional = order.qty * refPx;
+    if (notional > MAX_ORDER_NOTIONAL) {
+        reasons.push('Order notional ' + fmtMoney(notional) + ' exceeds the per-order limit of ' + fmtMoney(MAX_ORDER_NOTIONAL) + '.');
+    }
+    if (order.side === 'Buy') {
+        if (notional > portfolio.cash) {
+            reasons.push('Insufficient buying power: need ' + fmtMoney(notional) + ', available ' + fmtMoney(portfolio.cash) + '.');
+        }
+        const pos = portfolio.positions[order.symbol];
+        const after = (pos ? pos.qty : 0) + order.qty;
+        if (after > MAX_POSITION_QTY) {
+            reasons.push('Position limit breached: would hold ' + fmtNum(after) + ' shares of ' + order.symbol + ' (limit ' + fmtNum(MAX_POSITION_QTY) + ').');
+        }
+    } else {
+        const pos = portfolio.positions[order.symbol];
+        const held = pos ? pos.qty : 0;
+        if (order.qty > held) {
+            reasons.push('Insufficient position: selling ' + fmtNum(order.qty) + ' ' + order.symbol + ' but holding ' + fmtNum(held) + ' (short selling is disabled).');
+        }
+    }
+    return { pass: reasons.length === 0, reasons };
+}
+
+/* Split an order quantity into 1-3 partial fills that sum to qty. */
+function splitFills(qty, rand) {
+    if (qty <= 5) return [qty];
+    const n = 1 + Math.floor(rand() * 3);
+    const cuts = [];
+    let remaining = qty;
+    for (let i = 0; i < n - 1; i++) {
+        const maxTake = remaining - (n - 1 - i); /* leave >= 1 share per remaining fill */
+        const take = 1 + Math.floor(rand() * maxTake);
+        cuts.push(take);
+        remaining -= take;
+    }
+    cuts.push(remaining);
+    return cuts;
+}
+
+/* Fill price: market orders trade at the touch (ask for buys, bid for sells). */
+function touchPrice(order, q) { return order.side === 'Buy' ? q.ask : q.bid; }
+
+/* A limit order is marketable when its limit crosses the touch price. */
+function isMarketable(order, q) {
+    if (order.type !== 'Limit') return true;
+    return order.side === 'Buy' ? order.limit >= q.ask : order.limit <= q.bid;
+}
+
+/* A resting limit order fills when the market touches its limit. */
+function limitTouched(order, q) {
+    return order.side === 'Buy' ? q.ask <= order.limit : q.bid >= order.limit;
+}
+
+/* Split a fill across the two sub-accounts (60/40, whole shares). */
+function allocate(qty) {
+    const out = [];
+    let assigned = 0;
+    for (let i = 0; i < SUB_ACCOUNTS.length; i++) {
+        const a = SUB_ACCOUNTS[i];
+        const q = (i === SUB_ACCOUNTS.length - 1) ? qty - assigned : Math.floor(qty * a.pct);
+        out.push({ acct: a.acct, qty: q });
+        assigned += q;
+    }
+    return out;
+}
+
+/* Apply a fill to the portfolio: cash, average cost, realized P&L. */
+function applyFill(portfolio, fill) {
+    const p = portfolio.positions[fill.symbol] || { qty: 0, avg: 0 };
+    if (fill.side === 'Buy') {
+        const cost = fill.qty * fill.price;
+        p.avg = (p.qty * p.avg + cost) / (p.qty + fill.qty);
+        p.qty += fill.qty;
+        portfolio.cash -= cost;
+    } else {
+        const proceeds = fill.qty * fill.price;
+        portfolio.realized += fill.qty * (fill.price - p.avg);
+        p.qty -= fill.qty;
+        portfolio.cash += proceeds;
+        if (p.qty === 0) p.avg = 0;
+    }
+    if (p.qty === 0) delete portfolio.positions[fill.symbol];
+    else portfolio.positions[fill.symbol] = p;
+    return portfolio;
+}
+
+function unrealizedPnL(pos, mark) { return (mark - pos.avg) * pos.qty; }
+
+function positionsValue(portfolio, market) {
+    let v = 0;
+    for (const s in portfolio.positions) {
+        if (market[s]) v += portfolio.positions[s].qty * market[s].price;
+    }
+    return v;
+}
+
+function totalUnrealized(portfolio, market) {
+    let u = 0;
+    for (const s in portfolio.positions) {
+        if (market[s]) u += unrealizedPnL(portfolio.positions[s], market[s].price);
+    }
+    return u;
+}
+
+/* ---- FIX protocol messages (FIX 4.4, '|' shown for SOH) ---- */
+const SOH = '';
+
+function utf8Length(s) {
+    let n = 0;
+    for (let i = 0; i < s.length; i++) {
+        const c = s.charCodeAt(i);
+        n += c < 0x80 ? 1 : (c < 0x800 ? 2 : 3);
+    }
+    return n;
+}
+
+/* Build a FIX message from [tag, value] pairs, computing real
+   BodyLength (tag 9) and CheckSum (tag 10). */
+function buildFix(bodyFields) {
+    let body = '';
+    for (const f of bodyFields) body += f[0] + '=' + f[1] + SOH;
+    const head = '8=FIX.4.4' + SOH + '9=' + utf8Length(body) + SOH;
+    const msg = head + body;
+    let sum = 0;
+    for (let i = 0; i < msg.length; i++) sum += msg.charCodeAt(i);
+    const full = msg + '10=' + String(sum % 256).padStart(3, '0') + SOH;
+    return full.split(SOH).filter(Boolean).join('|');
+}
+
+/* FIX timestamp: YYYYMMDD-HH:MM:SS.sss (UTC). */
+function fixTs(d) {
+    const p = (n, l) => String(n).padStart(l || 2, '0');
+    return d.getUTCFullYear() + p(d.getUTCMonth() + 1) + p(d.getUTCDate()) + '-' +
+        p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()) + ':' + p(d.getUTCSeconds()) + '.' + p(d.getUTCMilliseconds(), 3);
+}
+
+/* NewOrderSingle (35=D) emitted at the Order Entry stage. */
+function fixNewOrderSingle(order, ts) {
+    fixSeq += 1;
+    const f = [
+        ['35', 'D'], ['49', 'MN-PORTAL'], ['56', VENUE], ['34', String(fixSeq)], ['52', fixTs(ts)],
+        ['11', order.id],                       /* ClOrdID */
+        ['55', order.symbol],                   /* Symbol */
+        ['54', order.side === 'Buy' ? '1' : '2'],/* Side */
+        ['38', String(order.qty)],               /* OrderQty */
+        ['40', order.type === 'Limit' ? '2' : '1'], /* OrdType: 2=Limit, 1=Market */
+        ['59', '0']                             /* TimeInForce: 0=Day */
+    ];
+    if (order.type === 'Limit') f.push(['44', order.limit.toFixed(2)]); /* Price */
+    return buildFix(f);
+}
+
+/* ExecutionReport (35=8).
+   execType: '0' = New, '1' = Partial fill, '2' = Fill.
+   ordStatus (tag 39): '0' = New, '1' = Partially filled, '2' = Filled. */
+function fixExecutionReport(o) {
+    fixSeq += 1;
+    const f = [
+        ['35', '8'], ['49', VENUE], ['56', 'MN-PORTAL'], ['34', String(fixSeq)], ['52', fixTs(o.ts)],
+        ['37', o.order.id],                      /* OrderID */
+        ['17', o.execId],                        /* ExecID */
+        ['20', '0'],                             /* ExecTransType: 0=New */
+        ['150', o.execType],                     /* ExecType */
+        ['39', o.ordStatus],                     /* OrdStatus */
+        ['55', o.order.symbol],
+        ['54', o.order.side === 'Buy' ? '1' : '2'],
+        ['38', String(o.order.qty)]
+    ];
+    if (o.fill) f.push(['31', o.fill.price.toFixed(2)], ['32', String(o.fill.qty)]); /* LastPx, LastQty */
+    f.push(['14', String(o.cumQty)],              /* CumQty */
+           ['151', String(o.leavesQty)],         /* LeavesQty */
+           ['6', o.avgPx.toFixed(2)],            /* AvgPx */
+           ['60', fixTs(o.ts)]);                /* TransactTime */
+    return buildFix(f);
+}
+
+/* ---- order model ---- */
+function createOrder(input) {
+    return {
+        id: nextOrderId(),
+        ts: input.ts,
+        symbol: input.symbol,
+        side: input.side,
+        qty: input.qty,
+        type: input.type,
+        limit: input.limit || null,
+        status: 'PENDING',
+        rejectReason: null,
+        stageIdx: -1,
+        stages: STAGES.map(n => ({ name: n, status: 'pending', ts: null, note: null })),
+        fills: [],
+        fixEntry: null,
+        fixReports: [],
+        allocations: [],
+        enriched: null,
+        settleDate: null
+    };
+}
+
+function setStage(o, idx, status, ts, note) {
+    o.stages[idx].status = status;
+    if (ts && (status === 'done' || status === 'failed')) o.stages[idx].ts = ts;
+    if (note) o.stages[idx].note = note;
+    o.stageIdx = idx;
+}
+
+/* Badge class for order/fill statuses. */
+function statusBadge(status) {
+    const map = {
+        PENDING: 'b-pending', WORKING: 'b-working', PARTIAL: 'b-partial',
+        FILLED: 'b-filled', SETTLED: 'b-settled', REJECTED: 'b-rejected',
+        done: 'b-done', active: 'b-active', pending: 'b-pending', failed: 'b-failed'
+    };
+    return '<span class="badge ' + (map[status] || 'b-pending') + '">' + status + '</span>';
+}
+
+function esc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+/* ============================================================
+   DOM LAYER — everything below runs only in the browser.
+   ============================================================ */
+
+function init() {
+    const $ = (id) => document.getElementById(id);
+    const els = {
+        feedDot: $('feed-dot'), feedLabel: $('feed-label'),
+        btnPause: $('btn-pause'), btnReset: $('btn-reset'),
+        quoteGrid: $('quote-grid'),
+        chartSym: $('chart-sym'), chartMeta: $('chart-meta'), chart: $('price-chart'),
+        tSymbol: $('t-symbol'), sideBuy: $('side-buy'), sideSell: $('side-sell'),
+        tQty: $('t-qty'), tType: $('t-type'), tLimit: $('t-limit'),
+        btnSubmit: $('btn-submit'), ticketMsg: $('ticket-msg'),
+        statCash: $('stat-cash'), statPositions: $('stat-positions'),
+        statPortfolio: $('stat-portfolio'), statUnreal: $('stat-unreal'),
+        statRealized: $('stat-realized'), positionsBody: $('positions-body'),
+        ordersCount: $('orders-count'), ordersBody: $('orders-body'),
+        fillsCount: $('fills-count'), fillsBody: $('fills-body'),
+        detail: $('detail'), detailTitle: $('detail-title'), detailBody: $('detail-body'),
+        detailClose: $('detail-close')
+    };
+
+    const STAGE_DELAY = 550;   /* ms between lifecycle stages */
+    const FILL_DELAY  = 250;   /* ms between partial fills */
+
+    /* ---- session state ---- */
+    let market     = makeMarketState(Math.random);
+    let portfolio  = newPortfolio();
+    let orders     = [];   /* newest first */
+    let fills      = [];   /* newest first */
+    let selectedSym  = 'AAPL';
+    let ticketSide   = 'Buy';
+    let feedOn       = true;
+    let sessionToken = 0;  /* bumped on reset; stale timers check it */
+    let detailOrderId = null;
+
+    /* ---- selectors ---- */
+    for (const c of SYMBOLS) {
+        const o1 = document.createElement('option');
+        o1.value = c.symbol; o1.textContent = c.symbol + ' — ' + c.name;
+        els.tSymbol.appendChild(o1);
+        const o2 = document.createElement('option');
+        o2.value = c.symbol; o2.textContent = c.symbol;
+        els.chartSym.appendChild(o2);
+    }
+    els.chartSym.value = selectedSym;
+
+    /* ---- rendering ---- */
+    function renderQuotes() {
+        let h = '';
+        for (const c of SYMBOLS) {
+            const st = market[c.symbol];
+            const chg = dayChangePct(st);
+            h += '<div class="market-card' + (c.symbol === selectedSym ? ' selected' : '') + '" data-sym="' + c.symbol + '">';
+            h += '<div class="q-sym">' + c.symbol + '</div><div class="q-name">' + esc(c.name) + '</div>';
+            h += '<div class="q-price">' + fmtPx(st.price) + '</div>';
+            h += '<div class="q-chg ' + (chg >= 0 ? 'up' : 'down') + '">' + fmtPct(chg) + ' today</div>';
+            h += '<div class="q-ba">Bid <b>' + fmtPx(st.bid) + '</b> · Ask <b>' + fmtPx(st.ask) + '</b></div>';
+            h += '</div>';
+        }
+        els.quoteGrid.innerHTML = h;
+        els.quoteGrid.querySelectorAll('.market-card').forEach(card => {
+            card.addEventListener('click', () => {
+                selectedSym = card.getAttribute('data-sym');
+                els.chartSym.value = selectedSym;
+                els.tSymbol.value = selectedSym;
+                renderQuotes(); renderChart();
+            });
+        });
+    }
+
+    function renderChart() {
+        const canvas = els.chart;
+        const dpr = window.devicePixelRatio || 1;
+        const w = canvas.clientWidth, h = canvas.clientHeight;
+        if (!w || !h) return;
+        if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
+            canvas.width = Math.round(w * dpr);
+            canvas.height = Math.round(h * dpr);
+        }
+        const ctx = canvas.getContext('2d');
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, w, h);
+        const st = market[selectedSym];
+        const data = st.history;
+        if (data.length < 2) return;
+        const min = Math.min.apply(null, data), max = Math.max.apply(null, data);
+        const pad = (max - min) * 0.15 || 1;
+        const lo = min - pad, hi = max + pad;
+        const X = (i) => 10 + i * (w - 20) / (data.length - 1);
+        const Y = (v) => h - 16 - (v - lo) / (hi - lo) * (h - 32);
+
+        ctx.strokeStyle = 'rgba(148,163,184,0.15)';
+        ctx.lineWidth = 1;
+        ctx.fillStyle = '#64748b';
+        ctx.font = '10px sans-serif';
+        for (let g = 0; g <= 4; g++) {
+            const v = lo + (hi - lo) * g / 4, yy = Y(v);
+            ctx.beginPath(); ctx.moveTo(10, yy); ctx.lineTo(w - 10, yy); ctx.stroke();
+            ctx.fillText(fmtPx(v), 12, yy - 3);
+        }
+
+        const up = data[data.length - 1] >= data[0];
+        const line = up ? '#22c55e' : '#f87171';
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, up ? 'rgba(34,197,94,0.25)' : 'rgba(248,113,113,0.25)');
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.beginPath();
+        ctx.moveTo(X(0), Y(data[0]));
+        for (let i = 1; i < data.length; i++) ctx.lineTo(X(i), Y(data[i]));
+        ctx.lineTo(X(data.length - 1), h); ctx.lineTo(X(0), h); ctx.closePath();
+        ctx.fillStyle = grad; ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(X(0), Y(data[0]));
+        for (let i = 1; i < data.length; i++) ctx.lineTo(X(i), Y(data[i]));
+        ctx.strokeStyle = line; ctx.lineWidth = 2; ctx.stroke();
+
+        const lx = X(data.length - 1), ly = Y(data[data.length - 1]);
+        ctx.beginPath(); ctx.arc(lx, ly, 4.5, 0, 7); ctx.fillStyle = line; ctx.fill();
+        ctx.lineWidth = 1.5; ctx.strokeStyle = '#fff'; ctx.stroke();
+
+        els.chartMeta.textContent = selectedSym + '  ·  last ' + fmtPx(st.price) +
+            '  ·  chg ' + fmtPct(dayChangePct(st)) +
+            '  ·  bid ' + fmtPx(st.bid) + ' / ask ' + fmtPx(st.ask);
+    }
+
+    function stageLabel(o) {
+        if (o.status === 'REJECTED') return 'REJECTED';
+        if (o.status === 'SETTLED') return 'SETTLED';
+        return o.stageIdx >= 0 ? STAGES[o.stageIdx] : '—';
+    }
+
+    function renderOrders() {
+        els.ordersCount.textContent = orders.length ? '(' + orders.length + ')' : '';
+        if (!orders.length) {
+            els.ordersBody.innerHTML = '<tr><td colspan="8" class="empty-note">No orders yet.</td></tr>';
+            return;
+        }
+        let h = '';
+        for (const o of orders) {
+            h += '<tr class="clickable" data-id="' + o.id + '">';
+            h += '<td><b>' + o.id + '</b></td><td>' + fmtTime(o.ts) + '</td><td>' + o.symbol + '</td>';
+            h += '<td class="' + (o.side === 'Buy' ? 'side-buy' : 'side-sell') + '">' + o.side.toUpperCase() + '</td>';
+            h += '<td>' + fmtNum(o.qty) + '</td><td>' + o.type + '</td>';
+            h += '<td>' + (o.type === 'Limit' ? fmtPx(o.limit) : '—') + '</td>';
+            h += '<td>' + statusBadge(o.status) + '</td></tr>';
+        }
+        els.ordersBody.innerHTML = h;
+        els.ordersBody.querySelectorAll('tr.clickable').forEach(tr => {
+            tr.addEventListener('click', () => showDetail(tr.getAttribute('data-id')));
+        });
+    }
+
+    function renderFills() {
+        els.fillsCount.textContent = fills.length ? '(' + fills.length + ')' : '';
+        if (!fills.length) {
+            els.fillsBody.innerHTML = '<tr><td colspan="8" class="empty-note">No fills yet.</td></tr>';
+            return;
+        }
+        let h = '';
+        for (const f of fills) {
+            const o = orders.find(x => x.id === f.orderId);
+            h += '<tr class="clickable" data-id="' + f.orderId + '">';
+            h += '<td><b>' + f.tradeId + '</b></td><td>' + f.orderId + '</td><td>' + fmtTime(f.ts) + '</td>';
+            h += '<td>' + f.symbol + '</td>';
+            h += '<td class="' + (f.side === 'Buy' ? 'side-buy' : 'side-sell') + '">' + f.side.toUpperCase() + '</td>';
+            h += '<td>' + fmtNum(f.qty) + '</td><td>' + fmtPx(f.price) + '</td>';
+            h += '<td>' + (o ? esc(stageLabel(o)) : '—') + '</td></tr>';
+        }
+        els.fillsBody.innerHTML = h;
+        els.fillsBody.querySelectorAll('tr.clickable').forEach(tr => {
+            tr.addEventListener('click', () => showDetail(tr.getAttribute('data-id')));
+        });
+    }
+
+    function renderPortfolio() {
+        const pv = positionsValue(portfolio, market);
+        const un = totalUnrealized(portfolio, market);
+        els.statCash.textContent = fmtMoney(portfolio.cash);
+        els.statPositions.textContent = fmtMoney(pv);
+        els.statPortfolio.textContent = fmtMoney(portfolio.cash + pv);
+        els.statUnreal.textContent = (un < 0 ? '-' : '+') + fmtMoney(Math.abs(un));
+        els.statUnreal.className = 'q-price ' + (un >= 0 ? 'pnl-pos' : 'pnl-neg');
+        els.statRealized.textContent = (portfolio.realized < 0 ? '-' : '+') + fmtMoney(Math.abs(portfolio.realized));
+        els.statRealized.style.color = portfolio.realized >= 0 ? '#4ade80' : '#f87171';
+        const syms = Object.keys(portfolio.positions);
+        if (!syms.length) {
+            els.positionsBody.innerHTML = '<tr><td colspan="5" class="empty-note">No positions yet — submit an order above.</td></tr>';
+            return;
+        }
+        let h = '';
+        for (const s of syms) {
+            const p = portfolio.positions[s];
+            const mark = market[s] ? market[s].price : p.avg;
+            const u = unrealizedPnL(p, mark);
+            h += '<tr><td><b>' + s + '</b></td><td>' + fmtNum(p.qty) + '</td><td>' + fmtPx(p.avg) + '</td><td>' + fmtPx(mark) + '</td>';
+            h += '<td class="' + (u >= 0 ? 'pnl-pos' : 'pnl-neg') + '">' + (u < 0 ? '-' : '+') + fmtMoney(Math.abs(u)) + '</td></tr>';
+        }
+        els.positionsBody.innerHTML = h;
+    }
+
+    function renderAll() {
+        renderQuotes(); renderChart(); renderOrders(); renderFills(); renderPortfolio();
+    }
+
+    /* ---- fill helpers ---- */
+    function filledQty(o) { return o.fills.reduce((a, f) => a + f.qty, 0); }
+    function avgPxOf(o) {
+        const q = filledQty(o);
+        return q ? o.fills.reduce((a, f) => a + f.qty * f.price, 0) / q : 0;
+    }
+
+    /* Apply one fill: portfolio, FIX ExecutionReport, blotters. */
+    function doFill(order, price, qty, ts) {
+        const fill = {
+            tradeId: nextTradeId(), orderId: order.id, symbol: order.symbol,
+            side: order.side, qty: qty, price: price, ts: ts,
+            allocations: [], desk: null, trader: null, cpty: null
+        };
+        order.fills.push(fill);
+        fills.unshift(fill);
+        applyFill(portfolio, fill);
+        const cum = filledQty(order), leaves = order.qty - cum, last = leaves === 0;
+        order.fixReports.push(fixExecutionReport({
+            order: order, execId: nextExecId(),
+            execType: last ? '2' : '1',       /* 2=Fill, 1=Partial fill */
+            ordStatus: last ? '2' : '1',      /* 39: 2=Filled, 1=Partially filled */
+            fill: fill, cumQty: cum, leavesQty: leaves, avgPx: avgPxOf(order), ts: ts
+        }));
+        order.status = last ? 'FILLED' : 'PARTIAL';
+        renderOrders(); renderFills(); renderPortfolio();
+        return last;
+    }
+
+    function rejectOrder(order, stageIdx, reason) {
+        order.status = 'REJECTED';
+        order.rejectReason = reason;
+        order.rejectStage = STAGES[stageIdx];
+        setStage(order, stageIdx, 'failed', new Date(), reason);
+        renderOrders();
+        showDetailIfSelected(order);
+        setTicketMsg('Order ' + order.id + ' REJECTED at ' + STAGES[stageIdx] + ': ' + reason, 'err');
+    }
+
+    function showDetailIfSelected(order) {
+        if (detailOrderId === order.id && !els.detail.hidden) showDetail(order.id);
+    }
+
+    /* ---- the 11-stage lifecycle engine ---- */
+    function runLifecycle(order) {
+        const token = sessionToken;
+        const chain = [
+            /* 0 — Order Entry */
+            (o, idx, cont) => {
+                o.fixEntry = fixNewOrderSingle(o, new Date());
+                setStage(o, idx, 'done', new Date(), 'NewOrderSingle (35=D) transmitted to ' + VENUE + '.');
+                o.status = 'PENDING';
+                renderOrders(); showDetailIfSelected(o);
+                cont();
+            },
+            /* 1 — Validation */
+            (o, idx, cont) => {
+                const errs = [];
+                if (!Number.isInteger(o.qty) || o.qty <= 0) errs.push('Quantity must be a positive integer.');
+                if (o.type === 'Limit' && !(o.limit > 0)) errs.push('Limit price must be positive for limit orders.');
+                if (!market[o.symbol]) errs.push('Unknown symbol ' + o.symbol + '.');
+                if (errs.length) { rejectOrder(o, idx, errs.join(' ')); return; }
+                setStage(o, idx, 'done', new Date(), 'Ticket validated: symbol, side, quantity and price checks passed.');
+                renderOrders(); showDetailIfSelected(o);
+                cont();
+            },
+            /* 2 — Risk Check */
+            (o, idx, cont) => {
+                const rc = riskCheck(o, portfolio, market);
+                if (!rc.pass) { rejectOrder(o, idx, rc.reasons.join(' ')); return; }
+                setStage(o, idx, 'done', new Date(),
+                    'Passed: notional ' + fmtMoney(o.qty * (o.type === 'Limit' ? o.limit : touchPrice(o, market[o.symbol]))) +
+                    ' within ' + fmtMoney(MAX_ORDER_NOTIONAL) + ' limit; buying power and position limits OK.');
+                renderOrders(); showDetailIfSelected(o);
+                cont();
+            },
+            /* 3 — Routing */
+            (o, idx, cont) => {
+                setStage(o, idx, 'done', new Date(), 'Smart order router selected ' + VENUE + ' (primary listing venue, lowest latency).');
+                renderOrders(); showDetailIfSelected(o);
+                cont();
+            },
+            /* 4 — Execution */
+            (o, idx, cont) => {
+                o.fixReports.push(fixExecutionReport({
+                    order: o, execId: nextExecId(), execType: '0', ordStatus: '0',
+                    fill: null, cumQty: 0, leavesQty: o.qty, avgPx: 0, ts: new Date()
+                }));
+                if (o.type === 'Market' || isMarketable(o, market[o.symbol])) {
+                    startMarketExecution(o, idx, cont, token);
+                } else {
+                    restLimitOrder(o, idx, cont);
+                }
+            },
+            /* 5 — Trade Capture */
+            (o, idx, cont) => {
+                setStage(o, idx, 'done', new Date(),
+                    'Captured ' + o.fills.length + ' fill(s): ' + o.fills.map(f => f.tradeId).join(', ') + '.');
+                renderOrders(); showDetailIfSelected(o);
+                cont();
+            },
+            /* 6 — Enrichment */
+            (o, idx, cont) => {
+                o.enriched = { desk: DESK, trader: TRADER, cpty: COUNTERPARTY };
+                for (const f of o.fills) { f.desk = DESK; f.trader = TRADER; f.cpty = COUNTERPARTY; }
+                setStage(o, idx, 'done', new Date(), 'Enriched with desk, trader and counterparty reference data.');
+                renderOrders(); showDetailIfSelected(o);
+                cont();
+            },
+            /* 7 — Allocation */
+            (o, idx, cont) => {
+                o.allocations = [];
+                for (const f of o.fills) {
+                    f.allocations = allocate(f.qty);
+                    for (const a of f.allocations) o.allocations.push({ tradeId: f.tradeId, acct: a.acct, qty: a.qty });
+                }
+                const byAcct = {};
+                for (const a of o.allocations) byAcct[a.acct] = (byAcct[a.acct] || 0) + a.qty;
+                setStage(o, idx, 'done', new Date(),
+                    'Allocated across sub-accounts: ' + Object.keys(byAcct).map(k => k + ' ' + fmtNum(byAcct[k]) + ' sh').join(' · ') + '.');
+                renderOrders(); showDetailIfSelected(o);
+                cont();
+            },
+            /* 8 — Confirmation / Affirmation */
+            (o, idx, cont) => {
+                setStage(o, idx, 'done', new Date(), 'Affirmed by ' + COUNTERPARTY + ' (auto-affirmation, no breaks).');
+                renderOrders(); showDetailIfSelected(o);
+                cont();
+            },
+            /* 9 — Clearing */
+            (o, idx, cont) => {
+                setStage(o, idx, 'done', new Date(), 'Novated to central counterparty ' + CCP + '; net settlement obligation created.');
+                renderOrders(); showDetailIfSelected(o);
+                cont();
+            },
+            /* 10 — Settlement */
+            (o, idx, cont) => {
+                o.settleDate = settleDateISO(new Date());
+                o.status = 'SETTLED';
+                setStage(o, idx, 'done', new Date(), 'Settling T+1 on ' + o.settleDate + ' via ' + CCP + '. End of lifecycle.');
+                renderOrders(); renderFills(); showDetailIfSelected(o);
+                cont();
+            }
+        ];
+        let i = 0;
+        function next() {
+            if (token !== sessionToken || i >= chain.length) return;
+            const fn = chain[i], idx = i;
+            i++;
+            setStage(order, idx, 'active');
+            renderOrders(); showDetailIfSelected(order);
+            setTimeout(() => {
+                if (token !== sessionToken) return;
+                fn(order, idx, next);
+            }, STAGE_DELAY);
+        }
+        next();
+    }
+
+    /* Market execution: 1-3 staggered partial fills at the touch price. */
+    function startMarketExecution(order, execIdx, cont, token) {
+        const parts = splitFills(order.qty, Math.random);
+        let i = 0;
+        function nextFill() {
+            if (token !== sessionToken) return;
+            const q = market[order.symbol];
+            const jitter = (Math.random() - 0.5) * 0.02;
+            const price = Math.max(0.01, touchPrice(order, q) + jitter);
+            doFill(order, price, parts[i], new Date());
+            i++;
+            showDetailIfSelected(order);
+            if (i < parts.length) {
+                setTimeout(nextFill, FILL_DELAY);
+            } else {
+                setStage(order, execIdx, 'done', new Date(),
+                    'Executed in ' + parts.length + ' fill' + (parts.length > 1 ? 's' : '') +
+                    ' at average ' + fmtPx(avgPxOf(order)) + ' on ' + VENUE + '.');
+                renderOrders(); showDetailIfSelected(order);
+                cont();
+            }
+        }
+        nextFill();
+    }
+
+    /* A non-marketable limit order rests on the book until touched. */
+    function restLimitOrder(order, execIdx, cont) {
+        order.status = 'WORKING';
+        order._resume = () => {
+            order._resume = null;
+            setStage(order, execIdx, 'done', new Date(),
+                'Limit order filled at ' + fmtPx(avgPxOf(order)) + ' on ' + VENUE + '.');
+            order.status = 'FILLED';
+            renderOrders(); showDetailIfSelected(order);
+            cont();
+        };
+        setStage(order, execIdx, 'active', null,
+            'Resting on the book at limit ' + fmtPx(order.limit) + ' — fills when the market touches it.');
+        renderOrders(); showDetailIfSelected(order);
+    }
+
+    /* Called on every market tick: fill resting limit orders that are touched. */
+    function tryFillWorking() {
+        const now = new Date();
+        for (const o of orders) {
+            if (o.status !== 'WORKING' || !o._resume) continue;
+            const q = market[o.symbol];
+            if (limitTouched(o, q)) {
+                const px = o.side === 'Buy' ? Math.min(q.ask, o.limit) : Math.max(q.bid, o.limit);
+                doFill(o, px, o.qty - filledQty(o), now);
+                const resume = o._resume;
+                if (resume) resume();
+            }
+        }
+    }
+
+    /* ---- detail drawer ---- */
+    function showDetail(orderId) {
+        const o = orders.find(x => x.id === orderId);
+        if (!o) return;
+        detailOrderId = orderId;
+        els.detail.hidden = false;
+        els.detailTitle.textContent = 'Order ' + o.id + ' — trade lifecycle';
+        let h = '<div class="detail-grid">';
+        h += '<div>Symbol<b>' + esc(o.symbol) + '</b></div>';
+        h += '<div>Side<b class="' + (o.side === 'Buy' ? 'side-buy' : 'side-sell') + '">' + o.side.toUpperCase() + '</b></div>';
+        h += '<div>Quantity<b>' + fmtNum(o.qty) + '</b></div>';
+        h += '<div>Type<b>' + o.type + (o.type === 'Limit' ? ' @ ' + fmtPx(o.limit) : '') + '</b></div>';
+        h += '<div>Submitted<b>' + fmtTime(o.ts) + '</b></div>';
+        h += '<div>Status<b>' + statusBadge(o.status) + '</b></div>';
+        if (o.settleDate) h += '<div>Settlement<b>T+1 · ' + esc(o.settleDate) + '</b></div>';
+        h += '</div>';
+        if (o.status === 'REJECTED') {
+            h += '<div class="reject-box"><b>Rejected at ' + esc(o.rejectStage || 'Risk Check') + '.</b> ' + esc(o.rejectReason || '') + ' The order never reached the market.</div>';
+        }
+        h += '<div class="timeline">';
+        o.stages.forEach((s, i) => {
+            h += '<div class="tl-item"><span class="tl-dot ' + s.status + '"></span>';
+            h += '<div class="tl-head"><span class="tl-name">' + esc(s.name) + '</span>' +
+                 statusBadge(s.status) + '<span class="tl-ts">' + (s.ts ? fmtTime(s.ts) : '—') + '</span></div>';
+            if (s.note) h += '<div class="tl-note">' + esc(s.note) + '</div>';
+            if (i === 0 && o.fixEntry) {
+                h += '<div class="fix-tag">NewOrderSingle · 35=D</div><div class="fix-box">' + esc(o.fixEntry) + '</div>';
+            }
+            if (i === 4 && o.fixReports.length) {
+                h += '<div class="fix-tag">ExecutionReports · 35=8 (tag 39: 0=New, 1=Partial fill, 2=Fill)</div>';
+                for (const r of o.fixReports) h += '<div class="fix-box">' + esc(r) + '</div>';
+            }
+            if (i === 6 && o.enriched) {
+                h += '<div class="tl-note">Desk ' + esc(o.enriched.desk) + ' · Trader ' + esc(o.enriched.trader) +
+                     ' · Counterparty ' + esc(o.enriched.cpty) + '</div>';
+            }
+            if (i === 7 && o.allocations.length) {
+                const byAcct = {};
+                for (const a of o.allocations) byAcct[a.acct] = (byAcct[a.acct] || 0) + a.qty;
+                h += '<div class="tl-note">' + Object.keys(byAcct).map(k => esc(k) + ': ' + fmtNum(byAcct[k]) + ' shares').join(' · ') + '</div>';
+            }
+            h += '</div>';
+        });
+        h += '</div>';
+        if (o.fills.length) {
+            h += '<h4 style="color:#f8fafc;margin:6px 0 10px;font-size:0.9rem">Fills</h4>' +
+                 '<div class="table-scroll"><table class="blotter"><thead><tr>' +
+                 '<th>Trade</th><th>Qty</th><th>Price</th><th>Value</th><th>Allocation</th></tr></thead><tbody>';
+            for (const f of o.fills) {
+                const al = f.allocations.map(a => esc(a.acct) + ' ' + fmtNum(a.qty)).join(', ');
+                h += '<tr><td><b>' + esc(f.tradeId) + '</b></td><td>' + fmtNum(f.qty) + '</td><td>' + fmtPx(f.price) +
+                     '</td><td>' + fmtMoney(f.qty * f.price) + '</td><td>' + (al || '—') + '</td></tr>';
+            }
+            h += '</tbody></table></div>';
+        }
+        els.detailBody.innerHTML = h;
+        els.detail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    /* ---- order ticket ---- */
+    function setTicketMsg(msg, cls) {
+        els.ticketMsg.textContent = msg;
+        els.ticketMsg.className = 'ticket-msg ' + (cls || '');
+    }
+
+    function submitOrder() {
+        const symbol = els.tSymbol.value;
+        const qty = parseInt(els.tQty.value, 10);
+        const type = els.tType.value;
+        const limit = type === 'Limit' ? parseFloat(els.tLimit.value) : null;
+        if (!Number.isInteger(qty) || qty <= 0) { setTicketMsg('Quantity must be a positive integer.', 'err'); return; }
+        if (type === 'Limit' && !(limit > 0)) { setTicketMsg('Enter a positive limit price for limit orders.', 'err'); return; }
+        const order = createOrder({ ts: new Date(), symbol: symbol, side: ticketSide, qty: qty, type: type, limit: limit });
+        orders.unshift(order);
+        setTicketMsg('Order ' + order.id + ': ' + ticketSide.toUpperCase() + ' ' + fmtNum(qty) + ' ' + symbol + ' ' +
+            type.toUpperCase() + (type === 'Limit' ? ' @ ' + fmtPx(limit) : '') + ' submitted — watch the lifecycle below.', 'ok');
+        renderOrders();
+        detailOrderId = order.id;
+        showDetail(order.id);
+        runLifecycle(order);
+    }
+
+    /* ---- controls ---- */
+    function onTick() {
+        if (!feedOn) return;
+        for (const c of SYMBOLS) tickSymbol(market[c.symbol], Math.random);
+        tryFillWorking();
+        renderQuotes(); renderChart(); renderPortfolio();
+        showDetailIfSelected({ id: detailOrderId });
+    }
+
+    function resetSession() {
+        sessionToken++;
+        market = makeMarketState(Math.random);
+        portfolio = newPortfolio();
+        orders = [];
+        fills = [];
+        detailOrderId = null;
+        els.detail.hidden = true;
+        els.ticketMsg.textContent = '';
+        els.ticketMsg.className = 'ticket-msg';
+        renderAll();
+    }
+
+    /* ---- wiring ---- */
+    els.sideBuy.addEventListener('click', () => {
+        ticketSide = 'Buy';
+        els.sideBuy.className = 'on-buy'; els.sideSell.className = '';
+    });
+    els.sideSell.addEventListener('click', () => {
+        ticketSide = 'Sell';
+        els.sideSell.className = 'on-sell'; els.sideBuy.className = '';
+    });
+    els.tType.addEventListener('change', () => {
+        const isLimit = els.tType.value === 'Limit';
+        els.tLimit.disabled = !isLimit;
+        els.tLimit.placeholder = isLimit ? '0.00' : '—';
+        if (!isLimit) els.tLimit.value = '';
+    });
+    els.btnSubmit.addEventListener('click', submitOrder);
+    els.chartSym.addEventListener('change', () => {
+        selectedSym = els.chartSym.value;
+        els.tSymbol.value = selectedSym;
+        renderQuotes(); renderChart();
+    });
+    els.btnPause.addEventListener('click', () => {
+        feedOn = !feedOn;
+        els.btnPause.textContent = feedOn ? 'Pause feed' : 'Resume feed';
+        els.feedLabel.textContent = feedOn ? 'MARKET FEED · LIVE' : 'MARKET FEED · PAUSED';
+        els.feedDot.className = 'feed-dot' + (feedOn ? '' : ' paused');
+    });
+    els.btnReset.addEventListener('click', resetSession);
+    els.detailClose.addEventListener('click', () => {
+        els.detail.hidden = true;
+        detailOrderId = null;
+    });
+    window.addEventListener('resize', renderChart);
+
+    renderAll();
+    setInterval(onTick, 1000);
+}
+
+if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', init);
+}
+
+/* Export pure functions for Node unit tests (no-op in the browser). */
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        STAGES: STAGES, SYMBOLS: SYMBOLS,
+        MAX_ORDER_NOTIONAL: MAX_ORDER_NOTIONAL, MAX_POSITION_QTY: MAX_POSITION_QTY, START_CASH: START_CASH,
+        nextOrderId: nextOrderId, nextExecId: nextExecId, nextTradeId: nextTradeId,
+        fmtMoney: fmtMoney, fmtNum: fmtNum, fmtPx: fmtPx, fmtPct: fmtPct, fmtTime: fmtTime,
+        settleDateISO: settleDateISO,
+        makeMarketState: makeMarketState, quote: quote, tickSymbol: tickSymbol, dayChangePct: dayChangePct,
+        newPortfolio: newPortfolio, riskCheck: riskCheck, splitFills: splitFills,
+        touchPrice: touchPrice, isMarketable: isMarketable, limitTouched: limitTouched,
+        allocate: allocate, applyFill: applyFill, unrealizedPnL: unrealizedPnL,
+        positionsValue: positionsValue, totalUnrealized: totalUnrealized,
+        buildFix: buildFix, fixTs: fixTs, fixNewOrderSingle: fixNewOrderSingle,
+        fixExecutionReport: fixExecutionReport,
+        createOrder: createOrder, setStage: setStage, statusBadge: statusBadge, esc: esc
+    };
+}
+</script>
+</body>
+</html>

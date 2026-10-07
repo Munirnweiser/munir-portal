@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Test your capital markets knowledge — trading, FIX protocol, bonds and risk. 12 questions.">
+    <title>Markets Quiz | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        /* Page-specific layout: quiz options, progress bar, explanations */
+        .quiz-options .btn {
+            display: block;
+            width: 100%;
+            text-align: left;
+            margin-bottom: 10px;
+            font-weight: 600;
+            justify-content: flex-start;
+        }
+        .quiz-options .btn:disabled {
+            opacity: 1;
+            cursor: default;
+            transform: none;
+        }
+        .quiz-options .btn.correct {
+            border-color: #34d399;
+            background: rgba(52, 211, 153, 0.12);
+            color: #e8f0ff;
+        }
+        .quiz-options .btn.wrong {
+            border-color: #fb7185;
+            background: rgba(251, 113, 133, 0.12);
+            color: #e8f0ff;
+        }
+        .quiz-progress {
+            height: 8px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.06);
+            overflow: hidden;
+            margin: 18px 0 6px;
+        }
+        .quiz-progress > div {
+            height: 100%;
+            width: 0;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #0891b2, #4f46e5);
+            transition: width 0.3s ease;
+        }
+        .quiz-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+            color: #7f91aa;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        .quiz-explain {
+            margin-top: 18px;
+            padding: 16px 18px;
+            border-left: 3px solid #67e8f9;
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 10px;
+            color: #b7c5d9;
+            font-size: 0.86rem;
+            line-height: 1.7;
+        }
+        .quiz-explain strong {
+            color: #67e8f9;
+            display: block;
+            margin-bottom: 4px;
+            font-size: 0.75rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+        .quiz-next {
+            margin-top: 18px;
+        }
+        .quiz-question {
+            font-size: 1.25rem;
+            color: #ffffff;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+        .result-score {
+            text-align: center;
+            padding: 30px 0 10px;
+        }
+        .result-score .stat-number {
+            font-size: 3.2rem;
+        }
+        .result-message {
+            text-align: center;
+            color: #b7c5d9;
+            font-size: 1.05rem;
+            max-width: 520px;
+            margin: 0 auto 26px;
+            line-height: 1.7;
+        }
+        .result-actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .quiz-intro-list {
+            margin: 18px 0 24px;
+        }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main>
+<section class="section">
+<div class="container" style="max-width: 820px;">
+
+    <div class="section-heading">
+        <p class="eyebrow">Games • Test Yourself</p>
+        <h2>Markets Quiz</h2>
+        <p>Twelve questions on trading, the FIX protocol, bonds and risk — the fundamentals behind every production support shift on a trading floor.</p>
+    </div>
+
+    <!-- Start screen -->
+    <div class="resume-card" id="start-screen">
+        <h3>How it works</h3>
+        <ul class="clean-list quiz-intro-list">
+            <li>12 multiple-choice questions</li>
+            <li>One correct answer each — explained after you answer</li>
+            <li>No timer. Think like it's an incident bridge, not a race.</li>
+        </ul>
+        <button type="button" class="btn btn-primary" id="btn-start">Start Quiz</button>
+    </div>
+
+    <!-- Question screen -->
+    <div class="resume-card" id="quiz-screen" style="display:none;">
+        <div class="quiz-meta">
+            <span id="quiz-count">Question 1 of 12</span>
+            <span id="quiz-score">Score: 0</span>
+        </div>
+        <div class="quiz-progress"><div id="quiz-bar"></div></div>
+        <p class="quiz-question" id="quiz-question"></p>
+        <div class="quiz-options" id="quiz-options"></div>
+        <div class="quiz-explain" id="quiz-explain" style="display:none;">
+            <strong>Why</strong>
+            <span id="quiz-why"></span>
+        </div>
+        <div class="quiz-next">
+            <button type="button" class="btn btn-primary" id="btn-next" style="display:none;">Next</button>
+        </div>
+    </div>
+
+    <!-- Result screen -->
+    <div class="resume-card" id="result-screen" style="display:none;">
+        <div class="result-score">
+            <span class="stat-number" id="result-score">0 / 12</span>
+            <div class="stat-label" id="result-pct">0%</div>
+        </div>
+        <p class="result-message" id="result-message"></p>
+        <div class="result-actions">
+            <button type="button" class="btn btn-primary" id="btn-again">Play Again</button>
+            <a href="../index.html#tutorials" class="btn btn-secondary">Browse Tutorials</a>
+        </div>
+    </div>
+
+</div>
+</section>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+
+<script src="../app.js"></script>
+<script>
+(function () {
+    'use strict';
+
+    /* ---------------- questions ----------------
+       answer = index of the correct option (0-based) */
+    var QUESTIONS = [
+        {
+            q: 'In the FIX protocol, what does tag 35 identify?',
+            options: ['The message type (MsgType)', 'The security symbol', 'The order quantity', 'The account number'],
+            answer: 0,
+            why: 'Tag 35 (MsgType) tells the counterparty how to parse the message — e.g. D = NewOrderSingle, 8 = ExecutionReport.'
+        },
+        {
+            q: 'When market interest rates rise, existing bond prices generally…',
+            options: ['Rise', 'Fall', 'Stay the same', 'Only become more volatile'],
+            answer: 1,
+            why: 'Bond prices move inversely to yields — higher rates make existing lower-coupon bonds less attractive.'
+        },
+        {
+            q: 'A one-day 99% VaR of $1M means…',
+            options: [
+                'The desk will lose exactly $1M tomorrow',
+                'The maximum possible loss is $1M',
+                'Losses should not exceed $1M on roughly 99 out of 100 days',
+                'The portfolio is worth $1M'
+            ],
+            answer: 2,
+            why: 'VaR is a quantile: under normal conditions, losses exceed $1M only about 1% of the time.'
+        },
+        {
+            q: 'The bid-ask spread is…',
+            options: [
+                'The difference between the highest bid and the lowest ask',
+                "The broker's commission on the trade",
+                'The daily high-low price range',
+                'The difference between the open and the close'
+            ],
+            answer: 0,
+            why: "The spread compensates market makers and is a key real-time gauge of liquidity."
+        },
+        {
+            q: 'Which FIX message is used to submit a new order to a broker or exchange?',
+            options: [
+                'ExecutionReport (35=8)',
+                'NewOrderSingle (35=D)',
+                'OrderCancelRequest (35=F)',
+                'MarketDataRequest (35=V)'
+            ],
+            answer: 1,
+            why: '35=D (NewOrderSingle) is the workhorse message for order entry.'
+        },
+        {
+            q: "An option's delta measures…",
+            options: [
+                'Sensitivity to changes in implied volatility',
+                'Time decay per day',
+                'Sensitivity of the option price to a $1 move in the underlying',
+                'The probability the option expires in the money'
+            ],
+            answer: 2,
+            why: 'Delta ≈ how much the option price moves for each $1 move in the underlying asset.'
+        },
+        {
+            q: 'Under T+1 settlement, a trade executed on Monday settles…',
+            options: ['The same day', 'On Tuesday', 'Two business days later', 'At month end'],
+            answer: 1,
+            why: 'T+1 = trade date plus one business day — the standard for most equities since 2024.'
+        },
+        {
+            q: 'Gamma measures…',
+            options: [
+                "The option's time decay",
+                'Sensitivity to interest-rate changes',
+                'The expected dividend yield',
+                'The rate of change of delta'
+            ],
+            answer: 3,
+            why: 'Gamma is the second-order greek: it tells you how fast delta itself moves.'
+        },
+        {
+            q: 'A market order…',
+            options: [
+                'Executes immediately at the best available price',
+                'Only executes at a specified limit price or better',
+                'Is valid for the trading day only',
+                'Guarantees execution with no slippage'
+            ],
+            answer: 0,
+            why: 'Market orders prioritize immediacy over price — you may pay the full spread.'
+        },
+        {
+            q: 'Modified duration tells you…',
+            options: [
+                "The bond's time to maturity",
+                'The coupon payment amount',
+                "The issuer's credit rating",
+                'The approximate % price change for a 1% move in yield'
+            ],
+            answer: 3,
+            why: 'A duration of 5 means roughly a −5% price move for a +1% yield shock.'
+        },
+        {
+            q: 'FIX Heartbeat messages (35=0) exist to…',
+            options: [
+                'Confirm order fills',
+                'Monitor that the session is still alive',
+                'Request market data snapshots',
+                'Reset sequence numbers'
+            ],
+            answer: 1,
+            why: 'Heartbeats — with TestRequest if one is missed — detect silently dropped connections.'
+        },
+        {
+            q: 'Unrealized PnL on a position is…',
+            options: [
+                'Profit already locked in by closing the trade',
+                'Commission paid to the broker',
+                'The mark-to-market gain or loss on an open position',
+                'Dividend income received'
+            ],
+            answer: 2,
+            why: 'Unrealized is paper PnL — it becomes realized only when the position is closed.'
+        }
+    ];
+
+    var qi = 0, score = 0, locked = false;
+
+    function el(id) { return document.getElementById(id); }
+    var startScreen = el('start-screen'),
+        quizScreen = el('quiz-screen'),
+        resultScreen = el('result-screen'),
+        countEl = el('quiz-count'),
+        scoreEl = el('quiz-score'),
+        barEl = el('quiz-bar'),
+        qEl = el('quiz-question'),
+        optsEl = el('quiz-options'),
+        explainEl = el('quiz-explain'),
+        whyEl = el('quiz-why'),
+        nextBtn = el('btn-next');
+
+    function show(node) { node.style.display = ''; }
+    function hide(node) { node.style.display = 'none'; }
+
+    function startQuiz() {
+        qi = 0;
+        score = 0;
+        hide(startScreen);
+        hide(resultScreen);
+        show(quizScreen);
+        renderQuestion();
+    }
+
+    function renderQuestion() {
+        var item = QUESTIONS[qi];
+        locked = false;
+        countEl.textContent = 'Question ' + (qi + 1) + ' of ' + QUESTIONS.length;
+        scoreEl.textContent = 'Score: ' + score;
+        barEl.style.width = (qi / QUESTIONS.length * 100) + '%';
+        qEl.textContent = item.q;
+        whyEl.textContent = item.why;
+        hide(explainEl);
+        hide(nextBtn);
+        optsEl.innerHTML = '';
+
+        for (var i = 0; i < item.options.length; i++) {
+            (function (idx) {
+                var b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'btn btn-secondary';
+                b.textContent = String.fromCharCode(65 + idx) + '.  ' + item.options[idx];
+                b.addEventListener('click', function () { answer(idx, b); });
+                optsEl.appendChild(b);
+            })(i);
+        }
+    }
+
+    function answer(idx, btn) {
+        if (locked) return;
+        locked = true;
+        var item = QUESTIONS[qi];
+        var buttons = optsEl.querySelectorAll('button');
+
+        for (var i = 0; i < buttons.length; i++) {
+            buttons[i].disabled = true;
+            if (i === item.answer) buttons[i].classList.add('correct');
+        }
+        if (idx === item.answer) {
+            score++;
+        } else {
+            btn.classList.add('wrong');
+        }
+        scoreEl.textContent = 'Score: ' + score;
+        barEl.style.width = ((qi + 1) / QUESTIONS.length * 100) + '%';
+        show(explainEl);
+        nextBtn.textContent = (qi === QUESTIONS.length - 1) ? 'See Results' : 'Next';
+        show(nextBtn);
+    }
+
+    function next() {
+        qi++;
+        if (qi >= QUESTIONS.length) {
+            showResults();
+        } else {
+            renderQuestion();
+        }
+    }
+
+    function ratingMessage(s, total) {
+        if (s === total) return 'A perfect score — trading-floor ready. The desk would trust you on the bridge.';
+        if (s >= 10) return 'Excellent — strong markets knowledge with only small gaps to close.';
+        if (s >= 7) return 'Solid foundation. A little more time on FIX and risk measures and you are there.';
+        if (s >= 4) return 'Developing — revisit the fundamentals in the tutorials section and try again.';
+        return 'Back to basics — work through the trading tutorials first, then come back for a rematch.';
+    }
+
+    function showResults() {
+        hide(quizScreen);
+        show(resultScreen);
+        var pct = Math.round(score / QUESTIONS.length * 100);
+        el('result-score').textContent = score + ' / ' + QUESTIONS.length;
+        el('result-pct').textContent = pct + '% correct';
+        el('result-message').textContent = ratingMessage(score, QUESTIONS.length);
+    }
+
+    el('btn-start').addEventListener('click', startQuiz);
+    nextBtn.addEventListener('click', next);
+    el('btn-again').addEventListener('click', startQuiz);
+    el('current-year').textContent = new Date().getFullYear();
+})();
+</script>
+</body>
+</html>

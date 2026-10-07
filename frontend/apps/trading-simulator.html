@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Interactive trading simulator — practice order entry, positions and PnL with a live simulated market.">
+    <title>Trading Simulator | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        /* Page-specific layout: chart, blotter table, simulator controls */
+        #chart {
+            width: 100%;
+            height: 320px;
+            display: block;
+        }
+        .chart-head {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+        .chart-price {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: -0.02em;
+        }
+        .chart-change {
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-left: 10px;
+        }
+        .live-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #7f91aa;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+        }
+        .trade-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin: 20px 0 6px;
+        }
+        .qty-row {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .qty-row > span {
+            color: #7f91aa;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        .trade-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 14px;
+        }
+        .blotter-wrap {
+            overflow-x: auto;
+        }
+        .blotter {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+            min-width: 520px;
+        }
+        .blotter th {
+            text-align: left;
+            color: #7f91aa;
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: 10px 8px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+        }
+        .blotter td {
+            padding: 9px 8px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.06);
+            color: #b7c5d9;
+        }
+        .blotter tr:last-child td {
+            border-bottom: 0;
+        }
+        .side-buy {
+            color: #34d399;
+            font-weight: 800;
+        }
+        .side-sell {
+            color: #fb7185;
+            font-weight: 800;
+        }
+        .market-card.positive > strong {
+            color: #34d399;
+        }
+        .market-card.negative > strong {
+            color: #fb7185;
+        }
+        .sim-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        @media (max-width: 900px) {
+            .sim-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main>
+<section class="section">
+<div class="container">
+
+    <div class="section-heading">
+        <p class="eyebrow">Trading Lab • Interactive</p>
+        <h2>Trading Simulator</h2>
+        <p>Start with $100,000 of virtual cash. The market ticks every second — buy and sell, watch your position and unrealized PnL move, and review every fill in the blotter.</p>
+    </div>
+
+    <!-- Account snapshot -->
+    <div class="market-grid" style="margin-bottom: 16px;">
+        <div class="market-card">
+            <span>Cash</span>
+            <strong id="stat-cash">$100,000.00</strong>
+            <small>settled funds</small>
+        </div>
+        <div class="market-card">
+            <span>Position</span>
+            <strong id="stat-position">0 shares</strong>
+            <small id="stat-avg">flat</small>
+        </div>
+        <div class="market-card">
+            <span>Portfolio Value</span>
+            <strong id="stat-portfolio">$100,000.00</strong>
+            <small>cash + positions</small>
+        </div>
+        <div class="market-card" id="pnl-card">
+            <span>Unrealized PnL</span>
+            <strong id="stat-pnl">+$0.00</strong>
+            <small id="stat-pnl-sub">flat</small>
+        </div>
+    </div>
+
+    <div class="sim-grid">
+        <!-- Chart panel -->
+        <div class="resume-card">
+            <div class="chart-head">
+                <div>
+                    <span class="chart-price" id="last-price">$100.00</span><span class="chart-change" id="day-change"></span>
+                </div>
+                <span class="live-tag"><span class="status-dot"></span>LIVE</span>
+            </div>
+            <canvas id="chart" aria-label="Simulated price chart"></canvas>
+        </div>
+
+        <!-- Order entry panel -->
+        <div class="resume-card">
+            <h3>Order Entry</h3>
+            <p style="color:#7f91aa;font-size:0.82rem;margin:8px 0 0;">Market orders fill instantly at the current price.</p>
+            <div class="trade-controls">
+                <div class="qty-row">
+                    <span>Qty</span>
+                    <button type="button" class="btn btn-secondary qty-btn" data-qty="1">1</button>
+                    <button type="button" class="btn btn-primary qty-btn" data-qty="10">10</button>
+                    <button type="button" class="btn btn-secondary qty-btn" data-qty="100">100</button>
+                </div>
+            </div>
+            <div class="trade-actions">
+                <button type="button" class="btn btn-primary" id="btn-buy">Buy</button>
+                <button type="button" class="btn btn-secondary" id="btn-sell">Sell</button>
+                <button type="button" class="btn btn-secondary" id="btn-reset">Reset</button>
+            </div>
+            <p class="form-status" id="order-status" role="status"></p>
+        </div>
+    </div>
+
+    <!-- Blotter panel -->
+    <div class="resume-card">
+        <h3>Trade Blotter</h3>
+        <div class="blotter-wrap">
+            <table class="blotter">
+                <thead>
+                    <tr><th>Time</th><th>Side</th><th>Qty</th><th>Price</th><th>Value</th></tr>
+                </thead>
+                <tbody id="blotter-body">
+                    <tr><td colspan="5" style="color:#7f91aa;">No trades yet — place your first order above.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+</section>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+
+<script src="../app.js"></script>
+<script>
+(function () {
+    'use strict';
+
+    /* ---------------- state ---------------- */
+    var START_CASH = 100000;
+    var START_PRICE = 100;
+    var MAX_POINTS = 150;
+
+    var cash, position, avgCost, price, history, trades, currentQty;
+
+    /* ---------------- dom ---------------- */
+    function el(id) { return document.getElementById(id); }
+    var cashEl = el('stat-cash'),
+        posEl = el('stat-position'),
+        avgEl = el('stat-avg'),
+        portEl = el('stat-portfolio'),
+        pnlEl = el('stat-pnl'),
+        pnlSub = el('stat-pnl-sub'),
+        pnlCard = el('pnl-card'),
+        lastPriceEl = el('last-price'),
+        dayChangeEl = el('day-change'),
+        statusEl = el('order-status'),
+        blotterBody = el('blotter-body'),
+        canvas = el('chart');
+
+    /* ---------------- helpers ---------------- */
+    function money(n) {
+        return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function setStatus(msg) { statusEl.textContent = msg; }
+
+    /* One step of a geometric random walk (approx-normal shock). */
+    function stepPrice(p) {
+        var drift = 0.0002, vol = 0.006;
+        var shock = (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
+        var np = p * (1 + drift + vol * shock);
+        return np < 1 ? 1 : np;
+    }
+
+    /* Pre-fill history so the chart looks alive on load. */
+    function seedHistory() {
+        history = [];
+        var p = START_PRICE;
+        for (var i = 0; i < 40; i++) {
+            p = stepPrice(p);
+            history.push(p);
+        }
+        price = p;
+    }
+
+    /* ---------------- core ---------------- */
+    function reset() {
+        cash = START_CASH;
+        position = 0;
+        avgCost = 0;
+        trades = [];
+        currentQty = 10;
+        seedHistory();
+        blotterBody.innerHTML = '<tr><td colspan="5" style="color:#7f91aa;">No trades yet — place your first order above.</td></tr>';
+        setStatus('Simulator reset. $100,000 cash ready.');
+        update();
+    }
+
+    function tick() {
+        price = stepPrice(price);
+        history.push(price);
+        if (history.length > MAX_POINTS) history.shift();
+        update();
+    }
+
+    function buy() {
+        var cost = currentQty * price;
+        if (cost > cash) {
+            setStatus('Order rejected: insufficient cash for ' + currentQty + ' shares at ' + money(price) + '.');
+            return;
+        }
+        var prevPos = position;
+        cash -= cost;
+        position += currentQty;
+        /* volume-weighted average cost */
+        avgCost = (prevPos === 0) ? price : (avgCost * prevPos + cost) / position;
+        logTrade('BUY', currentQty, price);
+        setStatus('Bought ' + currentQty + ' @ ' + money(price) + '.');
+        update();
+    }
+
+    function sell() {
+        if (currentQty > position) {
+            setStatus('Order rejected: cannot sell ' + currentQty + ' shares, position is ' + position + '.');
+            return;
+        }
+        cash += currentQty * price;
+        position -= currentQty;
+        if (position === 0) avgCost = 0;
+        logTrade('SELL', currentQty, price);
+        setStatus('Sold ' + currentQty + ' @ ' + money(price) + '.');
+        update();
+    }
+
+    function logTrade(side, qty, px) {
+        if (trades.length === 0) blotterBody.innerHTML = '';
+        trades.unshift({ time: new Date().toLocaleTimeString('en-US', { hour12: false }), side: side, qty: qty, price: px });
+        var t = trades[0];
+        var tr = document.createElement('tr');
+        var sideClass = t.side === 'BUY' ? 'side-buy' : 'side-sell';
+        tr.innerHTML = '<td>' + t.time + '</td>' +
+            '<td class="' + sideClass + '">' + t.side + '</td>' +
+            '<td>' + t.qty + '</td>' +
+            '<td>' + money(t.price) + '</td>' +
+            '<td>' + money(t.qty * t.price) + '</td>';
+        blotterBody.insertBefore(tr, blotterBody.firstChild);
+    }
+
+    /* ---------------- rendering ---------------- */
+    function update() {
+        var posValue = position * price;
+        var portfolio = cash + posValue;
+        var upl = position * (price - avgCost);
+
+        cashEl.textContent = money(cash);
+        posEl.textContent = position + ' shares';
+        avgEl.textContent = position > 0 ? 'avg ' + money(avgCost) : 'flat';
+        portEl.textContent = money(portfolio);
+        pnlEl.textContent = (upl >= 0 ? '+' : '-') + money(Math.abs(upl));
+        pnlSub.textContent = position > 0 ? 'open' : 'flat';
+        pnlCard.classList.toggle('positive', upl >= 0);
+        pnlCard.classList.toggle('negative', upl < 0);
+
+        lastPriceEl.textContent = money(price);
+        var open = history[0];
+        var chg = price - open, pct = (chg / open) * 100;
+        dayChangeEl.textContent = (chg >= 0 ? '+' : '') + chg.toFixed(2) + ' (' + (chg >= 0 ? '+' : '') + pct.toFixed(2) + '%)';
+        dayChangeEl.style.color = chg >= 0 ? '#34d399' : '#fb7185';
+
+        renderChart();
+    }
+
+    function renderChart() {
+        var dpr = window.devicePixelRatio || 1;
+        var w = canvas.clientWidth, h = canvas.clientHeight;
+        if (w === 0) return;
+        var bw = Math.round(w * dpr), bh = Math.round(h * dpr);
+        if (canvas.width !== bw || canvas.height !== bh) {
+            canvas.width = bw;
+            canvas.height = bh;
+        }
+        var ctx = canvas.getContext('2d');
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, w, h);
+        if (history.length < 2) return;
+
+        var min = Math.min.apply(null, history);
+        var max = Math.max.apply(null, history);
+        if (max - min < 0.01) { max += 0.005; min -= 0.005; }
+
+        var padRight = 44;
+        function x(i) { return (i / (history.length - 1)) * (w - padRight); }
+        function y(p) { return h - 14 - ((p - min) / (max - min)) * (h - 30); }
+
+        /* gridlines + price labels */
+        ctx.strokeStyle = 'rgba(148,163,184,0.12)';
+        ctx.lineWidth = 1;
+        ctx.fillStyle = '#7f91aa';
+        ctx.font = '10px Inter, sans-serif';
+        for (var g = 0; g <= 4; g++) {
+            var gp = min + (max - min) * g / 4;
+            var gy = Math.round(y(gp)) + 0.5;
+            ctx.beginPath();
+            ctx.moveTo(0, gy);
+            ctx.lineTo(w - padRight, gy);
+            ctx.stroke();
+            ctx.fillText(gp.toFixed(2), w - padRight + 6, gy + 3);
+        }
+
+        /* price line */
+        ctx.beginPath();
+        for (var i = 0; i < history.length; i++) {
+            var px = x(i), py = y(history[i]);
+            if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.strokeStyle = '#67e8f9';
+        ctx.lineWidth = 2;
+        ctx.lineJoin = 'round';
+        ctx.stroke();
+
+        /* area fill under the line */
+        ctx.lineTo(x(history.length - 1), h);
+        ctx.lineTo(x(0), h);
+        ctx.closePath();
+        var grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, 'rgba(103,232,249,0.22)');
+        grad.addColorStop(1, 'rgba(103,232,249,0)');
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        /* last-price dot */
+        ctx.beginPath();
+        ctx.arc(x(history.length - 1), y(price), 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#67e8f9';
+        ctx.fill();
+    }
+
+    /* ---------------- wiring ---------------- */
+    var qtyBtns = document.querySelectorAll('.qty-btn');
+    function selectQty(btn) {
+        currentQty = parseInt(btn.getAttribute('data-qty'), 10);
+        for (var i = 0; i < qtyBtns.length; i++) {
+            var b = qtyBtns[i];
+            var active = b === btn;
+            b.classList.toggle('btn-primary', active);
+            b.classList.toggle('btn-secondary', !active);
+        }
+    }
+    for (var i = 0; i < qtyBtns.length; i++) {
+        (function (btn) {
+            btn.addEventListener('click', function () { selectQty(btn); });
+        })(qtyBtns[i]);
+    }
+
+    el('btn-buy').addEventListener('click', buy);
+    el('btn-sell').addEventListener('click', sell);
+    el('btn-reset').addEventListener('click', reset);
+    window.addEventListener('resize', renderChart);
+
+    el('current-year').textContent = new Date().getFullYear();
+
+    reset();
+    setInterval(tick, 1000);
+})();
+</script>
+</body>
+</html>

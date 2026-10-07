@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Dynatrace-style production incident simulator: inject CPU saturation, memory leaks, DB slowdowns, crash loops and latency spikes, then triage like on-call support.">
+    <title>Dynatrace Simulator — Munir Portal</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .back-link { display:inline-block; margin-bottom:30px; color:#7dd3fc; text-decoration:none; }
+        .back-link:hover { text-decoration:underline; }
+
+        .sim-layout { display:grid; grid-template-columns: 1fr 330px; gap:24px; align-items:start; }
+        @media (max-width: 1020px) { .sim-layout { grid-template-columns: 1fr; } }
+
+        .sim-services { display:grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap:16px; }
+        .sim-svc { border:1px solid rgba(125,211,252,.14); border-radius:12px; padding:16px; background:rgba(15,23,42,.55); }
+        .sim-svc-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+        .sim-svc-name { font-family:ui-monospace,Menlo,Consolas,monospace; color:#f8fafc; font-weight:700; font-size:.95rem; }
+        .sim-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:8px; vertical-align:1px; }
+        .sim-dot.ok { background:#34d399; }
+        .sim-dot.warn { background:#fbbf24; }
+        .sim-dot.crit { background:#f87171; }
+        .sim-dot.down { background:#ef4444; animation:sim-blink 1s infinite; }
+        @media (prefers-reduced-motion: reduce) { .sim-dot.down { animation:none; } }
+        @keyframes sim-blink { 50% { opacity:.25; } }
+        .sim-status { font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; color:#94a3b8; }
+        .sim-metrics { display:grid; grid-template-columns: repeat(4, 1fr); gap:8px; margin-bottom:12px; }
+        .sim-metric { background:rgba(30,41,59,.65); border-radius:8px; padding:8px 4px; text-align:center; }
+        .sim-metric-label { display:block; font-size:.62rem; color:#94a3b8; text-transform:uppercase; letter-spacing:.06em; margin-bottom:4px; }
+        .sim-metric-val { font-size:.95rem; color:#f8fafc; font-variant-numeric:tabular-nums; font-weight:700; }
+        .sim-metric-val.warn { color:#fbbf24; }
+        .sim-metric-val.crit { color:#f87171; }
+        .sim-chart { width:100%; height:130px; display:block; background:rgba(2,6,23,.65); border-radius:8px; }
+        .sim-legend { display:flex; gap:16px; font-size:.68rem; color:#94a3b8; margin-top:6px; flex-wrap:wrap; }
+        .sim-legend i { display:inline-block; width:18px; height:3px; border-radius:2px; margin-right:6px; vertical-align:middle; }
+
+        .sim-inject { display:grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap:12px; }
+        .sim-inject .btn { width:100%; font-size:.82rem; }
+        .sim-inject-note { color:#94a3b8; font-size:.8rem; margin-top:12px; }
+
+        .sim-problem { border:1px solid rgba(248,113,113,.28); border-left:4px solid #f87171; border-radius:10px; padding:14px 16px; margin-bottom:12px; background:rgba(30,41,59,.5); }
+        .sim-problem.warning { border-color:rgba(251,191,36,.28); border-left-color:#fbbf24; }
+        .sim-problem.resolved { opacity:.62; border-left-color:#34d399; }
+        .sim-prob-head { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:6px; }
+        .sim-prob-title { color:#f8fafc; font-weight:700; }
+        .sim-sev { font-size:.66rem; font-weight:800; text-transform:uppercase; letter-spacing:.08em; padding:3px 10px; border-radius:20px; }
+        .sim-sev.critical { background:rgba(248,113,113,.15); color:#f87171; }
+        .sim-sev.warning { background:rgba(251,191,36,.15); color:#fbbf24; }
+        .sim-prob-meta { font-size:.78rem; color:#94a3b8; margin:4px 0; font-variant-numeric:tabular-nums; }
+        .sim-rootcause { margin:10px 0 4px; padding:10px 12px; background:rgba(2,6,23,.65); border-radius:8px; font-size:.82rem; color:#c4b5fd; line-height:1.6; display:none; }
+        .sim-rootcause.show { display:block; }
+        .sim-prob-actions { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+        .sim-prob-actions .btn { font-size:.78rem; padding:8px 14px; }
+        .sim-empty { color:#64748b; font-size:.85rem; padding:10px 0; }
+
+        .sim-timeline { max-height:290px; overflow-y:auto; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.76rem; }
+        .sim-event { padding:6px 0; border-bottom:1px solid rgba(148,163,184,.1); color:#cbd5e1; line-height:1.5; }
+        .sim-event .t { color:#64748b; margin-right:10px; }
+        .sim-event.info .m { color:#7dd3fc; }
+        .sim-event.warn .m { color:#fbbf24; }
+        .sim-event.crit .m { color:#f87171; }
+        .sim-event.ok .m { color:#34d399; }
+
+        .sim-check h4 { color:#7dd3fc; margin:18px 0 8px; font-size:.92rem; }
+        .sim-check h4:first-child { margin-top:0; }
+        .sim-check p { color:#94a3b8; font-size:.8rem; line-height:1.6; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container" style="padding:120px 0 80px">
+<a href="../index.html#markets" class="back-link">← Back to Markets</a>
+
+<div class="section-heading">
+<p class="eyebrow">DevOps • Monitoring</p>
+<h2>Production Incident Simulator</h2>
+<p>A Dynatrace-style war room. Inject real failure modes into a 4-service trading stack, watch metrics degrade live, then triage: acknowledge the problem, find the root cause, resolve it — and beat your MTTR.</p>
+</div>
+
+<div class="sim-layout">
+<div class="sim-main">
+
+<div class="resume-card">
+<h3>Environment — live service health</h3>
+<p style="color:#94a3b8;font-size:.82rem;margin-bottom:16px">web-frontend → trade-api → pricing-engine → oracle-db. Metrics tick every second.</p>
+<div class="sim-services" id="services"></div>
+</div>
+
+<div class="resume-card">
+<h3>Failure injection</h3>
+<div class="sim-inject" id="inject-panel">
+<button type="button" class="btn btn-secondary" data-inject="cpu-sat">CPU saturation<br><small style="opacity:.7">pricing-engine</small></button>
+<button type="button" class="btn btn-secondary" data-inject="mem-leak">Memory leak → OOM<br><small style="opacity:.7">trade-api</small></button>
+<button type="button" class="btn btn-secondary" data-inject="db-slow">Database slowdown<br><small style="opacity:.7">oracle-db</small></button>
+<button type="button" class="btn btn-secondary" data-inject="crash-loop">CrashLoopBackOff<br><small style="opacity:.7">web-frontend</small></button>
+<button type="button" class="btn btn-secondary" data-inject="net-lat">Network latency spike<br><small style="opacity:.7">inter-service</small></button>
+<button type="button" class="btn btn-primary" id="reset-all">Reset environment</button>
+</div>
+<p class="sim-inject-note">Failures ramp up over 10–30 seconds like real incidents — nothing breaks instantly. Each injection opens a Problem card below with a live MTTR timer.</p>
+</div>
+
+<div class="resume-card">
+<h3>Problems</h3>
+<div id="problems"><p class="sim-empty">No open problems. The environment is healthy — inject a failure to start triaging.</p></div>
+</div>
+
+<div class="resume-card">
+<h3>Event timeline</h3>
+<div class="sim-timeline" id="timeline"></div>
+</div>
+
+</div><!-- /sim-main -->
+
+<aside class="sim-side">
+<div class="resume-card sim-check">
+<h3>Triage checklist</h3>
+<p>How an L2/L3 engineer works a problem, in order:</p>
+
+<h4>1 · Metrics — what is abnormal?</h4>
+<ul class="clean-list">
+<li>Which service deviated first? (blast radius starts there)</li>
+<li>Is it saturation (CPU/mem), latency, or errors?</li>
+<li>Did dependents degrade after? (points upstream)</li>
+</ul>
+
+<h4>2 · Logs — what was it doing?</h4>
+<ul class="clean-list">
+<li>Errors/exceptions around the problem start time</li>
+<li>OOMKilled / exit 137 → memory; CrashLoopBackOff → startup or limits</li>
+<li>Correlate with deploys and config changes</li>
+</ul>
+
+<h4>3 · Traces — where is time spent?</h4>
+<ul class="clean-list">
+<li>Slowest spans: DB query, downstream call, or in-process?</li>
+<li>One slow dependency poisons every caller — fix the root, not the callers</li>
+</ul>
+
+<h4>4 · Infra — what changed underneath?</h4>
+<ul class="clean-list">
+<li>Node pressure, noisy neighbors, AZ network events</li>
+<li>Connection pool exhaustion vs. genuinely slow queries</li>
+</ul>
+
+<h4>Per-scenario hints</h4>
+<ul class="clean-list">
+<li><strong>CPU saturation:</strong> thread dumps → hot method; scale out or kill the runaway thread.</li>
+<li><strong>Memory leak:</strong> heap trend climbing between restarts = leak, not load. Exit 137 confirms OOM kill.</li>
+<li><strong>DB slowdown:</strong> check top SQL / execution plans; one missing index slows the whole chain.</li>
+<li><strong>Crash loop:</strong> previous container logs (not current) hold the crash reason.</li>
+<li><strong>Latency spike:</strong> affects all callers equally — suspect the network path, not the code.</li>
+</ul>
+</div>
+</aside>
+
+</div><!-- /sim-layout -->
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+<script>
+(function () {
+'use strict';
+
+/* ============================================================
+   Production Incident Simulator (Dynatrace-style)
+   4 services, 1s ticks, 5 injectable failure modes with
+   gradual ramps, dependency propagation, problem cards with
+   MTTR timers, and an event timeline.
+   ============================================================ */
+
+var TICK_MS = 1000;
+var HIST = 90;          /* chart history points */
+
+/* Dependency order for computation: DB first so dependents
+   can read its degraded values in the same tick. */
+var COMPUTE_ORDER = ['oracle-db', 'pricing-engine', 'trade-api', 'web-frontend'];
+var DISPLAY_ORDER = ['web-frontend', 'trade-api', 'pricing-engine', 'oracle-db'];
+
+var services = {
+    'web-frontend':   { base: { rt: 120, err: 0.1, cpu: 32, mem: 55 } },
+    'trade-api':      { base: { rt: 85,  err: 0.2, cpu: 45, mem: 60 } },
+    'pricing-engine': { base: { rt: 45,  err: 0.1, cpu: 55, mem: 50 } },
+    'oracle-db':      { base: { rt: 12,  err: 0.0, cpu: 30, mem: 65 } }
+};
+
+COMPUTE_ORDER.forEach(function (id) {
+    var s = services[id];
+    s.id = id;
+    s.cur = { rt: s.base.rt, err: s.base.err, cpu: s.base.cpu, mem: s.base.mem };
+    s.hist = { rt: [], err: [] };
+    s.status = 'ok';
+    s.downTicks = 0;
+    /* pre-seed history with healthy values so charts are alive on load */
+    for (var i = 0; i < HIST; i++) {
+        s.hist.rt.push(s.base.rt * (1 + (Math.random() * 0.12 - 0.06)));
+        s.hist.err.push(Math.max(0, s.base.err + (Math.random() * 0.2 - 0.1)));
+    }
+});
+
+var SCENARIOS = {
+    'cpu-sat': {
+        title: 'CPU saturation', target: 'pricing-engine', sev: 'warning',
+        root: 'pricing-engine CPU pinned at 97% — a hot loop in the vol-surface recalculation thread is starving request handlers. Fix: kill the runaway thread or scale the deployment out; long term, move the calculation off the request path onto a worker queue.'
+    },
+    'mem-leak': {
+        title: 'Memory leak → OOM kill', target: 'trade-api', sev: 'critical',
+        root: 'trade-api heap grows ~2.2%/s with no plateau — unreleased order objects accumulate per request. The container is OOMKilled (exit 137) and restarts, then leaks again: the sawtooth pattern proves it is a leak, not load. Fix: find the unclosed collection (heap dump), then roll the patched image.'
+    },
+    'db-slow': {
+        title: 'Database slowdown', target: 'oracle-db', sev: 'critical',
+        root: 'oracle-db average response time climbed to ~2.5s — a missing index on TRADES(TRADE_DATE) forces a full table scan, with latch contention under load. Every dependent service inherits the latency. Fix: add the index online, then kill the runaway sessions.'
+    },
+    'crash-loop': {
+        title: 'CrashLoopBackOff', target: 'web-frontend', sev: 'critical',
+        root: 'web-frontend is CrashLoopBackOff — the container OOMs during startup because the 512Mi memory limit is too small for the JS bundle plus SSR cache. Fix: raise the memory limit / tune heap flags, then check the *previous* container logs for the actual crash line.'
+    },
+    'net-lat': {
+        title: 'Network latency spike', target: 'all', sev: 'warning',
+        root: '+900ms inter-service latency hitting every caller equally — a saturated availability-zone uplink (faulty top-of-rack switch). Code did not change; nothing to fix in the services. Fix: fail traffic over to the healthy AZ and page the network team.'
+    }
+};
+
+var incidents = {};   /* key -> { key, progress, ramp, resolving, breached, phase, restarts } */
+var problems = [];    /* { id, key, sev, title, entities, start, status, ack, mttr } */
+var probSeq = 0;
+
+/* ---------------- helpers ---------------- */
+function $(id) { return document.getElementById(id); }
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+function noise(amt) { return (Math.random() * 2 - 1) * amt; }
+function fmtClock(d) {
+    function p(n) { return (n < 10 ? '0' : '') + n; }
+    return p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+}
+function fmtDur(ms) {
+    var s = Math.floor(ms / 1000);
+    var m = Math.floor(s / 60);
+    s = s % 60;
+    return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+}
+function dbRtExcess() {
+    var db = services['oracle-db'];
+    return Math.max(0, db.cur.rt - db.base.rt);
+}
+function findProblem(key) {
+    for (var i = 0; i < problems.length; i++) {
+        if (problems[i].key === key && problems[i].status !== 'Resolved') return problems[i];
+    }
+    return null;
+}
+
+/* ---------------- event timeline ---------------- */
+var timelineEl = $('timeline');
+function logEvent(type, msg) {
+    var div = document.createElement('div');
+    div.className = 'sim-event ' + type;
+    var t = document.createElement('span');
+    t.className = 't';
+    t.textContent = fmtClock(new Date());
+    var m = document.createElement('span');
+    m.className = 'm';
+    m.textContent = msg;
+    div.appendChild(t);
+    div.appendChild(m);
+    timelineEl.insertBefore(div, timelineEl.firstChild);
+    while (timelineEl.children.length > 80) timelineEl.removeChild(timelineEl.lastChild);
+}
+
+/* ---------------- build service cards ---------------- */
+var servicesEl = $('services');
+DISPLAY_ORDER.forEach(function (id) {
+    var s = services[id];
+    var card = document.createElement('div');
+    card.className = 'sim-svc';
+    card.innerHTML =
+        '<div class="sim-svc-head">' +
+            '<span class="sim-svc-name"><span class="sim-dot ok" id="dot-' + id + '"></span>' + id + '</span>' +
+            '<span class="sim-status" id="status-' + id + '">healthy</span>' +
+        '</div>' +
+        '<div class="sim-metrics">' +
+            '<div class="sim-metric"><span class="sim-metric-label">Resp.time</span><strong class="sim-metric-val" id="m-rt-' + id + '">–</strong></div>' +
+            '<div class="sim-metric"><span class="sim-metric-label">Errors</span><strong class="sim-metric-val" id="m-err-' + id + '">–</strong></div>' +
+            '<div class="sim-metric"><span class="sim-metric-label">CPU</span><strong class="sim-metric-val" id="m-cpu-' + id + '">–</strong></div>' +
+            '<div class="sim-metric"><span class="sim-metric-label">Memory</span><strong class="sim-metric-val" id="m-mem-' + id + '">–</strong></div>' +
+        '</div>' +
+        '<canvas class="sim-chart" id="chart-' + id + '"></canvas>' +
+        '<div class="sim-legend"><span><i style="background:#7dd3fc"></i>response time (ms)</span><span><i style="background:#f87171"></i>error rate (%)</span></div>';
+    servicesEl.appendChild(card);
+    s.canvas = $('chart-' + id);
+    s.ctx = s.canvas.getContext('2d');
+});
+
+function sizeCanvases() {
+    DISPLAY_ORDER.forEach(function (id) {
+        var c = services[id].canvas;
+        var r = c.getBoundingClientRect();
+        var dpr = window.devicePixelRatio || 1;
+        c.width = Math.max(1, Math.round(r.width * dpr));
+        c.height = Math.max(1, Math.round(r.height * dpr));
+        services[id].ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    });
+}
+window.addEventListener('resize', sizeCanvases);
+
+function drawChart(s) {
+    var c = s.canvas, ctx = s.ctx;
+    var w = c.clientWidth, h = c.clientHeight;
+    if (w < 10 || h < 10) return;
+    ctx.clearRect(0, 0, w, h);
+
+    /* gridlines */
+    ctx.strokeStyle = 'rgba(148,163,184,0.12)';
+    ctx.lineWidth = 1;
+    for (var g = 1; g < 4; g++) {
+        var gy = (h / 4) * g;
+        ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
+    }
+
+    var n = s.hist.rt.length;
+    if (n < 2) return;
+    var maxRt = 200;
+    for (var i = 0; i < n; i++) {
+        if (s.hist.rt[i] !== null && s.hist.rt[i] > maxRt) maxRt = s.hist.rt[i];
+    }
+    function x(i) { return (i / (HIST - 1)) * w; }
+    function yRt(v) { return h - 6 - (v / maxRt) * (h - 14); }
+    function yErr(v) { return h - 6 - (clamp(v, 0, 100) / 100) * (h - 14); }
+
+    /* response time line */
+    ctx.strokeStyle = '#7dd3fc';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    var started = false;
+    for (var j = 0; j < n; j++) {
+        var v = s.hist.rt[j];
+        if (v === null) { started = false; continue; }  /* gap while down */
+        if (!started) { ctx.moveTo(x(j), yRt(v)); started = true; }
+        else ctx.lineTo(x(j), yRt(v));
+    }
+    ctx.stroke();
+
+    /* error rate line */
+    ctx.strokeStyle = '#f87171';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    started = false;
+    for (var k2 = 0; k2 < n; k2++) {
+        var e = s.hist.err[k2];
+        if (!started) { ctx.moveTo(x(k2), yErr(e)); started = true; }
+        else ctx.lineTo(x(k2), yErr(e));
+    }
+    ctx.stroke();
+}
+
+/* ---------------- per-tick service update ---------------- */
+function pushHist(s) {
+    s.hist.rt.push(s.downTicks > 0 || s.status === 'down' ? null : s.cur.rt);
+    s.hist.err.push(s.cur.err);
+    if (s.hist.rt.length > HIST) s.hist.rt.shift();
+    if (s.hist.err.length > HIST) s.hist.err.shift();
+}
+
+function updateService(s) {
+    var b = s.base;
+    var inc, p;
+
+    /* hard-down window (OOM restart, crash) */
+    if (s.downTicks > 0) {
+        s.downTicks--;
+        s.cur.rt = 0; s.cur.err = 100; s.cur.cpu = 2;
+        s.cur.mem = Math.max(30, s.cur.mem - 5);
+        s.status = 'down';
+        pushHist(s);
+        return;
+    }
+
+    var t = { rt: b.rt, err: b.err, cpu: b.cpu, mem: b.mem };
+
+    /* (a) CPU saturation on pricing-engine — gradual ramp */
+    inc = incidents['cpu-sat'];
+    if (inc && s.id === 'pricing-engine') {
+        p = inc.progress;
+        t.cpu = b.cpu + 42 * p;            /* -> ~97% */
+        t.rt  = b.rt * (1 + 9 * p);        /* -> ~450ms */
+        t.err = b.err + 3 * p;
+        if (p > 0.6 && !inc.breached) {
+            inc.breached = true;
+            logEvent('warn', 'Threshold breached: pricing-engine CPU ' + Math.round(t.cpu) + '% > 90%');
+        }
+    }
+
+    /* (b) memory leak on trade-api — monotonic climb, OOM kill, restart, leak again */
+    inc = incidents['mem-leak'];
+    if (inc && s.id === 'trade-api') {
+        if (!inc.resolving) {
+            s.cur.mem = Math.min(100, s.cur.mem + 2.2);
+            if (s.cur.mem >= 100) {
+                s.downTicks = 5;
+                s.cur.mem = 46;
+                s.status = 'down';
+                var pr = findProblem('mem-leak');
+                var n = pr ? (pr.oomCount = (pr.oomCount || 0) + 1) : 1;
+                logEvent('crit', 'trade-api OOMKilled (exit 137) — container restarting (OOM #' + n + ')');
+                pushHist(s);
+                return;
+            }
+        }
+        t.mem = s.cur.mem; /* do not ease memory back while leaking */
+    }
+
+    /* (c) database slowdown — oracle-db degrades, dependents inherit it */
+    inc = incidents['db-slow'];
+    if (inc) {
+        p = inc.progress;
+        if (s.id === 'oracle-db') {
+            t.rt = b.rt + 2500 * p;        /* -> ~2.5s */
+            t.cpu = b.cpu + 55 * p;
+            if (p > 0.5 && !inc.breached) {
+                inc.breached = true;
+                logEvent('warn', 'Threshold breached: oracle-db response time ' + Math.round(t.rt) + 'ms > 500ms');
+            }
+        } else if (s.id === 'trade-api') {
+            t.rt = b.rt + dbRtExcess() * 0.55;
+            t.err = b.err + 7 * p;
+        } else if (s.id === 'pricing-engine') {
+            t.rt = b.rt + dbRtExcess() * 0.40;
+        }
+    }
+
+    /* (d) crash loop on web-frontend — 3 down ticks out of every 12 */
+    inc = incidents['crash-loop'];
+    if (inc && s.id === 'web-frontend' && !inc.resolving) {
+        inc.phase = ((inc.phase || 0) + 1) % 12;
+        if (inc.phase >= 9) {
+            s.cur.rt = 0;
+            s.cur.err = 55 + Math.random() * 10;
+            s.cur.cpu = 3;
+            s.cur.mem = 38;
+            s.status = 'down';
+            if (inc.phase === 9) {
+                inc.restarts = (inc.restarts || 0) + 1;
+                logEvent('crit', 'web-frontend container crashed — CrashLoopBackOff (restart #' + inc.restarts + ')');
+            }
+            pushHist(s);
+            return;
+        }
+    }
+
+    /* (e) network latency spike — hits every caller, not the DB itself */
+    inc = incidents['net-lat'];
+    if (inc && s.id !== 'oracle-db') {
+        p = inc.progress;
+        t.rt += 900 * p;
+        t.err += 1.5 * p;
+    }
+
+    /* noise + easing toward target (this is what makes ramps gradual) */
+    t.rt  += noise(b.rt * 0.06);
+    t.err += noise(0.15);
+    t.cpu += noise(2.5);
+    t.mem += noise(1.2);
+
+    var k = 0.22;
+    s.cur.rt  += (Math.max(0, t.rt) - s.cur.rt) * k;
+    s.cur.err += (Math.max(0, t.err) - s.cur.err) * k;
+    s.cur.cpu += (clamp(t.cpu, 0, 100) - s.cur.cpu) * k;
+    var memLeaking = incidents['mem-leak'] && s.id === 'trade-api' && !incidents['mem-leak'].resolving;
+    if (!memLeaking) s.cur.mem += (clamp(t.mem, 0, 100) - s.cur.mem) * k;
+
+    /* status from thresholds */
+    s.status = 'ok';
+    if (s.cur.err > 2 || s.cur.rt > b.rt * 3 || s.cur.cpu > 90) s.status = 'warn';
+    if (s.cur.err > 10 || s.cur.cpu > 96) s.status = 'crit';
+
+    pushHist(s);
+}
+
+/* ---------------- render ---------------- */
+var STATUS_LABEL = { ok: 'healthy', warn: 'degraded', crit: 'critical', down: 'down' };
+
+function metricClass(val, warnAt, critAt) {
+    if (val >= critAt) return 'crit';
+    if (val >= warnAt) return 'warn';
+    return '';
+}
+
+function renderService(s) {
+    var down = (s.status === 'down');
+    function set(id, text, cls) {
+        var el = $(id);
+        el.textContent = text;
+        el.className = 'sim-metric-val' + (cls ? ' ' + cls : '');
+    }
+    set('m-rt-' + s.id, down ? '—' : Math.round(s.cur.rt) + ' ms',
+        metricClass(s.cur.rt, s.base.rt * 3, s.base.rt * 6));
+    set('m-err-' + s.id, down ? '—' : s.cur.err.toFixed(1) + ' %',
+        metricClass(s.cur.err, 2, 10));
+    set('m-cpu-' + s.id, Math.round(s.cur.cpu) + ' %',
+        metricClass(s.cur.cpu, 85, 95));
+    set('m-mem-' + s.id, Math.round(s.cur.mem) + ' %',
+        metricClass(s.cur.mem, 85, 97));
+    $('dot-' + s.id).className = 'sim-dot ' + s.status;
+    $('status-' + s.id).textContent = STATUS_LABEL[s.status];
+    drawChart(s);
+}
+
+/* ---------------- problems ---------------- */
+var problemsEl = $('problems');
+
+function openProblem(key) {
+    var sc = SCENARIOS[key];
+    var p = {
+        id: ++probSeq, key: key, sev: sc.sev, title: sc.title,
+        entities: sc.target === 'all' ? 'web-frontend, trade-api, pricing-engine' : sc.target,
+        start: Date.now(), status: 'Open', ack: false, mttr: null
+    };
+    problems.unshift(p);
+    logEvent(sc.sev === 'critical' ? 'crit' : 'warn',
+        'Problem P-' + p.id + ' opened: ' + sc.title + ' [' + sc.sev.toUpperCase() + '] — entities: ' + p.entities);
+    renderProblems();
+}
+
+function renderProblems() {
+    problemsEl.innerHTML = '';
+    var open = problems.filter(function (p) { return p.status !== 'Resolved'; });
+    if (open.length === 0 && problems.length === 0) {
+        problemsEl.innerHTML = '<p class="sim-empty">No open problems. The environment is healthy — inject a failure to start triaging.</p>';
+        return;
+    }
+    problems.forEach(function (p) {
+        var sc = SCENARIOS[p.key];
+        var div = document.createElement('div');
+        div.className = 'sim-problem' + (p.sev === 'warning' ? ' warning' : '') + (p.status === 'Resolved' ? ' resolved' : '');
+
+        var head = document.createElement('div');
+        head.className = 'sim-prob-head';
+        var title = document.createElement('span');
+        title.className = 'sim-prob-title';
+        title.textContent = 'P-' + p.id + ' · ' + p.title;
+        var sev = document.createElement('span');
+        sev.className = 'sim-sev ' + p.sev;
+        sev.textContent = p.sev;
+        head.appendChild(title);
+        head.appendChild(sev);
+        div.appendChild(head);
+
+        var meta = document.createElement('div');
+        meta.className = 'sim-prob-meta';
+        var durText = p.status === 'Resolved' ? 'MTTR ' + fmtDur(p.mttr) : 'open <span class="sim-dur" data-pid="' + p.id + '">' + fmtDur(Date.now() - p.start) + '</span>';
+        meta.innerHTML = 'Entities: ' + p.entities +
+            ' &nbsp;·&nbsp; Started ' + fmtClock(new Date(p.start)) +
+            ' &nbsp;·&nbsp; Status: <strong>' + p.status + '</strong>' +
+            ' &nbsp;·&nbsp; ' + durText;
+        div.appendChild(meta);
+
+        var rc = document.createElement('div');
+        rc.className = 'sim-rootcause' + (p.ack ? ' show' : '');
+        rc.innerHTML = '<strong>Likely root cause:</strong> ' + sc.root;
+        div.appendChild(rc);
+
+        if (p.status !== 'Resolved') {
+            var actions = document.createElement('div');
+            actions.className = 'sim-prob-actions';
+            if (!p.ack) {
+                var ackBtn = document.createElement('button');
+                ackBtn.type = 'button';
+                ackBtn.className = 'btn btn-secondary';
+                ackBtn.textContent = 'Acknowledge';
+                ackBtn.onclick = function () {
+                    p.ack = true;
+                    p.status = 'Acknowledged';
+                    logEvent('info', 'Problem P-' + p.id + ' acknowledged — root cause revealed');
+                    renderProblems();
+                };
+                actions.appendChild(ackBtn);
+            }
+            var resBtn = document.createElement('button');
+            resBtn.type = 'button';
+            resBtn.className = 'btn btn-primary';
+            resBtn.textContent = 'Resolve incident';
+            resBtn.onclick = function () { resolveIncident(p.key); };
+            actions.appendChild(resBtn);
+            div.appendChild(actions);
+        }
+        problemsEl.appendChild(div);
+    });
+}
+
+function updateDurations() {
+    var spans = problemsEl.querySelectorAll('.sim-dur');
+    for (var i = 0; i < spans.length; i++) {
+        var pid = parseInt(spans[i].getAttribute('data-pid'), 10);
+        for (var j = 0; j < problems.length; j++) {
+            if (problems[j].id === pid && problems[j].status !== 'Resolved') {
+                spans[i].textContent = fmtDur(Date.now() - problems[j].start);
+            }
+        }
+    }
+}
+
+/* ---------------- inject / resolve ---------------- */
+var injectPanel = $('inject-panel');
+
+function setInjectButtons() {
+    var btns = injectPanel.querySelectorAll('[data-inject]');
+    for (var i = 0; i < btns.length; i++) {
+        btns[i].disabled = !!incidents[btns[i].getAttribute('data-inject')];
+    }
+}
+
+function inject(key) {
+    if (incidents[key]) return;
+    var ramps = { 'cpu-sat': 1 / 20, 'mem-leak': 1, 'db-slow': 1 / 15, 'crash-loop': 1, 'net-lat': 1 / 8 };
+    incidents[key] = { key: key, progress: 0, ramp: ramps[key], resolving: false, breached: false, phase: 0, restarts: 0 };
+    var sc = SCENARIOS[key];
+    logEvent('warn', 'Failure injected: ' + sc.title + ' → ' + sc.target);
+    openProblem(key);
+    setInjectButtons();
+}
+
+function resolveIncident(key) {
+    var inc = incidents[key];
+    if (!inc) return;
+    inc.resolving = true;
+    logEvent('info', 'Resolution started: ' + SCENARIOS[key].title + ' — metrics recovering…');
+}
+
+function onIncidentCleared(inc) {
+    var p = findProblem(inc.key);
+    if (p) {
+        p.status = 'Resolved';
+        p.mttr = Date.now() - p.start;
+        logEvent('ok', 'Problem P-' + p.id + ' resolved — MTTR ' + fmtDur(p.mttr));
+    } else {
+        logEvent('ok', 'Incident cleared: ' + SCENARIOS[inc.key].title);
+    }
+    if (inc.key === 'crash-loop') services['web-frontend'].cur.mem = 55;
+    renderProblems();
+    setInjectButtons();
+}
+
+injectPanel.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-inject]');
+    if (btn && !btn.disabled) inject(btn.getAttribute('data-inject'));
+});
+
+$('reset-all').addEventListener('click', function () {
+    Object.keys(incidents).forEach(function (k) { delete incidents[k]; });
+    problems = [];
+    COMPUTE_ORDER.forEach(function (id) {
+        var s = services[id];
+        s.cur = { rt: s.base.rt, err: s.base.err, cpu: s.base.cpu, mem: s.base.mem };
+        s.status = 'ok';
+        s.downTicks = 0;
+    });
+    renderProblems();
+    setInjectButtons();
+    logEvent('ok', 'Environment reset — all services healthy');
+});
+
+/* ---------------- main loop ---------------- */
+function tick() {
+    /* advance incident ramps */
+    Object.keys(incidents).forEach(function (k) {
+        var inc = incidents[k];
+        if (inc.resolving) {
+            inc.progress = Math.max(0, inc.progress - 0.07);
+            if (inc.progress === 0) {
+                delete incidents[k];
+                onIncidentCleared(inc);
+            }
+        } else if (inc.progress < 1) {
+            inc.progress = Math.min(1, inc.progress + inc.ramp);
+        }
+    });
+
+    COMPUTE_ORDER.forEach(function (id) { updateService(services[id]); });
+    DISPLAY_ORDER.forEach(function (id) { renderService(services[id]); });
+    updateDurations();
+}
+
+/* ---------------- init ---------------- */
+sizeCanvases();
+renderProblems();
+setInjectButtons();
+logEvent('info', 'Monitoring started — 4 services online, all baselines healthy');
+logEvent('info', 'Tip: inject "Memory leak → OOM" and watch the sawtooth: heap climbs, exit 137, restart, leak again');
+setInterval(tick, TICK_MS);
+/* first paint immediately so the page is alive without waiting 1s */
+tick();
+
+})();
+</script>
+</body>
+</html>
