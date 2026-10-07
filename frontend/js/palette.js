@@ -67,6 +67,11 @@
         { t: 'Dynatrace Simulator', u: 'apps/dynatrace-simulator.html', k: 'incidents cpu memory problems mttr', s: 'Apps' },
         { t: 'Interview Q&A Bank', u: 'apps/interview-bank.html', k: 'flashcards linux sql fix prep', s: 'Apps' },
         { t: 'Interview Simulator', u: 'apps/interview-simulator.html', k: 'mock interview scored practice job', s: 'Apps' },
+        { t: 'A Day on the Desk', u: 'apps/day-on-desk.html', k: 'sev-1 incident on-call adventure triage', s: 'Apps' },
+        { t: 'FIX Certification Simulator', u: 'apps/fix-cert-sim.html', k: 'fix cert mock test resend possdup', s: 'Apps' },
+        { t: 'Explain My Trade', u: 'apps/explain-trade.html', k: 'fix execution report decode 35=8', s: 'Apps' },
+        { t: 'Market Hours Board', u: 'apps/market-hours.html', k: 'exchanges open closed clock countdown', s: 'Apps' },
+        { t: 'iPhone Apps', u: 'apps/iphone-apps.html', k: 'install home screen games ios', s: 'Apps' },
         { t: 'AI Lab', u: 'apps/ai-lab.html', k: 'agents demo chatbot desk', s: 'Apps' },
         /* more */
         { t: 'Community', u: 'community.html', k: 'social feed stories likes', s: 'More' },
