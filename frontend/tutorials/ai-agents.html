@@ -154,6 +154,49 @@
 </div>
 </div>
 
+
+<div class="resume-card">
+<h3>Agent architecture, in one diagram</h3>
+<p>Every production agent - from alert triage to deployment approval - has the same skeleton:</p>
+<div class="example-box"><pre class="formula" style="white-space:pre;overflow-x:auto;margin:0;">+--------+     +------------------+     +--------------+
+|  User  |----&gt;|   Agent loop     |----&gt;|    Tools     |
++--------+     |  1. perceive      |     |  - db.query  |
+               |  2. reason (LLM) |     |  - kb.search |
+               |  3. act (tool)   |     |  - ticket    |
+               |  4. observe      |     +--------------+
+               +--------+---------+
+                        |  memory: short-term (this run)
+                        |          long-term (past incidents)
+                        v
+               +--------+---------+
+               |   Guardrails     |
+               |  allow/deny/audit|
+               +------------------+</pre></div>
+<p>The loop is the whole game: the model never touches production directly - it only <em>reasons</em> and calls tools. Everything dangerous lives behind the tool layer and the guardrails, which is exactly where support's controls (approvals, audit logs, read-only defaults) plug in.</p>
+</div>
+
+<div class="resume-card">
+<h3>Tool schema design example</h3>
+<p>A tool is a contract. This is the schema for the read-only database tool our alert-triage agent uses - note how narrow it is on purpose:</p>
+<div class="example-box"><pre class="formula" style="white-space:pre;overflow-x:auto;margin:0;">{
+  "name": "db_query",
+  "description": "Run a READ-ONLY SELECT against the trading
+                  replica. No writes, no DDL, 5s timeout.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "sql":      { "type": "string",
+                    "pattern": "^SELECT\\b",
+                    "maxLength": 2000 },
+      "max_rows": { "type": "integer",
+                    "default": 50, "maximum": 200 }
+    },
+    "required": ["sql"]
+  }
+}</pre></div>
+<p>Design rules that prevent 3am pages: <strong>least privilege</strong> (SELECT-only, enforced in the tool, not in the prompt), <strong>validated inputs</strong> (the pattern rejects anything that is not a SELECT), <strong>bounded outputs</strong> (200 rows max - the model cannot drown in data), and <strong>timeouts</strong> (a hung query fails fast instead of hanging the loop). If a tool cannot hurt you, the agent using it cannot either.</p>
+</div>
+
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
 </main>
 
@@ -163,5 +206,6 @@
 <div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
 </div></footer>
 <script src="../app.js"></script>
+<script src="../slides.js"></script>
 </body>
 </html>

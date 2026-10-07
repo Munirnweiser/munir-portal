@@ -129,6 +129,26 @@
 </div>
 </div>
 
+
+<div class="resume-card">
+<h3>VaR model comparison</h3>
+<table class="tag-table">
+<tr><th></th><th>Parametric</th><th>Historical</th><th>Monte Carlo</th></tr>
+<tr><td>Method</td><td>volatility x z-score x sqrt(t)</td><td>Reprice over past N days, take percentile</td><td>Simulate thousands of paths, take percentile</td></tr>
+<tr><td>Data needed</td><td>Volatility + correlations</td><td>Clean historical P&amp;L / market series</td><td>Calibrated stochastic model</td></tr>
+<tr><td>Strength</td><td>Fast, explainable</td><td>No distribution assumption</td><td>Handles non-linear payoffs well</td></tr>
+<tr><td>Weakness</td><td>Assumes normality - underestimates tails</td><td>Blind to regimes not in the window</td><td>Slow; model risk in calibration</td></tr>
+<tr><td>Breaks when</td><td>Vol regime shifts (sigma stale)</td><td>Window too short or includes a crash</td><td>Calibration data goes stale</td></tr>
+</table>
+<p>Support angle: when the desk says "VaR looks wrong", the first question is always <em>which model, and what changed in its inputs</em> - a stale volatility feed breaks parametric VaR exactly the way a bad market-data feed breaks pricing.</p>
+</div>
+
+<div class="resume-card">
+<h3>A note on backtesting Expected Shortfall</h3>
+<p>VaR is backtested by counting exceptions - clean and simple. Expected Shortfall is harder: ES is not <em>elicitable</em>, meaning no scoring function is minimized only by the true ES. In practice, desks backtest the VaR that ES is conditioned on, then apply the Acerbi-Szekely test statistic, which checks whether realized tail losses are consistent with the reported ES.</p>
+<p>What this means for support: risk reports carry both numbers, and the validation jobs that check them are different jobs with different failure modes. When the ES validation feed breaks but VaR is fine, the report still goes out - flagged. Know which downstream consumers read the flag and which ignore it.</p>
+</div>
+
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
 </main>
 
@@ -138,5 +158,6 @@
 <div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
 </div></footer>
 <script src="../app.js"></script>
+<script src="../slides.js"></script>
 </body>
 </html>

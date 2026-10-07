@@ -149,6 +149,32 @@ kubectl top node</div>
 </div>
 </div>
 
+
+<div class="resume-card">
+<h3>Production readiness checklist</h3>
+<p>Before any workload enters the prod cluster, it passes this gate. Every item is a past incident:</p>
+<table class="tag-table">
+<tr><th>Check</th><th>Why it exists</th></tr>
+<tr><td>requests = limits (or justified gap)</td><td>Unbounded containers get OOMKilled at 3am; requests drive scheduling</td></tr>
+<tr><td>Liveness + readiness probes</td><td>Without readiness, a starting pod takes traffic and fails it</td></tr>
+<tr><td>PodDisruptionBudget</td><td>Node upgrades evict everything at once without one</td></tr>
+<tr><td>NetworkPolicies</td><td>Default-allow once let a compromised pod scan the cluster</td></tr>
+<tr><td>ResourceQuota + LimitRange</td><td>One namespace's runaway job starved the whole cluster</td></tr>
+<tr><td>Pod anti-affinity</td><td>All three replicas landed on the same node; the node died</td></tr>
+<tr><td>Image pull secret + pinned digest</td><td>:latest moved under a running deployment</td></tr>
+<tr><td>Log + metric scraping</td><td>If it is not in the dashboards, it does not exist during an incident</td></tr>
+</table>
+</div>
+
+<div class="resume-card">
+<h3>A failed readiness review</h3>
+<div class="example-box">
+<p><strong>What happened.</strong> The pricing-engine deploy passed CI and went to prod Friday evening. Saturday 02:14: no liveness probe, so when the JVM wedged on a full GC, kubelet kept it in service - it accepted requests and timed every one out for 40 minutes before anyone noticed. No PDB either, so the Sunday node patch evicted its only two replicas simultaneously.</p>
+<p><strong>The outcome.</strong> Rollback, then the checklist became a merge gate: no probes, no PDB, no deploy. Three incidents that quarter traced to the same missing six lines of YAML.</p>
+</div>
+<p>Support takeaway: most Kubernetes incidents are not Kubernetes problems - they are missing guardrails. When triaging, check the guardrails first: <span class="formula">kubectl get pdb,networkpolicy -A</span> plus the deployment's probe definitions tell you in seconds whether this workload was ever prod-ready.</p>
+</div>
+
 </main>
 
 <footer class="site-footer"><div class="container footer-content">
@@ -157,5 +183,6 @@ kubectl top node</div>
 <div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
 </div></footer>
 <script src="../app.js"></script>
+<script src="../slides.js"></script>
 </body>
 </html>

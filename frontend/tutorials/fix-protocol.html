@@ -160,6 +160,39 @@
 <p>A <em>burst</em> of 35=3 right after a counterparty upgrade almost always means a spec mismatch (a tag they now require, or one they stopped accepting). Compare the reject texts against the certified spec before touching your own engine.</p>
 </div>
 
+
+<div class="resume-card">
+<h3>Session recovery decision tree</h3>
+<p>When a FIX session misbehaves, support walks the same triage every time, top to bottom:</p>
+<ul class="clean-list">
+<li><strong>No heartbeats for 2 x HeartBtInt (tag 108)?</strong> Send TestRequest (35=1). No response: declare the session down, page the venue, fail over if dual sessions exist.</li>
+<li><strong>Incoming MsgSeqNum (34) higher than expected?</strong> There is a gap. Send ResendRequest (35=2) with BeginSeqNo = expected, EndSeqNo = received - 1. Queue everything after the gap; never process out of order.</li>
+<li><strong>ResendRequest received from the counterparty?</strong> Retransmit the range. Replay app messages with PossDupFlag (43=Y); answer admin messages with SequenceReset-GapFill (35=4, GapFillFlag=Y) instead of resending them.</li>
+<li><strong>SequenceReset with NewSeqNo lower than expected?</strong> Reject it (35=3) and send Logout (35=5) with explanatory text - accepting it would silently drop messages.</li>
+<li><strong>Gap fills arriving?</strong> Verify PossDupFlag=Y on replays, apply in sequence, then release the queued messages.</li>
+</ul>
+<div class="example-box">
+<p><strong>Worked example.</strong> You expect 34=152. A message arrives with 34=155. You immediately send <span class="formula">35=2|7=152|16=154</span> (BeginSeqNo=152, EndSeqNo=154) and hold 155+ in a queue. The venue replays 152-154 with 43=Y, then sends 35=4 GapFill for admin traffic in the range. You apply 152, 153, 154, release the queue - session healthy, zero message loss.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>FIX certification checklist</h3>
+<p>Before a venue lets you trade, you certify. Support usually owns the checklist:</p>
+<table class="tag-table">
+<tr><th>Item</th><th>What to confirm</th></tr>
+<tr><td>Comp IDs</td><td>SenderCompID (49) / TargetCompID (56) for prod and UAT, exactly as provisioned</td></tr>
+<tr><td>FIX version</td><td>4.2 vs 4.4 vs 5.0 + FIXT session protocol - dictionary matches on both sides</td></tr>
+<tr><td>Heartbeat</td><td>HeartBtInt (108) agreed both directions; TestRequest behavior verified</td></tr>
+<tr><td>Sequence policy</td><td>Daily reset to 1 at an agreed time, or continuous numbering - in writing</td></tr>
+<tr><td>Cancel on disconnect</td><td>Does the venue cancel working orders when the session drops? Know it cold</td></tr>
+<tr><td>Throttling</td><td>Max messages/second; what the reject looks like when you exceed it</td></tr>
+<tr><td>Message scope</td><td>Which order types, which ExecutionReport fields, which market data the feed sends</td></tr>
+<tr><td>Session calendar</td><td>Start/end times, timezone, weekend behavior</td></tr>
+</table>
+<p>The three certification failures support sees most: echoing back the wrong TargetCompID, recomputing a wrong CheckSum (10) on retransmitted messages, and ignoring ResendRequest entirely. All three are caught in UAT if you test the failure paths - not just the happy path.</p>
+</div>
+
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
 </main>
 
@@ -169,5 +202,6 @@
 <div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
 </div></footer>
 <script src="../app.js"></script>
+<script src="../slides.js"></script>
 </body>
 </html>

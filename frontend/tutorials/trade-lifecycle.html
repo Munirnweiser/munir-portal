@@ -147,6 +147,35 @@
 <p class="watch"><strong>Support watches:</strong> the corporate-action event feed (late or wrong events are the root cause), transformation job completion before settlement cutoffs, and entitlement claims on trades that settled across the ex-date.</p>
 </div>
 
+
+<div class="resume-card">
+<h3>Fail-management playbook</h3>
+<p>When a trade does not settle on value date, it becomes a fail. The playbook, in order:</p>
+<ul class="clean-list">
+<li><strong>1. Detect.</strong> Settlement-status feeds and the aged-fail report each morning. Anything past value date + 1 is on the list.</li>
+<li><strong>2. Diagnose.</strong> Four usual suspects: wrong SSI, insufficient inventory (short), counterparty fail, corporate-action transformation stuck.</li>
+<li><strong>3. Act.</strong> Pre-match and affirm same-day; partial-settle what you can; borrow or repo the security to cover shorts; after the extension period, execute a buy-in.</li>
+<li><strong>4. Escalate.</strong> Age buckets drive escalation: T+1 notify the desk, T+3 involve the counterparty's ops team, T+5+ formal buy-in notice. Under CSDR, fails accrue daily cash penalties - the meter is running.</li>
+<li><strong>5. Prevent.</strong> Track affirmation rate as a KPI; enrich SSIs automatically; project inventory before value date, not after.</li>
+</ul>
+<div class="example-box">
+<p><strong>Classic ticket.</strong> "Client failing on 500k bonds since Monday." Diagnosis: SSI pointed at a decommissioned custodian account after a migration. Fix: update the SSI, re-instruct, partial-settle 300k same day, borrow 200k overnight. Prevention: SSI effective-dating validated against the migration calendar.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>T+1 vs T+2 settlement</h3>
+<table class="tag-table">
+<tr><th></th><th>T+2 (legacy)</th><th>T+1 (US/Canada since May 2024)</th></tr>
+<tr><td>Affirmation deadline</td><td>End of T+1</td><td>21:00 ET on trade date</td></tr>
+<tr><td>FX funding window</td><td>Comfortable</td><td>Compressed - same-day FX execution</td></tr>
+<tr><td>Fail cost</td><td>Lower</td><td>Higher - less time to fix breaks</td></tr>
+<tr><td>Support impact</td><td>Overnight batch mindset</td><td>Intraday triage mindset; breaks worked same-day</td></tr>
+<tr><td>Corporate actions</td><td>Handled in stride</td><td>Ex-date elections collide with settlement</td></tr>
+</table>
+<p>For production support, T+1 changed the job: the settlement window is no longer "tomorrow's problem". Breaks discovered at 4pm must be diagnosed before the affirmation cutoff - which is why pre-matching and same-day affirmation rates are the KPIs desks ask about first.</p>
+</div>
+
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
 </main>
 
@@ -156,5 +185,6 @@
 <div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
 </div></footer>
 <script src="../app.js"></script>
+<script src="../slides.js"></script>
 </body>
 </html>

@@ -169,6 +169,39 @@ CONNECT BY PRIOR amends_trade_id = trade_id;</div>
 </div>
 </div>
 
+
+<div class="resume-card">
+<h3>Reading an execution plan</h3>
+<p>When a query is slow, read its plan before touching anything. The plan is the optimizer telling you what it decided. The two join strategies that matter most:</p>
+<div class="sql">-- trade blotter: 40 rows from ORDERS, 2M rows in TRADES
+EXPLAIN SELECT o.id, t.price
+FROM orders o JOIN trades t ON t.order_id = o.id
+WHERE o.trade_date = CURRENT_DATE;
+
+-- plan (simplified):
+--   NESTED LOOP
+--     -&gt; Index Range Scan on orders(trade_date)  -- 40 rows
+--     -&gt; Index Lookup on trades(order_id)        -- ~3 rows per order</div>
+<p><strong>Nested loops</strong> win when the outer side is small and the inner side has an index - 40 probe lookups, done. <strong>Hash join</strong> wins when both sides are large: build a hash table on the smaller side, scan the bigger side once. Rule of thumb: small x indexed goes nested loops; large x large goes hash join.</p>
+<div class="sql">-- red flag: the same query, a different plan after a data growth spurt
+--   HASH JOIN
+--     -&gt; Seq Scan on trades   -- 2M rows, no usable index!
+--     -&gt; Hash on orders
+-- diagnosis: the trades(order_id) index was dropped during a migration.
+-- fix: recreate the index, re-gather stats, re-check the plan.</div>
+</div>
+
+<div class="resume-card">
+<h3>When the optimizer picks wrong</h3>
+<p>Plans change without anyone touching the query. The usual culprits:</p>
+<ul class="clean-list">
+<li><strong>Stale statistics</strong> - the optimizer thinks a table has 10k rows; it has 10M. Regather stats and watch the plan flip back.</li>
+<li><strong>Bind-variable peeking</strong> - the plan was optimized for the first parameter value seen, which was an outlier. Sudden slowness right after a deploy or restart is the signature.</li>
+<li><strong>Missing histograms</strong> - skewed columns (status flags, desk codes) need histograms, or the cardinality estimates are fiction.</li>
+</ul>
+<p>Support discipline: capture the good plan (baseline / stored outline) before you need it, so "the query got slow overnight" becomes a ten-minute compare-and-restore instead of a war room. Hints are the last resort, not the first - fix the inputs (stats, indexes) before overriding the optimizer.</p>
+</div>
+
 </main>
 
 <footer class="site-footer"><div class="container footer-content">
@@ -177,5 +210,6 @@ CONNECT BY PRIOR amends_trade_id = trade_id;</div>
 <div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
 </div></footer>
 <script src="../app.js"></script>
+<script src="../slides.js"></script>
 </body>
 </html>
