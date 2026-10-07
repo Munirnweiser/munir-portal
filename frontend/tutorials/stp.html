@@ -125,6 +125,9 @@
 <li><a href="#sec-5">SSI enrichment: the unglamorous king of settlement</a></li>
 <li><a href="#sec-6">Affirmation platforms: CTM and the matching machine</a></li>
 <li><a href="#sec-7">Break-resolution SLA workflow</a></li>
+<li><a href="#sec-8">The economics of a 2% break rate, worked</a></li>
+<li><a href="#sec-9">Incident: the SSI migration that wasn't</a></li>
+<li><a href="#sec-10">Interview Q&A: break vs fail - which one pages you?</a></li>
 </ul>
 </div>
 
@@ -202,6 +205,37 @@
 <li><strong>Root-cause coding:</strong> every resolved break gets a code (data, counterparty, system, human). Weekly review of code frequencies turns firefighting into prevention — three weeks of "SSI" codes means an SSI project, not fifty one-off fixes.</li>
 </ul>
 <p><strong>Support watches:</strong> SLA breach counts (the morning ops meeting runs on them), re-break rates (fixed trades that break again signal a systematic cause), and the handoff between the overnight batch window and the morning shift — breaks born at 3 AM need owners by 8 AM.</p>
+</div>
+
+
+<div class="resume-card" id="sec-8">
+<h3>The economics of a 2% break rate, worked</h3>
+<p>STP rate &mdash; the share of trades flowing from execution to settlement untouched &mdash; is the operations KPI that decides headcount. The math is brutal.</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> A desk trades 5,000 tickets a day. At a 2% break rate that's <strong>100 breaks a day</strong>. At ~25 minutes of ops work per break: 2,500 minutes &asymp; <strong>42 person-hours a day</strong> &mdash; roughly five full-time people doing nothing but firefighting. Cut the break rate to 0.2% and it's 10 breaks, ~4 hours, half a person.</p>
+<p>That's why a 0.5% STP regression after a release is a sev-2, and why support should track break rate <em>per counterparty</em>: one bad SSI at a single client can move the entire desk's metric &mdash; and tells you exactly where to fix it.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-9">
+<h3>Incident: the SSI migration that wasn't</h3>
+<p><strong>Symptom.</strong> Tuesday &mdash; settlement fails spike for a single custodian: 40 fails, all rejected "wrong account" at the CSD. One counterparty, one failure reason, dozens of trades.</p>
+<ul class="clean-list">
+<li><strong>Diagnose:</strong> the custodian migrated to a new BIC over the weekend and emailed new SSIs; ops updated the static table &mdash; in production region A only. Region B, which settles the Asian book, still held the old SSIs. <span class="formula">diff</span> the SSI extracts across regions to confirm in one command.</li>
+<li><strong>Root cause:</strong> reference data deployed like a memo instead of like code &mdash; no versioning, no cross-region checksum.</li>
+<li><strong>Fix:</strong> sync region B from the golden source, re-instruct the failed settlements, claim fail compensation where the agreements allow it. Then put SSI tables under the same deployment pipeline as code: versioned, checksummed, and verified in every region before value date.</li>
+</ul>
+<div class="example-box">
+<p><strong>Lesson.</strong> Settlement instructions are code that moves money. A single counterparty spiking the fail count is the signature of a reference-data problem &mdash; check the data before you check the network.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-10">
+<h3>Interview Q&A: break vs fail &mdash; which one pages you?</h3>
+<div class="example-box">
+<p><strong>Q: What's the difference between a trade break and a settlement fail, and which one pages you?</strong></p>
+<p><strong>Strong answer:</strong> "A break is a mismatch <em>before</em> settlement &mdash; our record vs theirs on economics, SSIs, or fees. A fail is value date arriving with the break still open &mdash; the cash or securities didn't move. Breaks page support during the day: fix them before value date and nothing happens. Fails page the settlements desk, and they page <em>me</em> when they're systemic &mdash; a whole batch failing at once means our instruction file was malformed. The principle: breaks are cheap if caught early, fails cost real money &mdash; buy-ins, fail fees, CSDR penalties in Europe &mdash; so every STP workflow is a race against value date, and my dashboards are organized around that clock."</p>
+</div>
 </div>
 
 <style>

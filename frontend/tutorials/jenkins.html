@@ -126,6 +126,9 @@
 <li><a href="#sec-5">Shared libraries: one pipeline definition, two hundred users</a></li>
 <li><a href="#sec-6">Credential binding: the 401 that is not the code</a></li>
 <li><a href="#sec-7">Parallel stages: cutting pipeline time</a></li>
+<li><a href="#sec-8">Declarative pipeline with parallel tests, worked</a></li>
+<li><a href="#sec-9">Incident: the queue that never drains</a></li>
+<li><a href="#sec-10">Interview Q&A: roll forward or roll back?</a></li>
 </ul>
 </div>
 
@@ -175,6 +178,38 @@
 </ul>
 <div class="tag-list" style="margin-top:16px">
 <span class="tag">Pipeline</span><span class="tag">Jenkinsfile</span><span class="tag">Agents</span><span class="tag">Blue Ocean</span><span class="tag">Console output</span><span class="tag">Rollback</span>
+</div>
+</div>
+
+
+<div class="resume-card" id="sec-8">
+<h3>Declarative pipeline with parallel tests, worked</h3>
+<p>Sequential pipelines waste the one resource builds can't buy back: wall-clock time. Run the independent stages together.</p>
+<div class="example-box">
+<p><strong>Worked example.</strong></p>
+<p class="sql">pipeline {<br>&nbsp;&nbsp;agent { label 'linux-build' }<br>&nbsp;&nbsp;stages {<br>&nbsp;&nbsp;&nbsp;&nbsp;stage('Build') { steps { sh 'mvn -q package -DskipTests' } }<br>&nbsp;&nbsp;&nbsp;&nbsp;stage('Test') {<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;parallel {<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;stage('Unit') { steps { sh 'mvn -q test' } }<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;stage('Integration') { steps { sh 'mvn -q verify -Dtest=IT*' } }<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;stage('Scan') { steps { sh 'trivy image myapp:${BUILD_NUMBER}' } }<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>&nbsp;&nbsp;&nbsp;&nbsp;}<br>&nbsp;&nbsp;&nbsp;&nbsp;stage('Deploy') {<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when { branch 'main' }<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;steps { sh './deploy.sh ${BUILD_NUMBER}' }<br>&nbsp;&nbsp;&nbsp;&nbsp;}<br>&nbsp;&nbsp;}<br>&nbsp;&nbsp;post { failure { mail to: 'team@bank.internal',<br>&nbsp;&nbsp;&nbsp;&nbsp;subject: "Build ${BUILD_NUMBER} failed" } }<br>}</p>
+<p>Sequential: ~45 minutes. Parallel: ~20. And the <span class="formula">when { branch 'main' }</span> guard is what stops a feature branch from deploying to production &mdash; the cheapest production incident you'll ever prevent.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-9">
+<h3>Incident: the queue that never drains</h3>
+<p><strong>Symptom.</strong> 10:00 &mdash; 60 builds queued, zero running. Agents show online. Nothing is failing; nothing is starting.</p>
+<ul class="clean-list">
+<li><strong>Diagnose:</strong> check executor counts first &mdash; a "maintenance" window set the controller's executors to 0. Then the <span class="formula">/computer/</span> page: are the <span class="formula">linux-build</span>-labeled agents actually connected, or just remembered? This time: Jenkins was in <strong>quiet-down mode</strong>, left enabled after the weekend upgrade &mdash; accepting no new builds, draining nothing.</li>
+<li><strong>Root cause:</strong> the upgrade runbook ended at "upgrade complete" with no post-upgrade verification of scheduler state.</li>
+<li><strong>Fix:</strong> cancel quiet-down, verify executor counts and agent connectivity, watch the queue drain. Then extend the runbook: after every upgrade, confirm quiet-down is off, executors are correct, and one canary build goes green before declaring victory.</li>
+</ul>
+<div class="example-box">
+<p><strong>Lesson.</strong> A scheduler has state, not just health. "Is Jenkins up?" is the wrong question &mdash; "is it accepting, scheduling, and executing?" is three checks, and quiet-down mode fails the first one silently.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-10">
+<h3>Interview Q&A: roll forward or roll back?</h3>
+<div class="example-box">
+<p><strong>Q: A deployment pipeline failed at the deploy stage but the build is green. How do you decide whether to roll forward or roll back?</strong></p>
+<p><strong>Strong answer:</strong> "Blast radius and reversibility decide. (1) What failed &mdash; infrastructure or artifact? A dead target host means fix the infra and re-run the deploy stage; no rollback needed. (2) Did the release include a database migration? Rolling back the app without rolling back the schema can break worse than the original failure &mdash; that's a roll-forward-with-fix. (3) Is there a feature flag? Flagging off is an instant rollback with no deploy at all. (4) Time: a 5-minute rollback beats a 2-hour fix at 2 AM. And the thing support owns in advance: the pipeline must keep the previous artifact &mdash; rollback has to be a one-click redeploy of a known-good build, never a rebuild from scratch under pressure."</p>
 </div>
 </div>
 

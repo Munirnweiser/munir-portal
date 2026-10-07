@@ -259,6 +259,9 @@
 <li><a href="#sec-6">Multi-stage builds: small, safe images</a></li>
 <li><a href="#sec-7">Compose dependencies: why &quot;connection refused&quot; happens</a></li>
 <li><a href="#sec-8">Image scanning: CVEs block releases</a></li>
+<li><a href="#sec-9">Multi-stage build, measured</a></li>
+<li><a href="#sec-10">Incident: OOMKilled at 03:00</a></li>
+<li><a href="#sec-11">Interview Q&A: works on my laptop, fails in prod</a></li>
 </ul>
 </div>
 
@@ -364,6 +367,38 @@ trivy image trade-api:1.4.2</div>
 </ul>
 <div class="example-box">
 <p><strong>Key takeaway.</strong> Auth failures are identity problems, not image problems. Confirm who is authenticating (user? service account? node?) before touching the image or the registry.</p>
+</div>
+</div>
+
+
+<div class="resume-card" id="sec-9">
+<h3>Multi-stage build, measured</h3>
+<p>Shipping the JDK, Maven, and the build cache inside your runtime image is paying for luggage you never open. Build in one stage, run in another.</p>
+<div class="example-box">
+<p><strong>Worked example.</strong></p>
+<p class="sql">FROM maven:3.9-eclipse-temurin-17 AS build<br>WORKDIR /app<br>COPY pom.xml .<br>RUN mvn -q dependency:go-offline<br>COPY src ./src<br>RUN mvn -q package -DskipTests<br>FROM eclipse-temurin:17-jre-alpine<br>WORKDIR /app<br>COPY --from=build /app/target/trading-app.jar app.jar<br>USER 10001<br>ENTRYPOINT ["java","-jar","app.jar"]</p>
+<p>Single-stage with JDK + Maven cache: ~<strong>850MB</strong>. Multi-stage JRE-only: ~<strong>180MB</strong>. Smaller image, faster pulls, faster rollouts, smaller CVE surface. And the <span class="formula">USER 10001</span> line matters &mdash; running as root is the finding every security scan flags, and it's one line to fix.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-10">
+<h3>Incident: OOMKilled at 03:00</h3>
+<p><strong>Symptom.</strong> The pricing service restarts every night around 03:00. <span class="formula">kubectl get pods</span> shows <span class="formula">OOMKilled</span>, exit code 137. By morning it's "fine" &mdash; until tonight.</p>
+<ul class="clean-list">
+<li><strong>Diagnose:</strong> metrics show memory climbing steadily to the 512Mi limit, then death &mdash; a sawtooth that never comes down. <span class="formula">dmesg | grep -i "killed process"</span> confirms the kernel OOM killer. Is the limit too small, or is the app leaking? Check heap config: the JVM was started with no <span class="formula">-Xmx</span> on a base image that sizes the heap to the <em>host</em>, not the cgroup.</li>
+<li><strong>Root cause:</strong> both, in layers &mdash; an unbounded in-memory price cache (the leak) plus a JVM that didn't respect the container limit (the accelerant).</li>
+<li><strong>Fix:</strong> <span class="formula">-XX:MaxRAMPercentage=75.0</span> so the JVM respects the cgroup, bound the cache with eviction, and set request/limit honestly (1Gi). Watch the sawtooth flatten.</li>
+</ul>
+<div class="example-box">
+<p><strong>Lesson.</strong> Exit 137 always means memory &mdash; then you decide whether the limit or the app is wrong. Raising the limit on a leak just schedules a bigger outage later.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-11">
+<h3>Interview Q&A: works on my laptop, fails in prod</h3>
+<div class="example-box">
+<p><strong>Q: A container works on your laptop but fails in production. Walk me through it.</strong></p>
+<p><strong>Strong answer:</strong> "The image is identical, so the difference is the environment &mdash; I diff the environments. (1) Env vars and secrets: prod injects different values; I <span class="formula">docker inspect</span> the running container's env against local. (2) Networking: DNS, service names, firewall rules &mdash; I <span class="formula">curl</span> the dependency from <em>inside</em> the container. (3) Volumes and permissions: prod mounts volumes my laptop doesn't, and a file owned by root breaks a <span class="formula">USER 10001</span> container instantly. (4) Resource limits: prod cgroups throttle CPU and memory my laptop never does. (5) The tag moved: <span class="formula">latest</span> today isn't <span class="formula">latest</span> from last month &mdash; I pin digests. Then I reproduce with the prod env file locally; if it fails there, I've got it, and the fix goes into the image or the manifest &mdash; never into someone's laptop."</p>
 </div>
 </div>
 

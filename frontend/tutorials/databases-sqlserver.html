@@ -259,6 +259,9 @@
 <li><a href="#sec-6">Query Store: catching plan regressions</a></li>
 <li><a href="#sec-7">Always On: failover readiness checks</a></li>
 <li><a href="#sec-8">Tempdb contention: the PAGELATCH storm</a></li>
+<li><a href="#sec-9">Walking the blocking chain to the head, worked</a></li>
+<li><a href="#sec-10">Incident: the Monday tempdb storm</a></li>
+<li><a href="#sec-11">Interview Q&A: stop the deadlocks (error 1205)</a></li>
 </ul>
 </div>
 
@@ -385,6 +388,40 @@ ORDER BY ips.avg_fragmentation_in_percent DESC;</div>
 <p>The maintenance rule: below 5% do nothing; 5–30% <span class="formula">ALTER INDEX ... REORGANIZE</span> (online, light); above 30% <span class="formula">ALTER INDEX ... REBUILD</span> (heavier, can be online in Enterprise). A trade table rebuilt weekly that suddenly shows 90% fragmentation after one night means something did a massive delete/insert cycle — find the job before rebuilding, or you will rebuild again tomorrow.</p>
 <div class="example-box">
 <p><strong>Key takeaway.</strong> Fragmentation is a symptom schedule, not a one-time fix. If the numbers return within days, the write pattern is the problem, not the index.</p>
+</div>
+</div>
+
+
+<div class="resume-card" id="sec-9">
+<h3>Walking the blocking chain to the head, worked</h3>
+<p>Blocking chains nest: A blocks B, B blocks C. Killing C or B fixes nothing &mdash; you want the head.</p>
+<div class="example-box">
+<p><strong>Worked session.</strong></p>
+<p class="sql">SELECT r.session_id, r.blocking_session_id, r.wait_type, r.wait_time,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;s.login_name, s.host_name<br>FROM sys.dm_exec_requests r<br>JOIN sys.dm_exec_sessions s ON s.session_id = r.session_id<br>WHERE r.blocking_session_id &lt;&gt; 0;</p>
+<p>Result: 61 blocked by 52; 52 blocked by 44; 44's <span class="formula">blocking_session_id</span> = 0 &mdash; <strong>44 is the head</strong>. Now see what the head is doing before touching anything:</p>
+<p class="sql">DBCC INPUTBUFFER(44);</p>
+<p>It's an open transaction from SSMS on someone's laptop, idle 40 minutes &mdash; a developer who ran <span class="formula">BEGIN TRAN</span>, updated 2M rows, and went to lunch. Kill 44 and the whole chain drains. Rule: walk to the head, identify, then kill &mdash; killing mid-chain victims just moves the queue.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-10">
+<h3>Incident: the Monday tempdb storm</h3>
+<p><strong>Symptom.</strong> Every Monday 09:00, the trading app crawls for 20 minutes &mdash; then recovers by itself. Same pattern for months; everyone "knows" Mondays are slow.</p>
+<ul class="clean-list">
+<li><strong>Diagnose:</strong> during the window, <span class="formula">SELECT * FROM sys.dm_os_waiting_tasks WHERE wait_type LIKE 'PAGELATCH%';</span> shows hundreds of waits on tempdb page 2:1:1 &mdash; the allocation bitmap. The Monday batch creates thousands of temp tables at once.</li>
+<li><strong>Root cause:</strong> one tempdb data file on a 16-core box. Every allocation fights over the same pages &mdash; classic PAGELATCH contention.</li>
+<li><strong>Fix:</strong> 8 equally-sized tempdb data files (one per core, up to 8), pre-sized to avoid autogrow storms, on fast storage. The "Monday slowness" disappears the next week.</li>
+</ul>
+<div class="example-box">
+<p><strong>Lesson.</strong> One tempdb file per CPU up to 8 is the oldest checklist item in SQL Server &mdash; and still the cause of Monday-morning pages. When slowness follows a weekly schedule, it's a workload pattern, not a mystery: match the pattern to the resource.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-11">
+<h3>Interview Q&A: stop the deadlocks (error 1205)</h3>
+<div class="example-box">
+<p><strong>Q: Error 1205 &mdash; deadlock victim. The app team wants you to "stop the deadlocks." What do you do?</strong></p>
+<p><strong>Strong answer:</strong> "I can't stop deadlocks from the database side alone &mdash; they're an application access-pattern problem, and I say that kindly but clearly. What I <em>can</em> do: (1) capture the deadlock graph &mdash; extended events <span class="formula">xml_deadlock_report</span> or trace flag 1222 &mdash; which shows the two processes and the exact resources they fought over; (2) look for the classic pattern, the same tables accessed in different order, and show the app team which two statements to reorder; (3) short-term relief: keep transactions short, touch the least-contentious rows first, consider SNAPSHOT isolation for read-heavy victims. And non-negotiable: the app must retry on 1205 &mdash; deadlocks are a normal concurrency event, and the victim's work has to be re-runnable by design."</p>
 </div>
 </div>
 

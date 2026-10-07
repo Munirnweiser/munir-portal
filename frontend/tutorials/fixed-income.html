@@ -126,6 +126,9 @@
 <li><a href="#sec-6">Accrued interest: who owns the coupon between payments</a></li>
 <li><a href="#sec-7">Repo: the plumbing that funds bond desks</a></li>
 <li><a href="#sec-8">Bond futures and the conversion factor</a></li>
+<li><a href="#sec-9">Dirty price and accrued interest, worked</a></li>
+<li><a href="#sec-10">Incident: the wrong coupon schedule</a></li>
+<li><a href="#sec-11">Interview Q&A: yields spiked - what breaks?</a></li>
 </ul>
 </div>
 
@@ -198,6 +201,37 @@
 <p>The short will always deliver the <strong>cheapest-to-deliver (CTD)</strong> bond — the one minimizing <em>quoted price − futures × CF</em> (the "basis").</p>
 <div class="example-box">
 <p><strong>Worked example.</strong> Futures trade at 120. Bond A: price 118, CF 0.98 → basis = 118 − 120×0.98 = <strong>0.40</strong>. Bond B: price 125, CF 1.05 → basis = 125 − 120×1.05 = <strong>−1.00</strong>. Bond B is CTD (most negative basis). When yields shift, the CTD can <em>switch</em> — and every pricing model, hedge ratio and risk number on the desk changes with it, a favorite source of "the model is wrong" tickets that are really CTD-switch events.</p>
+</div>
+</div>
+
+
+<div class="resume-card" id="sec-9">
+<h3>Dirty price and accrued interest, worked</h3>
+<p>A bond with a 5% annual coupon pays 2.50 every half-year on 100 face. You buy it 60 days into the 180-day coupon period (30/360 day count), quoted clean at 98.50. The seller owned those 60 days of coupon accrual &mdash; you compensate them.</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> Accrued interest = 2.50 &times; 60/180 = <strong>0.8333</strong>. Dirty price = 98.50 + 0.8333 = <strong>99.3333</strong> per 100 face. On &euro;10M face you pay &euro;9,933,333 &mdash; and &euro;83,333 of that is accrued, not price.</p>
+<p>Support angle: accrued-interest disputes are the most common "my P&amp;L is wrong" ticket on and around coupon dates. The first thing to check is always the day-count convention &mdash; 30/360 vs Actual/Actual on the same bond gives different accrual, and a static-data load that flips the convention reprices every holding at once.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-10">
+<h3>Incident: the wrong coupon schedule</h3>
+<p><strong>Symptom.</strong> Monday 08:30 &mdash; the bond desk's P&amp;L shows an unexplained +&euro;2M swing over the weekend. No trades, no market move that size.</p>
+<ul class="clean-list">
+<li><strong>Diagnose:</strong> the weekend static-data load touched bond reference data. Diff Friday's vs Monday's security master for the names driving the swing: <span class="formula">diff secmaster_fri.csv secmaster_mon.csv</span>. One new issue's coupon <em>payment dates</em> came in annual instead of semi-annual &mdash; so the accrual period stretched back 240 days instead of 60, and accrued came out larger than a full coupon. An impossible number, flowing straight into dirty prices.</li>
+<li><strong>Root cause:</strong> the vendor feed left the frequency field blank and the loader defaulted it to annual. Nobody reconciled the loaded schedule against the prospectus.</li>
+<li><strong>Fix:</strong> correct the schedule from the prospectus, re-run EOD pricing, restate P&amp;L. Add a one-line reconciliation: total scheduled coupon cashflows must equal coupon rate &times; face &times; years &mdash; and accrued must never exceed one full coupon.</li>
+</ul>
+<div class="example-box">
+<p><strong>Lesson.</strong> Reference data is the silent killer in fixed income &mdash; it changes rarely, nobody watches it, and when it's wrong every downstream number is wrong with it. Treat static-data loads like deployments: diff them, reconcile them, alert on them.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-11">
+<h3>Interview Q&A: yields spiked &mdash; what breaks?</h3>
+<div class="example-box">
+<p><strong>Q: Why does a bond's price fall when yields rise, and what breaks in our systems when it moves fast?</strong></p>
+<p><strong>Strong answer:</strong> "The price is the present value of fixed coupons &mdash; discount at a higher yield and the PV falls; the seesaw is arithmetic, not sentiment. When yields gap &mdash; say a hot CPI print &mdash; three things break: (1) intraday pricing lags if curves refresh on a batch schedule, so traders see stale marks and P&amp;L they can't explain; (2) duration-based risk limits computed on yesterday's curve understate today's exposure; (3) margin calls spike &mdash; repo haircuts and futures variation margin all key off the new prices, so the funding desk feels it within the hour. Support's job in that window: confirm the curves refreshed, confirm repricing ran to completion, and confirm the margin numbers tie out to the new marks."</p>
 </div>
 </div>
 

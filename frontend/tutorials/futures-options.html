@@ -125,6 +125,9 @@
 <li><a href="#sec-5">The Greeks, with numbers</a></li>
 <li><a href="#sec-6">Futures margin call: a worked example</a></li>
 <li><a href="#sec-7">Expiration and assignment: where support earns its pay</a></li>
+<li><a href="#sec-8">Intrinsic vs time value in expiry week, worked</a></li>
+<li><a href="#sec-9">Incident: the assignment nobody expected</a></li>
+<li><a href="#sec-10">Interview Q&A: why does support care about gamma?</a></li>
 </ul>
 </div>
 
@@ -205,6 +208,37 @@
 <li><strong>Futures expiry:</strong> physically-settled contracts require delivery logistics; cash-settled ones need the final settlement price feed — a wrong settlement price corrupts every expiring position.</li>
 </ul>
 <p><strong>Support watches:</strong> the expiry job schedule (exercise → assignment → position conversion), cutoff times for contrary instructions, and the reconciliation between the clearinghouse assignment file and internal positions before the next open.</p>
+</div>
+
+
+<div class="resume-card" id="sec-8">
+<h3>Intrinsic vs time value in expiry week, worked</h3>
+<p>Stock at $102. A $100-strike call with 5 days to expiry trades at $3.50. That premium is two things glued together.</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> Intrinsic value = 102 &minus; 100 = <strong>$2.00</strong> &mdash; what the option is worth if exercised now. Time value = 3.50 &minus; 2.00 = <strong>$1.50</strong> &mdash; what you're paying for the chance the stock moves further. If the stock sits at $102 through expiry, the holder collects $2.00 and the $1.50 evaporates &mdash; roughly $0.30 of theta burn per day.</p>
+<p>Buying options into expiry week is renting time by the day. Support sees the tickets every month: "the stock didn't move but my option lost money." The answer is always the same &mdash; the stock didn't move, so there was nothing to pay for except time, and time ran out.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-9">
+<h3>Incident: the assignment nobody expected</h3>
+<p><strong>Symptom.</strong> Monday 09:00 &mdash; hundreds of retail clients who were short equity calls wake up <em>long stock</em> they never bought (or short stock they must now buy in). Margin calls everywhere; the phones light up.</p>
+<ul class="clean-list">
+<li><strong>Diagnose:</strong> Friday's close left the stock $0.02 above the strike. Under OCC rules, any option $0.01 in-the-money at expiry is <em>automatically exercised</em> unless the holder gave contrary instructions. The desk's expiry report flagged the in-the-money shorts &mdash; nobody actioned it.</li>
+<li><strong>Root cause:</strong> process, not technology: the "expiring positions" report ran, but sign-off wasn't enforced before the exercise cutoff.</li>
+<li><strong>Fix:</strong> process the exercises, buy in the short stock, issue margin calls. Then change the process: a 15:30 "pin risk" report on expiry Fridays with mandatory trader sign-off, and an automated block on new short positions in expiring series after 15:00 without desk approval.</li>
+</ul>
+<div class="example-box">
+<p><strong>Lesson.</strong> Expiry is a batch process with real money consequences. Treat the expiry report like a production job &mdash; scheduled, monitored, and signed off &mdash; because the clearinghouse will not wait for anyone.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-10">
+<h3>Interview Q&A: why does support care about gamma?</h3>
+<div class="example-box">
+<p><strong>Q: Explain gamma to a trader in one breath, and tell me why production support cares about it.</strong></p>
+<p><strong>Strong answer:</strong> "Gamma is how fast your delta changes &mdash; high gamma means your hedge needs constant adjusting, which means constant trading and constant costs. Support cares for three reasons: (1) high-gamma books generate the most trade volume near expiry, which means the most booking and settlement breaks; (2) gamma hedging itself moves the market &mdash; the feedback loop behind gamma squeezes &mdash; so price feeds and risk numbers swing harder; (3) margin models charge more for gamma, so most 'wrong margin call' disputes on expiry week trace back to it. If amendment and cancel traffic spikes on a Friday afternoon, the first thing I check is what's expiring."</p>
+</div>
 </div>
 
 <style>

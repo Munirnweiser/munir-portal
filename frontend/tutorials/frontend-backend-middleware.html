@@ -126,6 +126,9 @@
 <li><a href="#sec-5">Poison messages: the one that blocks the queue</a></li>
 <li><a href="#sec-6">Distributed tracing, worked end to end</a></li>
 <li><a href="#sec-7">What production support watches</a></li>
+<li><a href="#sec-8">Latency budget, end to end</a></li>
+<li><a href="#sec-9">Incident: the poison message</a></li>
+<li><a href="#sec-10">Interview Q&A: frontend errors, backend logs clean</a></li>
 </ul>
 </div>
 
@@ -203,6 +206,38 @@ total: 930ms against a 500ms p99 budget</pre>
 </ul>
 <div class="tag-list" style="margin-top:16px">
 <span class="tag">3-tier</span><span class="tag">Middleware</span><span class="tag">Kafka</span><span class="tag">IBM MQ</span><span class="tag">Correlation ID</span><span class="tag">Consumer lag</span>
+</div>
+</div>
+
+
+<div class="resume-card" id="sec-8">
+<h3>Latency budget, end to end</h3>
+<p>An SLA without a per-tier budget is a wish. Slice the total and every tier owns its slice.</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> SLA: p95 under 800ms for order submission.</p>
+<p class="sql">browser -&gt; CDN ............ 50ms<br>WAF ..................... 10ms<br>API gateway (auth) ...... 30ms<br>backend service ........ 400ms<br>middleware (MQ) ......... 40ms<br>downstream adapter ..... 200ms<br>DB write ............... 70ms<br>TOTAL .................. 800ms</p>
+<p>When p95 hits 950ms, the budget says where to look: gateway at 30ms but backend at 600ms means the problem is downstream of the gateway &mdash; check the adapter and the DB, not the edge. Support practice: every tier must emit its own timings (server-timing headers, span durations). Without per-tier numbers, latency triage is guessing with extra steps.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-9">
+<h3>Incident: the poison message</h3>
+<p><strong>Symptom.</strong> 13:00 &mdash; the order queue depth climbs: 0 &rarr; 40,000 in twenty minutes. Consumers are "running," throughput is zero.</p>
+<ul class="clean-list">
+<li><strong>Diagnose:</strong> consumer logs show the <em>same message ID</em> crashing in a loop &mdash; a trade with a null symbol from a bad deploy. The consumer dequeues it, throws, restarts, and re-reads the same message: head-of-line blocking. The dead-letter queue is empty &mdash; because no DLQ was ever configured.</li>
+<li><strong>Root cause:</strong> no redelivery cap and no DLQ &mdash; one malformed message became a full outage.</li>
+<li><strong>Fix:</strong> move the poison message aside manually, deploy the null-guard fix, and configure a DLQ with max redeliveries (5): after 5 failures the message is quarantined automatically and the queue flows again. Add an alert on DLQ depth &mdash; a growing DLQ is tomorrow's incident arriving early.</li>
+</ul>
+<div class="example-box">
+<p><strong>Lesson.</strong> Every queue needs a dead-letter queue and a redelivery cap. Without them, a single bad message is not a data issue &mdash; it's a denial of service against yourself.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-10">
+<h3>Interview Q&A: frontend errors, backend logs clean</h3>
+<div class="example-box">
+<p><strong>Q: The frontend shows an error but the backend logs are clean. Where's the bug?</strong></p>
+<p><strong>Strong answer:</strong> "In the middle &mdash; or in what the frontend sent. I open the browser network tab and read the status: 400 means the <em>request</em> was bad &mdash; the frontend sent something the API contract rejects, so I diff the payload against the spec. 502/504 means the gateway or proxy &mdash; the backend never saw it or timed out. A CORS error means the browser blocked it &mdash; the backend may have answered perfectly but without <span class="formula">Access-Control-Allow-Origin</span>. Then I correlate with <span class="formula">X-Request-ID</span>: frontend &rarr; gateway logs &rarr; backend logs, following the ID. And if the gateway has no record at all, the request never left the browser &mdash; ad-blocker, VPN, or DNS. The interview point: 'backend logs are clean' is data, not a dead end &mdash; it narrows the fault to the client, the path, or the gateway."</p>
 </div>
 </div>
 

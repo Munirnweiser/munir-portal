@@ -128,6 +128,9 @@
 <li><a href="#sec-7">SD-WAN vs classic VPN, in one paragraph</a></li>
 <li><a href="#sec-8">Latency and jitter diagnosis with mtr</a></li>
 <li><a href="#sec-9">What production support watches</a></li>
+<li><a href="#sec-10">Subnet math for the tunnel, worked</a></li>
+<li><a href="#sec-11">Incident: the flapping tunnel</a></li>
+<li><a href="#sec-12">Interview Q&A: slow over VPN, fine in the office</a></li>
 </ul>
 </div>
 
@@ -212,6 +215,38 @@ gateway-hop-5    0.0%   13.0   12.5   15.1</pre>
 </ul>
 <div class="tag-list" style="margin-top:16px">
 <span class="tag">IPsec</span><span class="tag">IKE</span><span class="tag">Phase 1/2</span><span class="tag">DPD</span><span class="tag">MTU</span><span class="tag">Site-to-site</span><span class="tag">Client VPN</span>
+</div>
+</div>
+
+
+<div class="resume-card" id="sec-10">
+<h3>Subnet math for the tunnel, worked</h3>
+<p>The crypto ACL defines "interesting traffic" &mdash; what enters the tunnel. Get the subnets wrong and nothing else matters.</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> Office LAN <span class="formula">10.20.0.0/16</span>, data center <span class="formula">10.30.0.0/16</span>. Interesting traffic:</p>
+<p class="sql">permit ip 10.20.0.0 0.0.255.255 10.30.0.0 0.0.255.255</p>
+<p>/16 = 65,534 usable hosts per side; the wildcard mask <span class="formula">0.0.255.255</span> is the inverse of <span class="formula">255.255.0.0</span>. The number-one misconfiguration is overlapping subnets &mdash; if the data center were <em>also</em> 10.20.0.0/16, no crypto map can fix it: routing considers the destination local, so traffic never enters the tunnel. Support checklist for "tunnel up, traffic dead": Phase 1 up? Phase 2 SAs in <em>both</em> directions? <span class="formula">show crypto ipsec sa</span> &mdash; encaps incrementing but decaps at zero means the far end isn't returning traffic: their ACL or NAT, not yours.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-11">
+<h3>Incident: the flapping tunnel</h3>
+<p><strong>Symptom.</strong> Every 8 hours, the site-to-site tunnel drops for ~90 seconds. Traders reconnect, grumble, move on. Three times a day, for a week.</p>
+<ul class="clean-list">
+<li><strong>Diagnose:</strong> the drops land on a perfect 8-hour schedule &mdash; flapping on a schedule is always a timer. Phase 2 lifetime: 28,800s (8h); Phase 1: 86,400s. Logs show <span class="formula">IKEv2 deleting SA</span> exactly at each rekey. The DPD timers disagree (ours 30s/3 retries, theirs 10s/5) &mdash; their side declares the peer dead mid-rekey and tears the tunnel down before the new SA is ready.</li>
+<li><strong>Root cause:</strong> mismatched timers across the two ends &mdash; half of VPN troubleshooting is the other organization's config.</li>
+<li><strong>Fix:</strong> align Phase 1/Phase 2 lifetimes and DPD timers on both ends (get the peer's config in writing), and set a rekey margin so the new SA establishes <em>before</em> the old one dies.</li>
+</ul>
+<div class="example-box">
+<p><strong>Lesson.</strong> A failure on a perfect schedule is a timer expiring, not a mystery. Find the timer &mdash; lifetime, DPD, certificate expiry &mdash; and you've found the bug.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-12">
+<h3>Interview Q&A: slow over VPN, fine in the office</h3>
+<div class="example-box">
+<p><strong>Q: A trader working from home says the trading app is slow over VPN but fine in the office. How do you prove where the problem is?</strong></p>
+<p><strong>Strong answer:</strong> "I measure the path &mdash; I don't guess. (1) <span class="formula">mtr</span> to the app server from home: loss and latency per hop &mdash; the jump usually appears at the VPN concentrator or the home ISP. (2) Same test from the office as a baseline: clean office vs dirty home isolates it to the VPN path or the home link. (3) MTU: ESP encapsulation shrinks the effective MTU &mdash; <span class="formula">ping -M do -s 1472</span>; if large packets die, it's fragmentation, fixed with TCP MSS clamping on the tunnel. (4) Split tunneling: is internet traffic hairpinning through the concentrator? That taxes everything. The deliverable is numbers &mdash; '180ms home vs 12ms office, loss starts at hop 4' &mdash; so the ticket goes to the right team with evidence instead of opinions."</p>
 </div>
 </div>
 

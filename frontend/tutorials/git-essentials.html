@@ -126,6 +126,9 @@
 <li><a href="#sec-5">Interactive rebase: cleaning a hotfix branch</a></li>
 <li><a href="#sec-6">git bisect: finding the bad deploy</a></li>
 <li><a href="#sec-7">Submodule pitfalls</a></li>
+<li><a href="#sec-8">Rebase vs merge, visualized</a></li>
+<li><a href="#sec-9">Incident: force-push to main</a></li>
+<li><a href="#sec-10">Interview Q&A: revert or reset in production?</a></li>
 </ul>
 </div>
 
@@ -168,6 +171,39 @@ git push -u origin hotfix/fix-margin-calc  # open the PR / merge request</pre>
 </ul>
 <div class="tag-list" style="margin-top:16px">
 <span class="tag">Branch</span><span class="tag">Merge</span><span class="tag">Rebase</span><span class="tag">Cherry-pick</span><span class="tag">Stash</span><span class="tag">Reflog</span><span class="tag">Hotfix</span>
+</div>
+</div>
+
+
+<div class="resume-card" id="sec-8">
+<h3>Rebase vs merge, visualized</h3>
+<p>Same two branches, two different histories. The choice matters most when something goes wrong.</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> Starting point:</p>
+<p class="sql">main:&nbsp;&nbsp;&nbsp;&nbsp; A---B---C<br>feature:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\---D---E</p>
+<p><span class="formula">git merge feature</span> on main: <span class="formula">A---B---C---M</span> &mdash; a merge commit M joins the lines; history shows the branch existed. <span class="formula">git rebase main</span> on feature: <span class="formula">A---B---C---D'---E'</span> &mdash; D and E are <em>rewritten</em> onto C; history is linear but D'/E' are new commits.</p>
+<p>The rule: rebase private branches (clean history, your mess to rewrite), merge public ones (never rewrite shared history). The support incident this prevents: a developer who rebases <em>main</em> instead of their branch rewrites everyone's history &mdash; and the "all my pulls broke" tickets write themselves.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-9">
+<h3>Incident: force-push to main</h3>
+<p><strong>Symptom.</strong> 14:00 &mdash; three developers at once: "my pull says diverged, everything's broken." <span class="formula">git log --oneline main</span> shows history rewritten: commits missing, SHAs changed.</p>
+<ul class="clean-list">
+<li><strong>Diagnose:</strong> someone ran <span class="formula">git push --force</span> on main after rebasing locally. Find the last good SHA &mdash; the reflog of anyone who fetched recently, or the CI server's last green build, both record it.</li>
+<li><strong>Root cause:</strong> no branch protection on main &mdash; a single command from any laptop could rewrite shared history.</li>
+<li><strong>Fix:</strong> push the recovered SHA back to main (coordinate a freeze so nobody piles new work onto the broken ref), have everyone re-clone or hard-reset. Then the permanent fix: branch protection &mdash; require pull requests, block force pushes, require green CI. And teach <span class="formula">--force-with-lease</span>: it refuses to overwrite work you haven't seen, which is what plain <span class="formula">--force</span> happily destroys.</li>
+</ul>
+<div class="example-box">
+<p><strong>Lesson.</strong> Shared branches are append-only by policy, enforced by tooling. If your main branch <em>can</em> be force-pushed, it eventually <em>will</em> be &mdash; at the worst possible time.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-10">
+<h3>Interview Q&A: revert or reset in production?</h3>
+<div class="example-box">
+<p><strong>Q: What's the difference between <span class="formula">git revert</span> and <span class="formula">git reset</span>, and when would you use each in production support?</strong></p>
+<p><strong>Strong answer:</strong> "<span class="formula">reset</span> rewrites history; <span class="formula">revert</span> adds history. <span class="formula">git reset --hard</span> moves the branch pointer &mdash; fine on my private branch, forbidden on shared branches because it orphans everyone else's work. <span class="formula">git revert</span> creates a <em>new</em> commit that undoes the change &mdash; safe on main, auditable, and deployable through the normal pipeline. In production support a bad deploy gets <em>reverted</em>, never reset: the postmortem needs to show exactly what happened, and reset destroys the evidence. The revert commit is also the artifact the change ticket references &mdash; 'we shipped the fix that undid the breakage' reads a lot better than 'we rewrote history.'"</p>
 </div>
 </div>
 

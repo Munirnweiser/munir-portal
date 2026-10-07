@@ -259,6 +259,9 @@
 <li><a href="#sec-6">Reading an AWR report, section by section</a></li>
 <li><a href="#sec-7">ASH: what is the database doing right now</a></li>
 <li><a href="#sec-8">RMAN: proving the backup exists</a></li>
+<li><a href="#sec-9">Finding who's blocking whom, worked</a></li>
+<li><a href="#sec-10">Incident: ORA-01555 at month-end</a></li>
+<li><a href="#sec-11">Interview Q&A: the database is slow - where do you look?</a></li>
 </ul>
 </div>
 
@@ -370,6 +373,40 @@ ORDER BY begin_time DESC;</div>
 <p>Non-zero <span class="formula">SSOLDERRCNT</span> confirms snapshot-too-old errors; <span class="formula">NOSPACEERRCNT</span> means undo ran out of space entirely. On redo: frequent log switches (check <span class="formula">v$log_history</span> — more than a few per hour on a busy system) mean the redo logs are too small, causing checkpoint pain and bursty I/O. Both fixes are DBA-owned, but the diagnosis — with timestamps and counters — is support's contribution.</p>
 <div class="example-box">
 <p><strong>Key takeaway.</strong> ORA-01555 is never "just retry the query." It means the undo retention does not cover the longest legitimate query, and the next long report will hit it again.</p>
+</div>
+</div>
+
+
+<div class="resume-card" id="sec-9">
+<h3>Finding who's blocking whom, worked</h3>
+<p>When sessions pile up, Oracle tells you the wait chain directly &mdash; no guessing needed.</p>
+<div class="example-box">
+<p><strong>Worked session.</strong></p>
+<p class="sql">SELECT blocking_session, sid, serial#, username, status,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;event, seconds_in_wait<br>FROM v$session<br>WHERE blocking_session IS NOT NULL;</p>
+<p>Say it returns: session 412 blocked by session 87, waiting on <span class="formula">enq: TX - row lock contention</span> for 1,800 seconds. Next: what is 87 doing?</p>
+<p class="sql">SELECT sql_id, status, last_call_et FROM v$session WHERE sid = 87;</p>
+<p>Session 87 is INACTIVE for 1,790 seconds &mdash; an application that opened a transaction, updated a row, and never committed. The fix is <span class="formula">ALTER SYSTEM KILL SESSION '87,12345' IMMEDIATE;</span> &mdash; but the rule is iron: identify before you kill. That blocker could be a 2-hour batch load mid-rollback, and killing it restarts the rollback clock from zero.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-10">
+<h3>Incident: ORA-01555 at month-end</h3>
+<p><strong>Symptom.</strong> 04:00 on the last day of the month &mdash; the regulatory reporting job dies with <span class="formula">ORA-01555: snapshot too old</span>. Same job, same data volume as last month. It ran fine then.</p>
+<ul class="clean-list">
+<li><strong>Diagnose:</strong> the report takes 45 minutes. This month the overnight batch started 20 minutes earlier and now overlaps it, updating the same tables. <span class="formula">SELECT retention FROM dba_tablespaces WHERE tablespace_name = 'UNDOTBS1';</span> &rarr; 900 seconds, NOGUARANTEE. Undo survives 15 minutes; the query needs 45.</li>
+<li><strong>Root cause:</strong> a workload-scheduling collision wearing a database error costume &mdash; the batch window crept into the reporting window.</li>
+<li><strong>Fix:</strong> set <span class="formula">UNDO_RETENTION = 3600</span> with <span class="formula">RETENTION GUARANTEE</span> (and size the undo tablespace for it), or move the report ahead of the batch. Then pin the batch schedule &mdash; window creep is how this recurs every quarter.</li>
+</ul>
+<div class="example-box">
+<p><strong>Lesson.</strong> ORA-01555 is rarely "the database broke" &mdash; it's the read workload outliving the undo the write workload allows. Fix the schedule or size the undo; don't just re-run and hope.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-11">
+<h3>Interview Q&A: the database is slow &mdash; where do you look?</h3>
+<div class="example-box">
+<p><strong>Q: The database is slow. Where do you look first?</strong></p>
+<p><strong>Strong answer:</strong> "First I ask what 'slow' means &mdash; one session or everyone? Then I go to <span class="formula">v$session</span>: the <span class="formula">event</span> and <span class="formula">seconds_in_wait</span> columns say whether sessions are locked, I/O-bound, or CPU-bound. If everyone's slow, I check ASH top events: <span class="formula">db file sequential read</span> points at storage or a missing index, <span class="formula">log file sync</span> points at a commit-heavy app or slow redo disk, <span class="formula">enq: TX</span> points at application locking. Then I correlate with time &mdash; did it start at a batch window? &mdash; and check AWR deltas around that window. The key discipline: never start by tuning SQL. Start with the wait events &mdash; they tell you whether the database is even the problem."</p>
 </div>
 </div>
 

@@ -125,6 +125,9 @@
 <li><a href="#sec-5">Black-Scholes, worked end to end</a></li>
 <li><a href="#sec-6">Binomial trees: Black-Scholes without calculus</a></li>
 <li><a href="#sec-7">Dirty vs clean price: a worked settlement example</a></li>
+<li><a href="#sec-8">Bootstrapping a discount curve, worked</a></li>
+<li><a href="#sec-9">Incident: the curve that didn't roll</a></li>
+<li><a href="#sec-10">Interview Q&A: model vs market - who's wrong?</a></li>
 </ul>
 </div>
 
@@ -198,6 +201,37 @@
 <p><strong>Worked example.</strong></p>
 <p class="formula">Accrued = 5.00 × 120/360 = <strong>1.67</strong> per 100<br>Dirty price = 98.00 + 1.67 = <strong>99.67</strong></p>
 <p>On a $5M face trade the buyer wires $4,983,500 — not $4,900,000. Three support classics live here: (1) booking the clean price as the settlement amount, (2) day-count convention mismatches between counterparties (30/360 vs actual/actual can differ by days), and (3) accrued going <em>negative</em> logic errors when settlement predates the last coupon in the system.</p>
+</div>
+</div>
+
+
+<div class="resume-card" id="sec-8">
+<h3>Bootstrapping a discount curve, worked</h3>
+<p>A discount curve is built one maturity at a time from market prices &mdash; each new point "bootstrapped" off the previous ones. Given a 1-year zero rate of 4.00% and a 2-year par rate of 4.50% (annual coupons, par 100):</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> DF(1) = 1 / 1.04 = <strong>0.96154</strong>. The 2-year par bond satisfies: 100 = 4.50 &times; DF(1) + 104.50 &times; DF(2). So 104.50 &times; DF(2) = 100 &minus; 4.50 &times; 0.96154 = 95.6731, giving DF(2) = <strong>0.91552</strong>. The implied 2-year zero: (1/0.91552)<sup>1/2</sup> &minus; 1 &asymp; <strong>4.51%</strong>.</p>
+<p>Support relevance: if the pricer builds its curve from a fixing file that's missing today, every discount factor shifts and every bond reprices. When marks look "yesterday-ish," the curve's <em>as-of date</em> is the first thing to check &mdash; before the model, before the market data, before anything.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-9">
+<h3>Incident: the curve that didn't roll</h3>
+<p><strong>Symptom.</strong> Tuesday 08:00 &mdash; bond desk marks look stale; P&amp;L is flat despite a 10bp overnight rate move. Traders insist "the market moved, our books didn't."</p>
+<ul class="clean-list">
+<li><strong>Diagnose:</strong> the curve-build job failed at 06:30 &mdash; the log reads <span class="formula">missing 3M fixing; vendor file arrived 06:45, after the 06:30 cutoff</span>. The pricer silently fell back to yesterday's curve. Check: the curve "as-of" timestamp in the risk database vs today.</li>
+<li><strong>Root cause:</strong> a hard cutoff with a silent fallback &mdash; the job failed, the pricer shrugged, and every downstream number lied for the whole morning.</li>
+<li><strong>Fix:</strong> re-run the curve build with the late file, reprice, republish risk. Then make the fallback loud: alert on "curve as-of &ne; today" and page if the build fails &mdash; a system that fails loudly at 06:31 beats one that lies quietly all day.</li>
+</ul>
+<div class="example-box">
+<p><strong>Lesson.</strong> Silent fallbacks are the most dangerous failure mode in pricing. Any job whose output feeds valuation must either succeed on today's inputs or wake someone up &mdash; there is no acceptable third option.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-10">
+<h3>Interview Q&A: model vs market &mdash; who's wrong?</h3>
+<div class="example-box">
+<p><strong>Q: Your model price and the market price disagree by 2%. Is the model wrong?</strong></p>
+<p><strong>Strong answer:</strong> "Not necessarily &mdash; first I check which one is stale. (1) Is the market price a real trade or an indicative quote? Indications on illiquid bonds can be 2% off reality. (2) Are the model inputs current &mdash; curve as-of date, volatility surface, credit spread? (3) Clean or dirty &mdash; is one side quoting accrued and the other isn't? That explains small gaps instantly. (4) Check the calendar &mdash; ex-dividend and coupon effects. Only after all four do I question the model itself. In support, nine out of ten 'the model is wrong' tickets turn out to be stale inputs or clean/dirty confusion &mdash; the model is guilty last, not first."</p>
 </div>
 </div>
 

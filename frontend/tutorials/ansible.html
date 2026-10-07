@@ -127,6 +127,9 @@
 <li><a href="#sec-6">Dynamic inventory: the AWS EC2 plugin</a></li>
 <li><a href="#sec-7">Debugging become: privilege escalation failures</a></li>
 <li><a href="#sec-8">What production support watches</a></li>
+<li><a href="#sec-9">Idempotency, proven with two runs</a></li>
+<li><a href="#sec-10">Incident: the playbook that hit production</a></li>
+<li><a href="#sec-11">Interview Q&A: Ansible vs Terraform?</a></li>
 </ul>
 </div>
 
@@ -243,6 +246,38 @@ keyed_groups:
 </ul>
 <div class="tag-list" style="margin-top:16px">
 <span class="tag">Playbook</span><span class="tag">Inventory</span><span class="tag">Ad-hoc</span><span class="tag">Idempotency</span><span class="tag">Vault</span><span class="tag">--check</span>
+</div>
+</div>
+
+
+<div class="resume-card" id="sec-9">
+<h3>Idempotency, proven with two runs</h3>
+<p>Idempotency means running the playbook twice changes nothing the second time. It's what makes Ansible safe to run on a schedule &mdash; and safe to re-run mid-incident.</p>
+<div class="example-box">
+<p><strong>Worked example.</strong></p>
+<p class="sql">- name: Ensure NTP is installed and running<br>&nbsp;&nbsp;hosts: appservers<br>&nbsp;&nbsp;become: true<br>&nbsp;&nbsp;tasks:<br>&nbsp;&nbsp;&nbsp;&nbsp;- name: Install chrony<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ansible.builtin.apt: { name: chrony, state: present }<br>&nbsp;&nbsp;&nbsp;&nbsp;- name: Ensure chronyd is running<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ansible.builtin.service:<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;name: chronyd<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;state: started<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;enabled: true</p>
+<p>First run: <span class="formula">changed=2</span>. Second run: <span class="formula">changed=0</span> &mdash; all "ok". The trap: <span class="formula">command: systemctl restart chronyd</span> reports changed <em>every</em> run and restarts the service each time &mdash; use the <span class="formula">service</span> module instead of raw commands. Support relevance: a playbook that isn't idempotent can't be safely re-run during an incident &mdash; and incidents are exactly when you re-run things.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-10">
+<h3>Incident: the playbook that hit production</h3>
+<p><strong>Symptom.</strong> 11:20 &mdash; production app servers restart mid-day; traders disconnected. Nobody declared a change. The Ansible logs show a playbook ran against <span class="formula">[appservers]</span> &mdash; with the production inventory.</p>
+<ul class="clean-list">
+<li><strong>Diagnose:</strong> the run used <span class="formula">-i inventory/prod</span>. How? The Jenkins job's inventory parameter defaulted to prod after a job-config change last week &mdash; the operator ran "the usual job" and got the unusual target. Check: job config history and the ansible log's inventory line.</li>
+<li><strong>Root cause:</strong> no guard between intent and target &mdash; one dropdown default away from production.</li>
+<li><strong>Fix:</strong> immediate: verify services recovered via handlers, confirm no partial config. Permanent: prod runs require an explicit approval + change ticket in the pipeline, <span class="formula">--check --diff</span> dry-run as a mandatory first stage, and separate service accounts so a staging credential <em>cannot</em> authenticate to prod.</li>
+</ul>
+<div class="example-box">
+<p><strong>Lesson.</strong> The inventory flag is the most dangerous argument in Ansible. Any path that can reach production must have a human gate, a dry run, and credentials that don't work anywhere else.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-11">
+<h3>Interview Q&A: Ansible vs Terraform?</h3>
+<div class="example-box">
+<p><strong>Q: Ansible vs Terraform &mdash; when do you use which?</strong></p>
+<p><strong>Strong answer:</strong> "Terraform builds the house, Ansible furnishes it. Terraform provisions infrastructure &mdash; VMs, networks, load balancers &mdash; and owns the desired state of <em>resources</em>. Ansible configures what's on them &mdash; packages, config files, services &mdash; and owns the desired state of <em>machines</em>. In practice Terraform creates the VM and then calls Ansible to configure it. The support angle: a misconfigured server means check Ansible &mdash; did the playbook run, did it fail silently? A missing or wrong-sized server means check Terraform state. And never let both manage the same thing &mdash; two tools fighting over one config file is how you get changes that revert themselves every night."</p>
 </div>
 </div>
 

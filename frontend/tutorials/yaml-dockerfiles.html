@@ -127,6 +127,9 @@
 <li><a href="#sec-6">BuildKit cache mounts: fast builds without fat images</a></li>
 <li><a href="#sec-7">Distroless images: smaller, safer, harder to debug</a></li>
 <li><a href="#sec-8">What production support watches</a></li>
+<li><a href="#sec-9">Anchors and aliases, de-duplicated</a></li>
+<li><a href="#sec-10">Incident: the indentation deploy</a></li>
+<li><a href="#sec-11">Interview Q&A: why did yes page us at 2 AM?</a></li>
 </ul>
 </div>
 
@@ -259,6 +262,38 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 </ul>
 <div class="tag-list" style="margin-top:16px">
 <span class="tag">YAML</span><span class="tag">Dockerfile</span><span class="tag">Layer caching</span><span class="tag">Multi-stage</span><span class="tag">Non-root</span><span class="tag">.dockerignore</span>
+</div>
+</div>
+
+
+<div class="resume-card" id="sec-9">
+<h3>Anchors and aliases, de-duplicated</h3>
+<p>Copy-pasted YAML drifts: the pricer gets the new image, risk stays on the old one, and nobody notices for a month. Anchors fix it.</p>
+<div class="example-box">
+<p><strong>Worked example.</strong></p>
+<p class="sql">defaults: &amp;defaults<br>&nbsp;&nbsp;image: eclipse-temurin:17-jre<br>&nbsp;&nbsp;restart: unless-stopped<br>&nbsp;&nbsp;logging: { driver: json-file,<br>&nbsp;&nbsp;&nbsp;&nbsp;options: { max-size: "10m", max-files: "3" } }<br>services:<br>&nbsp;&nbsp;pricer:<br>&nbsp;&nbsp;&nbsp;&nbsp;&lt;&lt;: *defaults<br>&nbsp;&nbsp;&nbsp;&nbsp;ports: ["8080:8080"]<br>&nbsp;&nbsp;risk:<br>&nbsp;&nbsp;&nbsp;&nbsp;&lt;&lt;: *defaults<br>&nbsp;&nbsp;&nbsp;&nbsp;ports: ["8081:8081"]</p>
+<p>Change the image once under <span class="formula">&amp;defaults</span> and both services follow via <span class="formula">&lt;&lt;: *defaults</span>. The gotcha: anchors don't cross file boundaries &mdash; for shared Compose fragments use <span class="formula">include</span> or multiple <span class="formula">-f</span> files. And quote version-like values: <span class="formula">version: "3.8"</span>, not bare <span class="formula">3.8</span> &mdash; unquoted, YAML may parse it as a float and Compose will complain.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-10">
+<h3>Incident: the indentation deploy</h3>
+<p><strong>Symptom.</strong> After a "trivial" YAML edit, the service starts healthy &mdash; but connects to the <em>wrong database</em>, running on defaults. No crash, no error, just wrong.</p>
+<ul class="clean-list">
+<li><strong>Diagnose:</strong> <span class="formula">git diff</span> shows one block moved two spaces left &mdash; <span class="formula">database:</span> landed under the wrong parent key. YAML parsed fine; the <em>tree</em> was wrong. The app read <span class="formula">config.database.host</span>, got null, and fell back to localhost defaults. Dump the parsed structure to see it: <span class="formula">python3 -c "import yaml,json; print(json.dumps(yaml.safe_load(open('values.yaml'))))"</span>.</li>
+<li><strong>Root cause:</strong> YAML's failure mode isn't a syntax error &mdash; it's a silently wrong tree, and nothing validated the structure.</li>
+<li><strong>Fix:</strong> correct the indentation, redeploy, and add <span class="formula">yamllint</span> plus schema validation (kubeconform) to CI &mdash; syntax checks catch typos, schema checks catch wrong trees.</li>
+</ul>
+<div class="example-box">
+<p><strong>Lesson.</strong> In YAML, valid syntax and correct structure are two different things, and only the second one matters. When config "looks right but behaves wrong," print the parsed tree &mdash; the types and nesting reveal the lie.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-11">
+<h3>Interview Q&A: why did yes page us at 2 AM?</h3>
+<div class="example-box">
+<p><strong>Q: <span class="formula">true</span> vs <span class="formula">"true"</span> in YAML &mdash; why did this page someone at 2 AM?</strong></p>
+<p><strong>Strong answer:</strong> "YAML 1.1 auto-converts unquoted <span class="formula">true/false/yes/no/on/off</span> to booleans. The classic incident: <span class="formula">country: NO</span> &mdash; Norway &mdash; parsed as boolean <span class="formula">false</span>, and the shipping module rejected every Norwegian order. Or <span class="formula">enabled: on</span> becoming boolean true when the app expected the string. The fix: quote anything that must stay a string, and prefer YAML 1.2 parsers, which only treat <span class="formula">true/false</span> as booleans. For support, the diagnostic is the parsed-tree dump &mdash; when config looks right but behaves wrong, the types tell you what the parser actually saw."</p>
 </div>
 </div>
 

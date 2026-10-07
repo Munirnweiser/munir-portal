@@ -126,6 +126,9 @@
 <li><a href="#sec-6">Herstatt risk: when settlement itself is the risk</a></li>
 <li><a href="#sec-7">CLS pay-in schedule: a worked funding example</a></li>
 <li><a href="#sec-8">FX swap points: a worked calculation</a></li>
+<li><a href="#sec-9">Carry trade P&L: a worked example</a></li>
+<li><a href="#sec-10">Incident: the stale rate feed</a></li>
+<li><a href="#sec-11">Interview Q&A: the off-market forward</a></li>
 </ul>
 </div>
 
@@ -201,6 +204,37 @@
 <p><strong>Worked example.</strong> EUR/USD spot 1.0850. EUR 3-month rate 3.00%, USD 3-month rate 5.00%, t = 90/360 = 0.25.</p>
 <p class="formula">F = 1.0850 × (1 + 0.05×0.25) / (1 + 0.03×0.25) = 1.0850 × 1.0125 / 1.0075 ≈ 1.0904</p>
 <p>Swap points = (1.0904 − 1.0850) × 10,000 ≈ <strong>+54 pips</strong>. The higher-yielding dollar sits at a forward discount, so rolling a long EUR/USD position forward <em>earns</em> 54 pips per 3 months — and a pricing engine quoting +40 or +70 is visibly off-market, which is exactly the kind of ticket support investigates.</p>
+</div>
+</div>
+
+
+<div class="resume-card" id="sec-9">
+<h3>Carry trade P&L: a worked example</h3>
+<p>A carry trade borrows in a low-rate currency and invests in a high-rate one, pocketing the difference &mdash; until the exchange rate moves. Take USD/JPY: borrow &yen;1.5 billion at 0.10% and buy $10 million at 5.00% (spot 150.00), held 90 days.</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> Interest earned on USD: $10,000,000 &times; 5.00% &times; 90/360 = <strong>$125,000</strong>. Interest paid on JPY: &yen;1,500,000,000 &times; 0.10% &times; 90/360 = &yen;375,000 &asymp; <strong>$2,500</strong>. Net carry &asymp; <strong>$122,500</strong> per quarter &mdash; about 4.9% annualized.</p>
+<p>Now the catch: if USD/JPY falls 2% (150.00 &rarr; 147.00) during those 90 days, the FX loss on $10M notional is <strong>$200,000</strong> &mdash; wiping out the carry and then some. Carry is picking up pennies in front of a steamroller, which is why support watches carry-unwind episodes (2008, August 2024): margin calls cascade, liquidity vanishes, and every risk number on the desk reprices at once.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-10">
+<h3>Incident: the stale rate feed</h3>
+<p><strong>Symptom.</strong> 09:14 &mdash; a client complains the portal's EUR/USD quotes are "frozen" at 1.0849 while the market trades 1.0872. The trading desk confirms: downstream systems are pricing off a stale rate.</p>
+<ul class="clean-list">
+<li><strong>Diagnose:</strong> check the feed handler's last heartbeat &mdash; <span class="formula">grep -i "heartbeat\|timeout" feed-handler.log</span>. Last tick from the vendor arrived 09:02; the publisher kept serving its cache. Wall clock vs last-publish timestamp: 12 minutes apart.</li>
+<li><strong>Root cause:</strong> the primary feed's network path flapped. Failover to the secondary feed never triggered &mdash; the watchdog monitored <em>process liveness</em>, not <em>data freshness</em>. A running process publishing 12-minute-old ticks looked healthy.</li>
+<li><strong>Fix:</strong> force failover to the secondary feed, replay the missed ticks, and replace the watchdog with a freshness check: alert if no tick arrives within 5 seconds during market hours.</li>
+</ul>
+<div class="example-box">
+<p><strong>Lesson.</strong> For market data, freshness is the health metric &mdash; liveness is not. Every feed handler should export "age of last tick" as a monitored gauge, and every downstream consumer should know the difference between a live price and a cached one.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-11">
+<h3>Interview Q&A: the off-market forward</h3>
+<div class="example-box">
+<p><strong>Q: A trader says the forward rate your system published is off-market. Walk me through your investigation.</strong></p>
+<p><strong>Strong answer:</strong> "First I reproduce it &mdash; I pull the exact quote: tenor, value date, timestamp, counterparty. Then I check the inputs, because forwards are computed, not observed: (1) was the spot feed fresh at that timestamp, or stale? (2) which interest-rate curves were used &mdash; today's fixings or yesterday's? (3) is the value date a holiday in either currency's calendar &mdash; a bad value date shifts the tenor silently. Then I recompute by hand: F = S &times; (1+r<sub>d</sub>&middot;t)/(1+r<sub>f</sub>&middot;t), and compare against a broker screen. The usual culprits: a stale curve after a central-bank meeting, a month-end value-date roll, or a manual override someone left in the pricer. Fix it, republish, and add a tolerance check that alerts when the published rate differs from the recomputed rate by more than a few pips."</p>
 </div>
 </div>
 

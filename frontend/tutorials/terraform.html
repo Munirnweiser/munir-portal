@@ -127,6 +127,9 @@
 <li><a href="#sec-6">Module version pinning</a></li>
 <li><a href="#sec-7">Remote state backends: S3 with locking</a></li>
 <li><a href="#sec-8">Taint and replace: the sick VM</a></li>
+<li><a href="#sec-9">Reading a plan that wants to destroy, worked</a></li>
+<li><a href="#sec-10">Incident: the state lock that outlived the pipeline</a></li>
+<li><a href="#sec-11">Interview Q&A: someone changed it in the console</a></li>
 </ul>
 </div>
 
@@ -173,6 +176,38 @@ Plan: 1 to add, 1 to change, 1 to destroy.</pre>
 </ul>
 <div class="tag-list" style="margin-top:16px">
 <span class="tag">Plan</span><span class="tag">Apply</span><span class="tag">State</span><span class="tag">State lock</span><span class="tag">Drift</span><span class="tag">IaC</span>
+</div>
+</div>
+
+
+<div class="resume-card" id="sec-9">
+<h3>Reading a plan that wants to destroy, worked</h3>
+<p>The plan is the last checkpoint before reality changes. Read the destroy lines like a contract.</p>
+<div class="example-box">
+<p><strong>Worked example.</strong></p>
+<p class="sql">Plan: 3 to add, 1 to change, 2 to destroy.<br>&nbsp;&nbsp;# aws_instance.pricer must be replaced<br>&nbsp;&nbsp;# (forces replacement) because: ami has changed</p>
+<p>The AMI ID changed (new golden image) &rarr; the instance must be replaced, because AMI is a ForceNew attribute. Before approving: (1) expected? Check the commit &mdash; did someone bump the AMI variable on purpose? (2) blast radius &mdash; what depends on this instance? Check the load-balancer targets in the plan's "known after apply". (3) safety net &mdash; <span class="formula">terraform state pull &gt; backup.json</span> before apply. And the iron rule: any <em>destroy</em> on a stateful resource is a full stop &mdash; databases get <span class="formula">prevent_destroy = true</span> in the resource block so the plan <em>fails</em> instead of asking politely.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-10">
+<h3>Incident: the state lock that outlived the pipeline</h3>
+<p><strong>Symptom.</strong> Every terraform run fails: <span class="formula">Error: Error acquiring the state lock</span>. Plans, applies &mdash; everything. The lock info says <span class="formula">Locked by pipeline-run-4471 at 02:13</span>.</p>
+<ul class="clean-list">
+<li><strong>Diagnose:</strong> run 4471 was killed at 02:14 when its Jenkins agent was recycled mid-apply &mdash; the lock was never released. Before touching it: verify <em>no apply is actually running</em> &mdash; check pipeline history and the timestamps on recently modified resources. A lock held by a live apply is doing its job.</li>
+<li><strong>Root cause:</strong> no lock timeout and no cleanup on abort &mdash; the pipeline could die without releasing.</li>
+<li><strong>Fix:</strong> <span class="formula">terraform force-unlock &lt;lock-id&gt;</span>, then re-run plan. Harden afterwards: lock timeouts, and a pipeline trap/post-step that releases the lock on abort. Document the "verify nothing is running" check in the runbook &mdash; force-unlock against a live apply corrupts state.</li>
+</ul>
+<div class="example-box">
+<p><strong>Lesson.</strong> State locks are the only thing standing between two applies and a corrupted state file. Respect them: verify, then unlock &mdash; never the other way around.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-11">
+<h3>Interview Q&A: someone changed it in the console</h3>
+<div class="example-box">
+<p><strong>Q: Someone changed a security group by hand in the console. How do you find out, and what do you do?</strong></p>
+<p><strong>Strong answer:</strong> "That's drift, and <span class="formula">terraform plan</span> shows it as <span class="formula">~ update in-place</span> on the hand-edited resource. Detection should be automatic &mdash; a scheduled drift-detection plan in CI, not a human noticing. Response: I don't just apply, because applying reverts the hand change and might break whatever the person was fixing at 2 AM. I talk to them: if the change was legitimate, I codify it &mdash; write it into the .tf files, commit, apply clean. If it was a mistake, I apply to revert. The principle I state plainly: the console is read-only; every change goes through code. And I mention <span class="formula">prevent_destroy</span> on databases &mdash; some mistakes shouldn't even be apply-able."</p>
 </div>
 </div>
 

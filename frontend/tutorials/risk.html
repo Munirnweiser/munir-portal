@@ -126,6 +126,9 @@
 <li><a href="#sec-6">Historical VaR, computed by hand</a></li>
 <li><a href="#sec-7">Designing stress scenarios that actually stress</a></li>
 <li><a href="#sec-8">Anatomy of a limit-monitoring dashboard</a></li>
+<li><a href="#sec-9">Expected Shortfall, from the same hand-computed VaR</a></li>
+<li><a href="#sec-10">Incident: the risk engine that didn't run</a></li>
+<li><a href="#sec-11">Interview Q&A: VaR said $2M max - we lost $5M</a></li>
 </ul>
 </div>
 
@@ -210,6 +213,37 @@
 <li><strong>Data health</strong> — feed timestamps and batch completion flags; a risk number computed on stale data is worse than no number.</li>
 </ul>
 <p><strong>Support owns the plumbing:</strong> the overnight risk batch window (must complete before traders arrive), real-time limit-alert delivery (a silent alerting pipeline is an audit finding), and the reference-data joins that attribute risk to the right desk. When a trader says "my limit looks wrong," the answer is in the batch logs and feed timestamps — always check data health before doubting the math.</p>
+</div>
+
+
+<div class="resume-card" id="sec-9">
+<h3>Expected Shortfall, from the same hand-computed VaR</h3>
+<p>VaR answers "how bad can it get before we're in the worst 5%?" Expected Shortfall (ES) answers the next question: "<em>once</em> we're in the worst 5%, how bad is it on average?" Regulators (FRTB) moved to ES precisely because VaR goes silent beyond its own threshold.</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> Reuse the 10-day P&amp;L sample: &minus;45, &minus;30, &minus;18, &minus;12, &minus;5, +3, +8, +15, +22, +40. With only 10 observations, 95% ES is degenerate (a single data point), so drop to 80% to see the mechanics: the 80% VaR is the 2nd-worst outcome, <strong>$30k</strong>; the tail beyond it is {&minus;45, &minus;30}; ES = (45 + 30) / 2 = <strong>$37.5k</strong>.</p>
+<p>Note what ES caught that VaR missed: VaR said "$30k"; ES says "and when it's worse, expect $37.5k." In production with 250+ days, ES averages the worst ~13 days &mdash; and support should know that a VaR number with no ES beside it is only half a risk statement.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-10">
+<h3>Incident: the risk engine that didn't run</h3>
+<p><strong>Symptom.</strong> 09:30 &mdash; the risk dashboard shows yesterday's date. VaR, Greeks, limit utilization: all stale. Traders are flying blind into a volatile open; the risk manager is asking if anyone noticed (nobody did &mdash; until she looked).</p>
+<ul class="clean-list">
+<li><strong>Diagnose:</strong> the overnight risk batch is a chain: market-data snapshot &rarr; curve build &rarr; pricing &rarr; aggregation &rarr; publish. Check the scheduler: the snapshot job hung waiting on a vendor file that never arrived, and the chain has no timeout &mdash; it waited forever instead of failing. <span class="formula">ps -ef | grep risk-batch</span> shows it alive but idle since 02:00.</li>
+<li><strong>Root cause:</strong> a batch chain with no per-step timeout and no data-freshness SLA &mdash; a hung job looks identical to a running job.</li>
+<li><strong>Fix:</strong> kill the hung step, run the chain manually with the late file, publish before the open. Then harden: per-step timeouts, a freshness alert ("risk as-of &ne; today by 07:30 &rarr; page"), and a dashboard banner that screams STALE instead of quietly showing yesterday.</li>
+</ul>
+<div class="example-box">
+<p><strong>Lesson.</strong> A risk system that doesn't know it's stale is worse than no risk system &mdash; it gives traders confidence in numbers that are fiction. Freshness checks on risk output are as important as the calculations themselves.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-11">
+<h3>Interview Q&A: VaR said $2M max &mdash; we lost $5M</h3>
+<div class="example-box">
+<p><strong>Q: VaR said the maximum daily loss was $2M. The desk lost $5M. Was VaR wrong?</strong></p>
+<p><strong>Strong answer:</strong> "No &mdash; VaR never said 'maximum.' 95% VaR of $2M means: on the worst 5% of days, expect to lose <em>at least</em> $2M. A $5M day is a 1-in-20 event happening &mdash; that's the model working, not failing. What I'd investigate: (1) frequency &mdash; one breach is statistics; five breaches in a month means the model or the portfolio changed &mdash; that's what backtesting counts. (2) regime &mdash; did the portfolio's risk profile change since calibration? New positions, new volatility. (3) inputs &mdash; was VaR computed on stale positions or a stale curve? For support, the deliverable is the breach report: what moved, whether limits held, and whether the model needs recalibration &mdash; not an apology for statistics behaving statistically."</p>
+</div>
 </div>
 
 <style>

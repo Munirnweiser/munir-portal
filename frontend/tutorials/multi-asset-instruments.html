@@ -127,6 +127,9 @@
 <li><a href="#sec-7">ADR vs GDR: same idea, different plumbing</a></li>
 <li><a href="#sec-8">Futures curves: contango and backwardation</a></li>
 <li><a href="#sec-9">What production support watches</a></li>
+<li><a href="#sec-10">Convertible bond parity, worked</a></li>
+<li><a href="#sec-11">Incident: the stock split that didn't propagate</a></li>
+<li><a href="#sec-12">Interview Q&A: why is this ETF at a discount to NAV?</a></li>
 </ul>
 </div>
 
@@ -202,6 +205,37 @@
 </ul>
 <div class="tag-list" style="margin-top:16px">
 <span class="tag">Equities</span><span class="tag">ETF</span><span class="tag">ADR</span><span class="tag">Bonds</span><span class="tag">Repo</span><span class="tag">FX</span><span class="tag">Commodities</span><span class="tag">Options</span><span class="tag">Swaps</span><span class="tag">CDS</span>
+</div>
+</div>
+
+
+<div class="resume-card" id="sec-10">
+<h3>Convertible bond parity, worked</h3>
+<p>A convertible bond is a bond stapled to a call option on the issuer's stock. The conversion ratio tells you how many shares each bond becomes &mdash; and parity tells you what the bond <em>should</em> trade at.</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> $1,000 face convertible, conversion ratio 20 shares. Stock at $45: parity = 20 &times; 45 = <strong>$900</strong>. The bond trades at $980 &mdash; a conversion premium of (980 &minus; 900)/900 = <strong>8.9%</strong>, the price of the downside protection the bond wrapper provides. If the stock jumps to $55, parity becomes $1,100 &mdash; above the bond price, so conversion (or selling the bond near parity) is the rational move.</p>
+<p>Support angle: stock splits and dividends adjust the conversion ratio. A missed adjustment breaks parity, the arb desk's hedge goes wrong, and their P&amp;L ticket lands on you &mdash; corporate-action propagation is the cross-asset incident that keeps giving.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-11">
+<h3>Incident: the stock split that didn't propagate</h3>
+<p><strong>Symptom.</strong> Monday 10:00 &mdash; the options desk's P&amp;L is off by $300k on a single name; delta hedges are wrong-way. The stock did a 4:1 split effective today.</p>
+<ul class="clean-list">
+<li><strong>Diagnose:</strong> the corporate-action feed applied the split to equities, but the adjustment never reached the options symbology &mdash; strikes still read $100 instead of $25, contracts not multiplied by 4. Compare the OCC adjustment memo against the internal strike table; <span class="formula">grep</span> the CA event log for the effective date.</li>
+<li><strong>Root cause:</strong> the CA pipeline fans out per asset class, and the options leg had no reconciliation against the exchange memo &mdash; a silent drop.</li>
+<li><strong>Fix:</strong> apply the adjustment, rebook Friday's closing positions at adjusted terms, restate Greeks. Then add the missing check: every corporate action must reconcile adjusted terms against the exchange memo <em>per asset class</em> before the open.</li>
+</ul>
+<div class="example-box">
+<p><strong>Lesson.</strong> Corporate actions are the number-one cross-asset data incident. A split is one event in the real world but five updates in your systems &mdash; verify all five, or the one you missed will page you.</p>
+</div>
+</div>
+
+<div class="resume-card" id="sec-12">
+<h3>Interview Q&A: why is this ETF at a discount to NAV?</h3>
+<div class="example-box">
+<p><strong>Q: A client asks why their ETF trades at a discount to NAV. What do you tell them &mdash; and what do you check?</strong></p>
+<p><strong>Strong answer:</strong> "The ETF price is set by supply and demand; NAV is the basket's computed value. A discount means sellers outweigh buyers &mdash; normal in stressed or illiquid markets, or when the underlying market is closed. What I check: (1) is the underlying market open? If not &mdash; say a US-listed EM ETF while Asia sleeps &mdash; the published NAV is stale and the ETF price is actually the fresher signal. (2) Can authorized participants still create and redeem? If the basket is hard to trade, APs step back and the discount persists. (3) On the support side: a sudden wide discount with no underlying move usually means the <em>intraday NAV feed</em> went stale &mdash; a frozen iNAV looks exactly like a mispricing, so I verify the feed before I escalate the market."</p>
 </div>
 </div>
 
