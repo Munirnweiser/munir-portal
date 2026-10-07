@@ -81,8 +81,8 @@
         }
         requestAnimationFrame(frame);
 
-        /* schedule the next fairy 6–14 seconds later */
-        setTimeout(fly, 6000 + Math.random() * 8000);
+        /* schedule the next fairy ~3 minutes later (as originally designed) */
+        setTimeout(fly, 170000 + Math.random() * 20000);
     }
 
     /* first fairy appears 2 seconds after page load */
