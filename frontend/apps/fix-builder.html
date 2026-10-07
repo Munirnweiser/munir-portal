@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="FIX message builder: assemble a NewOrderSingle tag by tag with live checksum validation.">
+    <title>FIX Message Builder | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <meta property="og:title" content="FIX Message Builder | Munir Nweiser">
+    <meta property="og:description" content="Build a FIX NewOrderSingle tag by tag — live checksum included.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://munirnweiser.github.io/munir-portal/apps/fix-builder.html">
+    <meta property="og:site_name" content="Munir Nweiser — Capital Markets Technology">
+    <meta name="twitter:card" content="summary">
+    <style>
+        .two-col { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+        @media (max-width:800px) { .two-col { grid-template-columns:1fr; } }
+        .fld label { display:block; margin:10px 0 5px; color:var(--text-muted); font-size:.88rem; }
+        .fld input, .fld select { width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border);
+            background:#0a0f1e; color:var(--text); }
+        .fix-out { font-family:monospace; font-size:.85rem; word-break:break-all; background:#0a0f1e;
+            border:1px solid var(--border); border-radius:10px; padding:16px; line-height:1.9; }
+        .fix-out .tagn { color:var(--cyan); } .fix-out .sep { color:#f472b6; }
+        .tag-row { display:flex; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); font-size:.88rem; }
+        .tag-row .tn { font-family:monospace; color:var(--cyan); min-width:44px; }
+        .tag-row .td { color:var(--text-muted); }
+        .ok { color:#34d399; font-weight:700; } .bad { color:#f87171; font-weight:700; }
+        textarea.decode { width:100%; min-height:90px; padding:12px; border-radius:10px; border:1px solid var(--border);
+            background:#0a0f1e; color:var(--text); font-family:monospace; font-size:.82rem; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header">
+
+        <div class="container nav-container">
+
+            <a href="../index.html#home"] class="logo">
+                <span class="logo-mark">MN</span>
+
+                <span class="logo-text">
+                    Munir Nweiser
+                    <small>Capital Markets • Technology</small>
+                </span>
+            </a>
+
+
+            <nav class="main-nav" aria-label="Main navigation">
+
+                <a href="../index.html#home"]>Home</a>
+                <a href="../resume.html">Resume</a>
+                <a href="../scientific-calculator.html">Calculator</a>
+                <a href="../index.html#markets">Markets</a>
+                <a href="../index.html#trading">Trading</a>
+                <a href="../index.html#tutorials">Tutorials</a>
+                <a href="../roadmap.html">Roadmap</a>
+                <a href="../changelog.html">Changelog</a>
+                <a href="../index.html#games">Games</a>
+                <a href="../index.html#memories">Memories</a>
+
+            </nav>
+
+            <button
+                id="mobile-menu-button"
+                class="mobile-menu-button"
+                type="button"
+                aria-label="Open navigation menu"
+                aria-expanded="false"
+            >
+                ☰
+            </button>
+
+        </div>
+
+    </header>
+<main class="container" style="padding:120px 0 80px; max-width:1000px;">
+    <div class="section-heading">
+        <p class="eyebrow">FIX lab</p>
+        <h2>FIX Message Builder</h2>
+        <p>Assemble a <span class="formula">35=D</span> NewOrderSingle tag by tag. The checksum is computed live — exactly like a real engine does it.</p>
+    </div>
+    <div class="two-col">
+        <div class="resume-card" style="padding:22px;">
+            <h3 style="margin-top:0;">Order fields</h3>
+            <div class="fld"><label>SenderCompID (49)</label><input id="f49" value="MUNIR"></div>
+            <div class="fld"><label>TargetCompID (56)</label><input id="f56" value="EXCHANGE"></div>
+            <div class="fld"><label>Symbol (55)</label><input id="f55" value="AAPL"></div>
+            <div class="fld"><label>Side (54)</label><select id="f54"><option value="1">1 — Buy</option><option value="2">2 — Sell</option></select></div>
+            <div class="fld"><label>Order type (40)</label><select id="f40"><option value="2">2 — Limit</option><option value="1">1 — Market</option></select></div>
+            <div class="fld"><label>Price (44)</label><input id="f44" type="number" value="232.50" step="0.01"></div>
+            <div class="fld"><label>Quantity (38)</label><input id="f38" type="number" value="100" min="1"></div>
+            <div class="fld"><label>Time in force (59)</label><select id="f59"><option value="0">0 — Day</option><option value="1">1 — GTC</option><option value="3">3 — IOC</option><option value="4">4 — FOK</option></select></div>
+        </div>
+        <div>
+            <div class="resume-card" style="padding:22px; margin-bottom:16px;">
+                <h3 style="margin-top:0;">Raw FIX message</h3>
+                <div class="fix-out" id="raw"></div>
+                <p id="ck" style="margin-top:10px;"></p>
+                <button class="btn btn-secondary" id="copy">Copy raw (SOH delimiters)</button>
+            </div>
+            <div class="resume-card" style="padding:22px;">
+                <h3 style="margin-top:0;">Tag by tag</h3>
+                <div id="tags"></div>
+            </div>
+        </div>
+    </div>
+    <div class="resume-card" style="padding:22px; margin-top:18px;">
+        <h3 style="margin-top:0;">Decode a message</h3>
+        <p style="color:var(--text-muted); font-size:.9rem;">Paste any FIX message (| or SOH delimited) to parse it.</p>
+        <textarea class="decode" id="decIn" placeholder="8=FIX.4.4|9=...|35=D|..."></textarea>
+        <div style="margin-top:10px;"><button class="btn" id="decGo">Decode</button></div>
+        <div id="decOut" style="margin-top:12px;"></div>
+    </div>
+    <p style="text-align:center;margin-top:26px;"><a href="../tutorials/fix-protocol.html" class="btn btn-secondary">← FIX protocol tutorial</a></p>
+</main>
+<footer class="site-footer">
+
+        <div class="container footer-content">
+
+            <div>
+
+                <strong>
+                    Munir Nweiser
+                </strong>
+
+                <p>
+                    Application Support • Capital Markets • Technology
+                </p>
+
+            </div>
+
+
+            <div class="footer-links">
+
+                <a href="#home">Home</a>
+                <a href="#resume">Resume</a>
+                <a href="#trading">Trading</a>
+                <a href="#tutorials">Tutorials</a>
+
+            </div>
+
+
+            <div>
+
+                <small>
+                    © <span id="current-year"></span>
+                    Munir Nweiser
+                </small>
+
+                <br>
+
+                <small class="visitor-count">
+                    <span id="visitor-count"></span>
+                </small>
+
+                <small class="site-credit">
+                    Designed &amp; built with Muse 🤖
+                </small>
+
+            </div>
+
+        </div>
+
+    </footer>
+<script src="../app.js"></script>
+<script src="../js/progress.js"></script>
+<script>
+const TAGINFO = {"8": "BeginString \u2014 FIX version, e.g. FIX.4.4", "9": "BodyLength \u2014 byte count of the body", "35": "MsgType \u2014 D = NewOrderSingle", "49": "SenderCompID \u2014 your firm's ID", "56": "TargetCompID \u2014 counterparty's ID", "34": "MsgSeqNum \u2014 sequence number, increments per message", "52": "SendingTime \u2014 UTC timestamp YYYYMMDD-HH:MM:SS", "11": "ClOrdID \u2014 your unique client order ID", "55": "Symbol \u2014 instrument ticker", "54": "Side \u2014 1=Buy, 2=Sell", "60": "TransactTime \u2014 time of order initiation", "40": "OrdType \u2014 1=Market, 2=Limit", "44": "Price \u2014 limit price (omit for market)", "38": "OrderQty \u2014 quantity", "59": "TimeInForce \u2014 0=Day, 1=GTC, 3=IOC, 4=FOK", "10": "CheckSum \u2014 sum of all bytes mod 256, 3 digits"};
+const SOH = String.fromCharCode(1);
+let seq = 1;
+const $ = id => document.getElementById(id);
+const v = id => $(id).value.trim();
+function now() {
+    const d = new Date(), p = n => String(n).padStart(2, '0');
+    return d.getUTCFullYear() + p(d.getUTCMonth()+1) + p(d.getUTCDate()) + '-' + p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()) + ':' + p(d.getUTCSeconds());
+}
+function checksum(s) {
+    let sum = 0;
+    for (let i = 0; i < s.length; i++) sum += s.charCodeAt(i);
+    return String(sum % 256).padStart(3, '0');
+}
+function build() {
+    const isLimit = v('f40') === '2';
+    const body = [
+        ['35', 'D'], ['49', v('f49') || 'SENDER'], ['56', v('f56') || 'TARGET'],
+        ['34', String(seq)], ['52', now()],
+        ['11', 'ORD' + Date.now().toString(36).toUpperCase()],
+        ['55', v('f55') || 'SYM'], ['54', v('f54')], ['60', now()],
+        ['40', v('f40')], ['38', v('f38') || '0'], ['59', v('f59')]
+    ];
+    if (isLimit) body.splice(10, 0, ['44', v('f44') || '0']);
+    const bodyStr = body.map(([t, x]) => t + '=' + x).join(SOH) + SOH;
+    const len = bodyStr.length;
+    const head = '8=FIX.4.4' + SOH + '9=' + len + SOH;
+    const ck = checksum(head + bodyStr);
+    const full = head + bodyStr + '10=' + ck + SOH;
+    $('raw').innerHTML = full.split(SOH).filter(Boolean).map(p => {
+        const [t, x] = p.split('=');
+        return '<span class="tagn">' + t + '=</span>' + x;
+    }).join('<span class="sep">|</span>');
+    $('ck').innerHTML = 'Checksum <span class="ok">10=' + ck + ' ✓ valid</span> · BodyLength 9=' + len;
+    $('tags').innerHTML = [['8','FIX.4.4'],['9',String(len)],...body,['10',ck]].map(([t,x]) =>
+        '<div class="tag-row"><span class="tn">' + t + '</span><span><strong>' + x + '</strong><br><span class="td">' + (TAGINFO[t] || '') + '</span></span></div>'
+    ).join('');
+    $('copy').onclick = () => {
+        const done = () => { $('copy').textContent = 'Copied!'; setTimeout(() => $('copy').textContent = 'Copy raw (SOH delimiters)', 1500); };
+        if (navigator.clipboard) navigator.clipboard.writeText(full).then(done).catch(() => prompt('Copy:', full));
+        else prompt('Copy:', full);
+    };
+    if (window.PortalProgress && PortalProgress.firstCalcToday('fix-builder')) PortalProgress.addXP(10, 'FIX builder');
+}
+function decode() {
+    let s = $('decIn').value.trim().replace(/\|/g, SOH);
+    const parts = s.split(SOH).filter(Boolean);
+    if (!parts.length) { $('decOut').innerHTML = '<span class="bad">Nothing to decode.</span>'; return; }
+    let html = '', badCk = '';
+    const ckPart = parts.find(p => p.startsWith('10='));
+    if (ckPart) {
+        const raw = s.slice(0, s.indexOf('10='));
+        const exp = checksum(raw);
+        badCk = ckPart.slice(3) === exp
+            ? '<p class="ok">Checksum valid (10=' + exp + ')</p>'
+            : '<p class="bad">Checksum INVALID — message says ' + ckPart.slice(3) + ', computed ' + exp + '</p>';
+    }
+    html = parts.map(p => {
+        const i = p.indexOf('='), t = p.slice(0, i), x = p.slice(i + 1);
+        return '<div class="tag-row"><span class="tn">' + t + '</span><span><strong>' + x + '</strong><br><span class="td">' + (TAGINFO[t] || '—') + '</span></span></div>';
+    }).join('');
+    $('decOut').innerHTML = badCk + html;
+}
+['f49','f56','f55','f54','f40','f44','f38','f59'].forEach(id => $(id).addEventListener('input', build));
+$('decGo').addEventListener('click', decode);
+build();
+</script>
+</body>
+</html>

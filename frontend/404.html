@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="404 — this page wandered off the patrol route.">
+    <title>404 — Lost in the Server Room | Munir Nweiser</title>
+    <link rel="stylesheet" href="style.css">
+    <meta name="robots" content="noindex">
+    <style>
+        .lost { text-align:center; padding:60px 20px; }
+        .lost h1 { font-size:5rem; margin:0; background:linear-gradient(90deg,var(--cyan),#a78bfa);
+            -webkit-background-clip:text; background-clip:text; color:transparent; }
+        .bear-404 { font-size:4rem; animation:bob 2.4s ease-in-out infinite; display:inline-block; }
+        @keyframes bob { 0%,100% { transform:translateY(0) rotate(-6deg); } 50% { transform:translateY(-14px) rotate(6deg); } }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header">
+
+        <div class="container nav-container">
+
+            <a href="#home" class="logo">
+                <span class="logo-mark">MN</span>
+
+                <span class="logo-text">
+                    Munir Nweiser
+                    <small>Capital Markets • Technology</small>
+                </span>
+            </a>
+
+
+            <nav class="main-nav" aria-label="Main navigation">
+
+                <a href="#home">Home</a>
+                <a href="resume.html">Resume</a>
+                <a href="scientific-calculator.html">Calculator</a>
+                <a href="#markets">Markets</a>
+                <a href="#trading">Trading</a>
+                <a href="#tutorials">Tutorials</a>
+                <a href="roadmap.html">Roadmap</a>
+                <a href="changelog.html">Changelog</a>
+                <a href="#games">Games</a>
+                <a href="#memories">Memories</a>
+
+            </nav>
+
+            <button
+                id="mobile-menu-button"
+                class="mobile-menu-button"
+                type="button"
+                aria-label="Open navigation menu"
+                aria-expanded="false"
+            >
+                ☰
+            </button>
+
+        </div>
+
+    </header>
+<main class="container" style="padding:120px 0 80px; max-width:700px;">
+    <div class="lost">
+        <div class="bear-404">🐻</div>
+        <h1>404</h1>
+        <h2 style="margin-top:0;">This page wandered off the patrol route.</h2>
+        <p style="color:var(--text-muted); line-height:1.7;">munir-bot searched every rack in the server room and couldn't find it.<br>It may have been decommissioned — or it never existed.</p>
+        <div style="display:flex; gap:12px; justify-content:center; margin-top:24px; flex-wrap:wrap;">
+            <a href="index.html" class="btn">← Back home</a>
+            <a href="apps/trading-app.html" class="btn btn-secondary">Trading app</a>
+            <a href="tutorials/index.html" class="btn btn-secondary">Tutorials</a>
+        </div>
+    </div>
+</main>
+<footer class="site-footer">
+
+        <div class="container footer-content">
+
+            <div>
+
+                <strong>
+                    Munir Nweiser
+                </strong>
+
+                <p>
+                    Application Support • Capital Markets • Technology
+                </p>
+
+            </div>
+
+
+            <div class="footer-links">
+
+                <a href="#home">Home</a>
+                <a href="#resume">Resume</a>
+                <a href="#trading">Trading</a>
+                <a href="#tutorials">Tutorials</a>
+
+            </div>
+
+
+            <div>
+
+                <small>
+                    © <span id="current-year"></span>
+                    Munir Nweiser
+                </small>
+
+                <br>
+
+                <small class="visitor-count">
+                    <span id="visitor-count"></span>
+                </small>
+
+                <small class="site-credit">
+                    Designed &amp; built with Muse 🤖
+                </small>
+
+            </div>
+
+        </div>
+
+    </footer>
+<script src="app.js"></script>
+<script src="counter.js"></script>
+</body>
+</html>

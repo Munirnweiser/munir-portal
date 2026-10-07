@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Canada 2026 salary calculator: gross to net with federal + provincial tax (Ontario, Quebec, BC, Alberta).">
+    <title>Canada Salary Calculator | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <meta property="og:title" content="Canada Salary Calculator | Munir Nweiser">
+    <meta property="og:description" content="Gross-to-net pay with 2026 federal and provincial tax brackets.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://munirnweiser.github.io/munir-portal/calculators/salary-ca.html">
+    <meta property="og:site_name" content="Munir Nweiser — Capital Markets Technology">
+    <meta name="twitter:card" content="summary">
+    <style>
+        .calc-form label { display:block; margin:12px 0 6px; color:var(--text-muted); }
+        .calc-form input, .calc-form select { width:100%; padding:12px; border-radius:10px; border:1px solid var(--border);
+            background:#0a0f1e; color:var(--text); font-size:1rem; }
+        .big-result { font-size:1.8rem; font-weight:800; color:#34d399; }
+        .res-table { width:100%; border-collapse:collapse; margin-top:16px; }
+        .res-table td { padding:10px 8px; border-bottom:1px solid var(--border); }
+        .res-table td:last-child { text-align:right; font-variant-numeric:tabular-nums; }
+        .note { font-size:.82rem; color:var(--text-muted); margin-top:16px; line-height:1.6; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header">
+
+        <div class="container nav-container">
+
+            <a href="../index.html#home"] class="logo">
+                <span class="logo-mark">MN</span>
+
+                <span class="logo-text">
+                    Munir Nweiser
+                    <small>Capital Markets • Technology</small>
+                </span>
+            </a>
+
+
+            <nav class="main-nav" aria-label="Main navigation">
+
+                <a href="../index.html#home"]>Home</a>
+                <a href="../resume.html">Resume</a>
+                <a href="../scientific-calculator.html">Calculator</a>
+                <a href="../index.html#markets">Markets</a>
+                <a href="../index.html#trading">Trading</a>
+                <a href="../index.html#tutorials">Tutorials</a>
+                <a href="../roadmap.html">Roadmap</a>
+                <a href="../changelog.html">Changelog</a>
+                <a href="../index.html#games">Games</a>
+                <a href="../index.html#memories">Memories</a>
+
+            </nav>
+
+            <button
+                id="mobile-menu-button"
+                class="mobile-menu-button"
+                type="button"
+                aria-label="Open navigation menu"
+                aria-expanded="false"
+            >
+                ☰
+            </button>
+
+        </div>
+
+    </header>
+<main class="container" style="padding:120px 0 80px; max-width:760px;">
+    <div class="section-heading">
+        <p class="eyebrow">Calculator</p>
+        <h2>Canada Salary Calculator</h2>
+        <p>Gross → net for 2026: federal + provincial income tax. Compare offers across provinces.</p>
+    </div>
+    <div class="resume-card calc-form" style="padding:24px;">
+        <label for="gross">Gross annual salary (CAD)</label>
+        <input id="gross" type="number" value="95000" min="0" step="1000">
+        <label for="prov">Province</label>
+        <select id="prov">
+            <option>Ontario</option><option>Quebec</option><option>British Columbia</option><option>Alberta</option>
+        </select>
+        <div style="margin-top:18px;"><button class="btn" id="go">Calculate take-home</button></div>
+        <div id="out" style="margin-top:20px;"></div>
+        <p class="note">2026 brackets (federal lowest rate now 14%). Includes basic personal amount credits; Quebec applies the 16.5% federal abatement. Excludes CPP/QPP, EI, and employer deductions — so actual take-home is a bit lower. Estimates only, not tax advice.</p>
+    </div>
+    <p style="text-align:center;margin-top:26px;"><a href="../calculators.html" class="btn btn-secondary">← All calculators</a></p>
+</main>
+<footer class="site-footer">
+
+        <div class="container footer-content">
+
+            <div>
+
+                <strong>
+                    Munir Nweiser
+                </strong>
+
+                <p>
+                    Application Support • Capital Markets • Technology
+                </p>
+
+            </div>
+
+
+            <div class="footer-links">
+
+                <a href="#home">Home</a>
+                <a href="#resume">Resume</a>
+                <a href="#trading">Trading</a>
+                <a href="#tutorials">Tutorials</a>
+
+            </div>
+
+
+            <div>
+
+                <small>
+                    © <span id="current-year"></span>
+                    Munir Nweiser
+                </small>
+
+                <br>
+
+                <small class="visitor-count">
+                    <span id="visitor-count"></span>
+                </small>
+
+                <small class="site-credit">
+                    Designed &amp; built with Muse 🤖
+                </small>
+
+            </div>
+
+        </div>
+
+    </footer>
+<script src="../app.js"></script>
+<script src="../js/progress.js"></script>
+<script>
+const FED = [[58523, 0.14], [117045, 0.205], [181440, 0.26], [258482, 0.29], [-1, 0.33]];
+const FED_BPA = 16452;
+const PROV = {"Ontario": {"b": [[53891, 0.0505], [107785, 0.0915], [150000, 0.1116], [220000, 0.1216], [-1, 0.1316]], "bpa": 11865, "abatement": 0.0}, "Quebec": {"b": [[54345, 0.14], [108680, 0.19], [132245, 0.24], [-1, 0.2575]], "bpa": 18056, "abatement": 0.165}, "British Columbia": {"b": [[50363, 0.0506], [100728, 0.077], [115648, 0.105], [140430, 0.1229], [190405, 0.147], [265545, 0.168], [-1, 0.205]], "bpa": 11981, "abatement": 0.0}, "Alberta": {"b": [[61200, 0.08], [154259, 0.1], [185111, 0.12], [246813, 0.13], [370220, 0.14], [-1, 0.15]], "bpa": 21885, "abatement": 0.0}};
+function taxOn(income, brackets) {
+    let tax = 0, prev = 0;
+    for (const [lim, rate] of brackets) {
+        const cap = lim < 0 ? Infinity : lim;
+        const amt = Math.min(income, cap) - prev;
+        if (amt <= 0) break;
+        tax += amt * rate; prev = cap;
+    }
+    return tax;
+}
+function marginal(income, brackets) {
+    for (const [lim, rate] of brackets) {
+        const cap = lim < 0 ? Infinity : lim;
+        if (income <= cap) return rate;
+    }
+    return 0;
+}
+document.getElementById('go').addEventListener('click', () => {
+    const gross = Math.max(0, parseFloat(document.getElementById('gross').value) || 0);
+    const p = document.getElementById('prov').value;
+    const P = PROV[p];
+    let fed = Math.max(0, taxOn(gross, FED) - FED_BPA * FED[0][1]);
+    if (P.abatement) fed *= (1 - P.abatement);
+    const prov = Math.max(0, taxOn(gross, P.b) - P.bpa * P.b[0][1]);
+    const total = fed + prov, net = gross - total;
+    const mRate = (marginal(gross, FED) + marginal(gross, P.b)) * 100;
+    const fmt = n => '$' + n.toLocaleString('en-CA', {maximumFractionDigits: 0});
+    document.getElementById('out').innerHTML =
+        '<div class="big-result">' + fmt(net) + ' <span style="font-size:1rem;color:var(--text-muted)">/ year take-home</span></div>' +
+        '<div style="color:var(--text-muted);margin-top:4px;">' + fmt(net/12) + ' / month · ' + fmt(net/26) + ' / bi-weekly</div>' +
+        '<table class="res-table"><tbody>' +
+        '<tr><td>Gross income</td><td>' + fmt(gross) + '</td></tr>' +
+        '<tr><td>Federal tax' + (P.abatement ? ' (after QC abatement)' : '') + '</td><td>' + fmt(fed) + '</td></tr>' +
+        '<tr><td>Provincial tax (' + p + ')</td><td>' + fmt(prov) + '</td></tr>' +
+        '<tr><td><strong>Total income tax</strong></td><td><strong>' + fmt(total) + '</strong></td></tr>' +
+        '<tr><td>Average tax rate</td><td>' + (gross ? (total/gross*100).toFixed(1) : '0') + '%</td></tr>' +
+        '<tr><td>Marginal rate (next dollar)</td><td>' + mRate.toFixed(2) + '%</td></tr>' +
+        '</tbody></table>';
+    if (window.PortalProgress && PortalProgress.firstCalcToday('salary-ca')) PortalProgress.addXP(10, 'salary calc');
+});
+// auto-run once
+document.getElementById('go').click();
+</script>
+</body>
+</html>
