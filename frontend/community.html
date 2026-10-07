@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="The Munir Portal community — posts, stories, games and builds, shared in public.">
+    <meta property="og:title" content="Community | Munir Nweiser">
+    <meta property="og:description" content="Posts, stories and builds from the Munir Portal — trading apps, tutorials, games.">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
+    <title>Community | Munir Nweiser</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .community-wrap {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 120px 20px 80px;
+        }
+
+        /* ---------- profile header ---------- */
+        .profile-head {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .profile-avatar {
+            width: 96px;
+            height: 96px;
+            margin: 0 auto 14px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 800;
+            color: #fff;
+            background: linear-gradient(135deg, #0ea5e9, #8b5cf6);
+            border: 3px solid rgba(103, 232, 249, 0.5);
+            box-shadow: 0 0 30px rgba(103, 232, 249, 0.25);
+        }
+
+        .profile-head h1 {
+            font-size: 1.6rem;
+            margin-bottom: 6px;
+        }
+
+        .profile-bio {
+            color: var(--text-muted);
+            font-size: 0.92rem;
+            margin-bottom: 16px;
+        }
+
+        .profile-stats {
+            display: flex;
+            justify-content: center;
+            gap: 34px;
+            margin-bottom: 18px;
+        }
+
+        .profile-stats div {
+            text-align: center;
+        }
+
+        .profile-stats strong {
+            display: block;
+            font-size: 1.25rem;
+        }
+
+        .profile-stats span {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        /* ---------- stories ---------- */
+        .stories-row {
+            display: flex;
+            gap: 18px;
+            overflow-x: auto;
+            padding: 6px 4px 16px;
+            margin-bottom: 26px;
+        }
+
+        .story-item {
+            flex: 0 0 auto;
+            width: 76px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: inherit;
+            font: inherit;
+        }
+
+        .story-ring {
+            width: 68px;
+            height: 68px;
+            border-radius: 50%;
+            padding: 3px;
+            margin: 0 auto 6px;
+            background: linear-gradient(135deg, #22d3ee, #a78bfa, #f472b6);
+        }
+
+        .story-ring span {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: #0b1220;
+            font-size: 1.6rem;
+        }
+
+        .story-item small {
+            display: block;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            text-align: center;
+            line-height: 1.3;
+        }
+
+        .story-viewer {
+            position: fixed;
+            inset: 0;
+            z-index: 300;
+            background: rgba(2, 6, 16, 0.97);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .story-card {
+            width: min(420px, 92vw);
+            min-height: 420px;
+            border-radius: 20px;
+            padding: 34px 28px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 14px;
+            border: 1px solid var(--border);
+        }
+
+        .story-card .story-emoji {
+            font-size: 3.4rem;
+        }
+
+        .story-card h3 {
+            font-size: 1.5rem;
+        }
+
+        .story-card p {
+            color: var(--text-muted);
+            line-height: 1.7;
+        }
+
+        .story-progress {
+            position: absolute;
+            top: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 6px;
+        }
+
+        .story-progress i {
+            width: 44px;
+            height: 4px;
+            border-radius: 2px;
+            background: rgba(148, 163, 184, 0.3);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .story-progress i.done { background: #22d3ee; }
+
+        .story-close {
+            position: absolute;
+            top: 14px;
+            right: 18px;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1.8rem;
+            cursor: pointer;
+        }
+
+        /* ---------- composer ---------- */
+        .composer {
+            margin-bottom: 26px;
+        }
+
+        .composer textarea {
+            width: 100%;
+            min-height: 74px;
+            resize: vertical;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: rgba(15, 23, 42, 0.7);
+            color: inherit;
+            font: inherit;
+            padding: 12px 14px;
+            margin: 10px 0;
+        }
+
+        .composer input[type="text"] {
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: rgba(15, 23, 42, 0.7);
+            color: inherit;
+            font: inherit;
+            padding: 8px 12px;
+            width: 180px;
+        }
+
+        .composer-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .demo-note {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 10px;
+        }
+
+        /* ---------- feed / post cards ---------- */
+        .post-card {
+            margin-bottom: 22px;
+            overflow: hidden;
+        }
+
+        .post-head {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .post-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            color: #fff;
+            background: linear-gradient(135deg, #0ea5e9, #8b5cf6);
+            flex: 0 0 auto;
+        }
+
+        .post-head strong { display: block; font-size: 0.95rem; }
+        .post-head small { color: var(--text-muted); font-size: 0.78rem; }
+
+        .post-body {
+            color: var(--text);
+            line-height: 1.7;
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+        }
+
+        .post-visual {
+            border-radius: 14px;
+            padding: 30px 20px;
+            text-align: center;
+            font-size: 2.6rem;
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .post-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding-top: 4px;
+        }
+
+        .like-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font: inherit;
+            color: inherit;
+            font-size: 1.05rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 2px;
+        }
+
+        .like-btn .heart { transition: transform 0.15s ease; }
+        .like-btn.liked .heart { color: #f472b6; }
+        .like-btn.pop .heart { transform: scale(1.5); }
+
+        .comment-toggle {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font: inherit;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            padding: 4px 2px;
+        }
+
+        .comments {
+            margin-top: 12px;
+            border-top: 1px solid var(--border);
+            padding-top: 12px;
+            display: none;
+        }
+
+        .comments.open { display: block; }
+
+        .comment {
+            margin-bottom: 10px;
+            font-size: 0.88rem;
+            line-height: 1.55;
+        }
+
+        .comment strong { color: #7dd3fc; }
+
+        .comment-form {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .comment-form input {
+            flex: 1;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: rgba(15, 23, 42, 0.7);
+            color: inherit;
+            font: inherit;
+            font-size: 0.88rem;
+            padding: 8px 12px;
+        }
+
+        .post-link {
+            display: inline-block;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="fairy-layer" aria-hidden="true"></div>
+
+<header class="site-header">
+    <div class="container nav-container">
+        <a href="index.html" class="logo">
+            <span class="logo-mark">MN</span>
+            <span class="logo-text">
+                Munir Nweiser
+                <small>Capital Markets • Technology</small>
+            </span>
+        </a>
+        <nav class="main-nav" aria-label="Main navigation">
+            <a href="index.html">Home</a>
+            <a href="resume.html">Resume</a>
+            <a href="scientific-calculator.html">Calculator</a>
+            <a href="index.html#markets">Markets</a>
+            <a href="index.html#trading">Trading</a>
+            <a href="index.html#tutorials">Tutorials</a>
+            <a href="roadmap.html">Roadmap</a>
+            <a href="index.html#games">Games</a>
+            <a href="index.html#memories">Memories</a>
+        </nav>
+        <button
+            id="mobile-menu-button"
+            class="mobile-menu-button"
+            type="button"
+            aria-label="Open navigation menu"
+            aria-expanded="false"
+        >
+            ☰
+        </button>
+    </div>
+</header>
+
+<main class="community-wrap">
+
+    <div class="section-heading" style="text-align:center; margin-bottom: 26px;">
+        <p class="eyebrow">Social</p>
+        <h2>Community</h2>
+        <p>Builds, games and notes — shared in public.</p>
+    </div>
+
+    <section class="profile-head" aria-label="Profile">
+        <div class="profile-avatar">MN</div>
+        <h1>Munir Nweiser</h1>
+        <p class="profile-bio">Capital Markets • Production Support • Building in public</p>
+        <div class="profile-stats">
+            <div><strong id="stat-posts">0</strong><span>Posts</span></div>
+            <div><strong id="stat-followers">128</strong><span>Followers</span></div>
+            <div><strong>86</strong><span>Following</span></div>
+        </div>
+        <button id="follow-btn" class="btn" type="button">Follow</button>
+    </section>
+
+    <section aria-label="Stories">
+        <div class="stories-row" id="stories-row"></div>
+    </section>
+
+    <section class="resume-card composer" aria-label="Share an update">
+        <strong>Share an update</strong>
+        <textarea id="composer-text" placeholder="What are you building today?"></textarea>
+        <div class="composer-row">
+            <input type="text" id="composer-name" value="Munir" maxlength="40" aria-label="Your name">
+            <button id="composer-post" class="btn" type="button">Post</button>
+        </div>
+        <p class="demo-note">Demo: posts live in your browser until the backend arrives.</p>
+    </section>
+
+    <section id="feed" aria-label="Feed"></section>
+
+</main>
+
+<footer class="site-footer">
+    <div class="container footer-content">
+        <div>
+            <strong>Munir Nweiser</strong>
+            <p>Application Support • Capital Markets • Technology</p>
+        </div>
+        <div class="footer-links">
+            <a href="index.html">Home</a>
+            <a href="resume.html">Resume</a>
+            <a href="index.html#trading">Trading</a>
+            <a href="index.html#tutorials">Tutorials</a>
+            <a href="roadmap.html">Roadmap</a>
+        </div>
+        <div>
+            <small>© <span id="current-year"></span> Munir Nweiser</small>
+            <br>
+            <small class="visitor-count"><span id="visitor-count"></span></small>
+            <small class="site-credit">Designed &amp; built with Muse 🤖</small>
+        </div>
+    </div>
+</footer>
+
+<script src="app.js"></script>
+<script src="counter.js"></script>
+<script>
+(function () {
+    'use strict';
+
+    var LS_KEY = 'mp_community_v1';
+
+    function esc(s) {
+        return String(s)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function loadState() {
+        try {
+            var raw = localStorage.getItem(LS_KEY);
+            if (raw) return JSON.parse(raw);
+        } catch (e) { /* private mode etc. */ }
+        return null;
+    }
+
+    function saveState() {
+        try {
+            localStorage.setItem(LS_KEY, JSON.stringify(state));
+        } catch (e) { /* ignore */ }
+    }
+
+    var state = loadState() || {
+        liked: {},        // postId -> true
+        likeDelta: {},    // postId -> extra likes beyond base
+        comments: {},     // postId -> [{name, text, ts}]
+        userPosts: [],    // [{id, name, text, ts}]
+        following: false,
+        followers: 128
+    };
+
+    /* ---------------- seed posts (site-authored, trusted) ---------------- */
+    var SEEDS = [
+        {
+            id: 'seed-1',
+            time: '2h ago',
+            body: 'The trading app is live. Run an order through the full 11-stage lifecycle — entry, risk check, routing, execution, clearing, settlement — with real FIX messages at every step.',
+            visual: { emoji: '📈', bg: 'linear-gradient(135deg, rgba(14,165,233,0.25), rgba(139,92,246,0.25))' },
+            link: { href: 'apps/trading-app.html', label: 'Launch the trading app' },
+            baseLikes: 42
+        },
+        {
+            id: 'seed-2',
+            time: '1d ago',
+            body: 'New game: FIX Tag Match. Match tag 35 to MsgType, 49 to SenderCompID — how well do you really know your FIX tags?',
+            visual: { emoji: '🃏', bg: 'linear-gradient(135deg, rgba(139,92,246,0.25), rgba(244,114,182,0.25))' },
+            link: { href: 'apps/fix-match.html', label: 'Play FIX Tag Match' },
+            baseLikes: 31
+        },
+        {
+            id: 'seed-3',
+            time: '2d ago',
+            body: 'Roadmap is public: 50 ideas we are building together — financial knowledge, DevOps mastery, and career tools. Pick what we build next.',
+            visual: { emoji: '🗺️', bg: 'linear-gradient(135deg, rgba(34,211,238,0.2), rgba(14,165,233,0.25))' },
+            link: { href: 'roadmap.html', label: 'See the roadmap' },
+            baseLikes: 27
+        },
+        {
+            id: 'seed-4',
+            time: '3d ago',
+            body: 'Robot bear sighting. The old fairy retired — a robot bear with a spinning rotor now does loop-the-loops over the site every 3 minutes. 🐻',
+            visual: { emoji: '🐻', bg: 'linear-gradient(135deg, rgba(244,114,182,0.2), rgba(139,92,246,0.25))' },
+            link: null,
+            baseLikes: 56
+        },
+        {
+            id: 'seed-5',
+            time: '4d ago',
+            body: 'Production incidents, simulated. Inject a CPU saturation, a memory leak, or a database slowdown into the Dynatrace-style dashboard and practice your triage.',
+            visual: { emoji: '🚨', bg: 'linear-gradient(135deg, rgba(248,113,113,0.2), rgba(139,92,246,0.25))' },
+            link: { href: 'apps/dynatrace-simulator.html', label: 'Open the simulator' },
+            baseLikes: 38
+        }
+    ];
+
+    /* ---------------- stories ---------------- */
+    var STORIES = [
+        {
+            label: 'Trading App', emoji: '📈',
+            slides: [
+                { emoji: '📈', title: 'Trading App', text: 'A full workstation: order ticket, matching engine, portfolio.' },
+                { emoji: '🔁', title: 'Trade lifecycle', text: 'Every order walks 11 stages — entry to settlement — with FIX messages.', link: 'apps/trading-app.html', linkLabel: 'Open it' }
+            ]
+        },
+        {
+            label: 'Tutorials', emoji: '📚',
+            slides: [
+                { emoji: '📚', title: '23 Tutorials', text: 'FIX, trade lifecycle, risk, SQL, Docker, Kubernetes and more.' },
+                { emoji: '🎓', title: 'With slides', text: 'Every tutorial has a presentation mode. Hit "Present slides".', link: 'index.html#tutorials', linkLabel: 'Browse' }
+            ]
+        },
+        {
+            label: 'Games', emoji: '🎮',
+            slides: [
+                { emoji: '🎮', title: '10 Games', text: 'kill -9, Latency Racer, Pipeline Panic, Deploy Dash…' },
+                { emoji: '🏆', title: 'Beat the ranks', text: 'From "Back to the Runbook" to "L3 Commander".', link: 'index.html#games', linkLabel: 'Play' }
+            ]
+        },
+        {
+            label: 'Robot Bear', emoji: '🐻',
+            slides: [
+                { emoji: '🐻', title: 'Robot bear', text: 'Spinning rotor, glowing eyes, loop-the-loops.' },
+                { emoji: '⏱️', title: 'Every 3 minutes', text: 'Watch the skies. He does not file flight plans.' }
+            ]
+        },
+        {
+            label: 'Roadmap', emoji: '🗺️',
+            slides: [
+                { emoji: '🗺️', title: '50 ideas', text: 'Financial knowledge, DevOps mastery, career tools.' },
+                { emoji: '🤝', title: 'Built together', text: 'We work through them one by one.', link: 'roadmap.html', linkLabel: 'See all 50' }
+            ]
+        }
+    ];
+
+    function likeCount(post) {
+        return post.baseLikes + (state.likeDelta[post.id] || 0);
+    }
+
+    function isLiked(id) {
+        return !!state.liked[id];
+    }
+
+    function postById(id) {
+        for (var i = 0; i < SEEDS.length; i++) {
+            if (SEEDS[i].id === id) return SEEDS[i];
+        }
+        for (var j = 0; j < state.userPosts.length; j++) {
+            if (state.userPosts[j].id === id) return state.userPosts[j];
+        }
+        return null;
+    }
+
+    function commentCount(id) {
+        return (state.comments[id] || []).length;
+    }
+
+    function renderFeed() {
+        var feed = document.getElementById('feed');
+        var html = '';
+
+        var all = state.userPosts.slice().concat(SEEDS.map(function (s) {
+            return { id: s.id, name: 'Munir', time: s.time, text: null, seed: s };
+        }));
+
+        for (var i = 0; i < all.length; i++) {
+            html += renderPost(all[i]);
+        }
+        feed.innerHTML = html;
+
+        document.getElementById('stat-posts').textContent = String(all.length);
+
+        bindFeedEvents(feed);
+    }
+</script>
+</body>
+</html>
