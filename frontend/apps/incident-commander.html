@@ -100,6 +100,12 @@
         .final-rank { text-align: center; padding: 10px 0; }
         .final-rank .big { font-size: 2.2rem; margin: 8px 0; }
     </style>
+    <meta property="og:title" content="Incident Commander | Munir Nweiser">
+    <meta property="og:description" content="Incident Commander — a timed production-support triage game. Pick the right first action before the clock runs out.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://munirnweiser.github.io/munir-portal/apps/incident-commander.html">
+    <meta property="og:site_name" content="Munir Nweiser — Capital Markets Technology">
+    <meta name="twitter:card" content="summary">
 </head>
 <body>
 <div id="fairy-layer" aria-hidden="true"></div>
@@ -183,6 +189,48 @@
 
 </div>
 </section>
+<style>
+.share-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 28px 0 6px; color: var(--text-muted); font-size: 0.85rem; }
+.share-btn { display: inline-block; padding: 7px 14px; border: 1px solid var(--border); border-radius: 999px; color: var(--cyan); font-size: 0.8rem; background: transparent; cursor: pointer; text-decoration: none; font-family: inherit; }
+.share-btn:hover { border-color: var(--cyan); }
+</style>
+<div class="share-row">
+    <span>Share:</span>
+    <a class="share-btn" data-share="x" target="_blank" rel="noopener" href="#">X</a>
+    <a class="share-btn" data-share="linkedin" target="_blank" rel="noopener" href="#">LinkedIn</a>
+    <button class="share-btn" data-share="copy" type="button">Copy link</button>
+</div>
+<script>
+(function () {
+    'use strict';
+    var pageUrl = encodeURIComponent(window.location.href);
+    var pageTitle = encodeURIComponent(document.title);
+    document.querySelectorAll('[data-share="x"]').forEach(function (a) {
+        a.href = 'https://twitter.com/intent/tweet?text=' + pageTitle + '&url=' + pageUrl;
+    });
+    document.querySelectorAll('[data-share="linkedin"]').forEach(function (a) {
+        a.href = 'https://www.linkedin.com/sharing/share-offsite/?url=' + pageUrl;
+    });
+    document.querySelectorAll('[data-share="copy"]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            function done(msg) {
+                btn.textContent = msg;
+                setTimeout(function () { btn.textContent = 'Copy link'; }, 1500);
+            }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(window.location.href).then(
+                    function () { done('Copied!'); },
+                    function () { done('Copy failed'); }
+                );
+            } else if (window.prompt) {
+                window.prompt('Copy this link:', window.location.href);
+                done('Copied!');
+            }
+        });
+    });
+})();
+</script>
+
 </main>
 
 <footer class="site-footer"><div class="container footer-content">

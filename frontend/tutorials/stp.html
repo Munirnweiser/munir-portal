@@ -18,6 +18,12 @@
         .example-box p { margin-bottom:8px; }
         .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
     </style>
+    <meta property="og:title" content="Straight-Through Processing | Munir Nweiser">
+    <meta property="og:description" content="Straight-through processing explained: what STP means, why trades break, and the typical break points support teams monitor.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://munirnweiser.github.io/munir-portal/tutorials/stp.html">
+    <meta property="og:site_name" content="Munir Nweiser — Capital Markets Technology">
+    <meta name="twitter:card" content="summary">
 </head>
 <body>
 <div id="fairy-layer" aria-hidden="true"></div>
@@ -121,6 +127,48 @@
 </ul>
 <p><strong>Support watches:</strong> SLA breach counts (the morning ops meeting runs on them), re-break rates (fixed trades that break again signal a systematic cause), and the handoff between the overnight batch window and the morning shift — breaks born at 3 AM need owners by 8 AM.</p>
 </div>
+
+<style>
+.share-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 28px 0 6px; color: var(--text-muted); font-size: 0.85rem; }
+.share-btn { display: inline-block; padding: 7px 14px; border: 1px solid var(--border); border-radius: 999px; color: var(--cyan); font-size: 0.8rem; background: transparent; cursor: pointer; text-decoration: none; font-family: inherit; }
+.share-btn:hover { border-color: var(--cyan); }
+</style>
+<div class="share-row">
+    <span>Share:</span>
+    <a class="share-btn" data-share="x" target="_blank" rel="noopener" href="#">X</a>
+    <a class="share-btn" data-share="linkedin" target="_blank" rel="noopener" href="#">LinkedIn</a>
+    <button class="share-btn" data-share="copy" type="button">Copy link</button>
+</div>
+<script>
+(function () {
+    'use strict';
+    var pageUrl = encodeURIComponent(window.location.href);
+    var pageTitle = encodeURIComponent(document.title);
+    document.querySelectorAll('[data-share="x"]').forEach(function (a) {
+        a.href = 'https://twitter.com/intent/tweet?text=' + pageTitle + '&url=' + pageUrl;
+    });
+    document.querySelectorAll('[data-share="linkedin"]').forEach(function (a) {
+        a.href = 'https://www.linkedin.com/sharing/share-offsite/?url=' + pageUrl;
+    });
+    document.querySelectorAll('[data-share="copy"]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            function done(msg) {
+                btn.textContent = msg;
+                setTimeout(function () { btn.textContent = 'Copy link'; }, 1500);
+            }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(window.location.href).then(
+                    function () { done('Copied!'); },
+                    function () { done('Copy failed'); }
+                );
+            } else if (window.prompt) {
+                window.prompt('Copy this link:', window.location.href);
+                done('Copied!');
+            }
+        });
+    });
+})();
+</script>
 
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
 </main>

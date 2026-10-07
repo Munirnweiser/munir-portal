@@ -18,6 +18,12 @@
         .example-box p { margin-bottom:8px; }
         .formula { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c4b5fd; }
     </style>
+    <meta property="og:title" content="Risk Measures: VaR &amp;amp; Stress | Munir Nweiser">
+    <meta property="og:description" content="Risk measures for production support: VaR (parametric and historical), Stressed VaR, stress testing, Expected Shortfall and backtesting, with worked numbers.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://munirnweiser.github.io/munir-portal/tutorials/risk-measures.html">
+    <meta property="og:site_name" content="Munir Nweiser — Capital Markets Technology">
+    <meta name="twitter:card" content="summary">
 </head>
 <body>
 <div id="fairy-layer" aria-hidden="true"></div>
@@ -148,6 +154,48 @@
 <p>VaR is backtested by counting exceptions - clean and simple. Expected Shortfall is harder: ES is not <em>elicitable</em>, meaning no scoring function is minimized only by the true ES. In practice, desks backtest the VaR that ES is conditioned on, then apply the Acerbi-Szekely test statistic, which checks whether realized tail losses are consistent with the reported ES.</p>
 <p>What this means for support: risk reports carry both numbers, and the validation jobs that check them are different jobs with different failure modes. When the ES validation feed breaks but VaR is fine, the report still goes out - flagged. Know which downstream consumers read the flag and which ignore it.</p>
 </div>
+
+<style>
+.share-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 28px 0 6px; color: var(--text-muted); font-size: 0.85rem; }
+.share-btn { display: inline-block; padding: 7px 14px; border: 1px solid var(--border); border-radius: 999px; color: var(--cyan); font-size: 0.8rem; background: transparent; cursor: pointer; text-decoration: none; font-family: inherit; }
+.share-btn:hover { border-color: var(--cyan); }
+</style>
+<div class="share-row">
+    <span>Share:</span>
+    <a class="share-btn" data-share="x" target="_blank" rel="noopener" href="#">X</a>
+    <a class="share-btn" data-share="linkedin" target="_blank" rel="noopener" href="#">LinkedIn</a>
+    <button class="share-btn" data-share="copy" type="button">Copy link</button>
+</div>
+<script>
+(function () {
+    'use strict';
+    var pageUrl = encodeURIComponent(window.location.href);
+    var pageTitle = encodeURIComponent(document.title);
+    document.querySelectorAll('[data-share="x"]').forEach(function (a) {
+        a.href = 'https://twitter.com/intent/tweet?text=' + pageTitle + '&url=' + pageUrl;
+    });
+    document.querySelectorAll('[data-share="linkedin"]').forEach(function (a) {
+        a.href = 'https://www.linkedin.com/sharing/share-offsite/?url=' + pageUrl;
+    });
+    document.querySelectorAll('[data-share="copy"]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            function done(msg) {
+                btn.textContent = msg;
+                setTimeout(function () { btn.textContent = 'Copy link'; }, 1500);
+            }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(window.location.href).then(
+                    function () { done('Copied!'); },
+                    function () { done('Copy failed'); }
+                );
+            } else if (window.prompt) {
+                window.prompt('Copy this link:', window.location.href);
+                done('Copied!');
+            }
+        });
+    });
+})();
+</script>
 
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
 </main>

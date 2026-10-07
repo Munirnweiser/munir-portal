@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Munir Portal build changelog — every change, shipped and overnight.">
+    <title>Changelog | Munir Nweiser</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="fairy-layer" aria-hidden="true"></div>
+
+<header class="site-header">
+
+        <div class="container nav-container">
+
+            <a href="#home" class="logo">
+                <span class="logo-mark">MN</span>
+
+                <span class="logo-text">
+                    Munir Nweiser
+                    <small>Capital Markets • Technology</small>
+                </span>
+            </a>
+
+
+            <nav class="main-nav" aria-label="Main navigation">
+
+                <a href="#home">Home</a>
+                <a href="resume.html">Resume</a>
+                <a href="scientific-calculator.html">Calculator</a>
+                <a href="#markets">Markets</a>
+                <a href="#trading">Trading</a>
+                <a href="#tutorials">Tutorials</a>
+                <a href="roadmap.html">Roadmap</a>
+                <a href="#games">Games</a>
+                <a href="#memories">Memories</a>
+
+            </nav>
+
+            <button
+                id="mobile-menu-button"
+                class="mobile-menu-button"
+                type="button"
+                aria-label="Open navigation menu"
+                aria-expanded="false"
+            >
+                ☰
+            </button>
+
+        </div>
+
+    </header>
+
+<main class="container" style="padding:120px 0 80px; max-width: 900px;">
+
+    <div class="section-heading">
+        <p class="eyebrow">Build log</p>
+        <h2>Changelog</h2>
+        <p>Everything built on the night of October 6–7, 2026 — and what's still cooking overnight.</p>
+    </div>
+
+    <div class="resume-card" style="margin-bottom:14px; padding:18px 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+            <strong style="font-size:1.02rem;">Portfolio + resume</strong>
+            <span class="tag" style="border-color:#34d399; color:#34d399;">SHIPPED</span>
+        </div>
+        <p style="color:var(--text-muted); margin:8px 0 0; line-height:1.65;">Took over from ChatGPT. Fixed nav consistency, footer year, fairy layer on the resume page.</p>
+    </div>
+<div class="resume-card" style="margin-bottom:14px; padding:18px 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+            <strong style="font-size:1.02rem;">Robot fairy → robot bear</strong>
+            <span class="tag" style="border-color:#34d399; color:#34d399;">SHIPPED</span>
+        </div>
+        <p style="color:var(--text-muted); margin:8px 0 0; line-height:1.65;">Rebuilt as a metal robot bear with spinning rotor, glowing eyes, blinking antenna. New flight: cruise in, loop-the-loop, hover, dash off. Every ~3 minutes.</p>
+    </div>
+<div class="resume-card" style="margin-bottom:14px; padding:18px 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+            <strong style="font-size:1.02rem;">Scientific calculator</strong>
+            <span class="tag" style="border-color:#34d399; color:#34d399;">SHIPPED</span>
+        </div>
+        <p style="color:var(--text-muted); margin:8px 0 0; line-height:1.65;">Rebuilt from an 18-line stub into a real calculator: expression parser, trig, DEG/RAD, keyboard support.</p>
+    </div>
+<div class="resume-card" style="margin-bottom:14px; padding:18px 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+            <strong style="font-size:1.02rem;">CFA calculator lab</strong>
+            <span class="tag" style="border-color:#34d399; color:#34d399;">SHIPPED</span>
+        </div>
+        <p style="color:var(--text-muted); margin:8px 0 0; line-height:1.65;">11 pages: TVM, NPV/IRR, bonds/YTM, duration/convexity, CAPM, WACC, portfolio, Sharpe, FX forwards, option payoffs. All math verified against textbook values.</p>
+    </div>
+<div class="resume-card" style="margin-bottom:14px; padding:18px 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+            <strong style="font-size:1.02rem;">23 tutorials</strong>
+            <span class="tag" style="border-color:#34d399; color:#34d399;">SHIPPED</span>
+        </div>
+        <p style="color:var(--text-muted); margin:8px 0 0; line-height:1.65;">Markets (FX, bonds, futures/options, FIX, lifecycle, valuation, risk, STP), databases (SQL, Oracle, SQL Server), DevOps (Docker, K8s, Jenkins, Git, Terraform, Ansible, YAML), multi-asset, risk measures, VPN, AI agents. Each with presentation-slides mode.</p>
+    </div>
+<div class="resume-card" style="margin-bottom:14px; padding:18px 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+            <strong style="font-size:1.02rem;">Trading app</strong>
+            <span class="tag" style="border-color:#34d399; color:#34d399;">SHIPPED</span>
+        </div>
+        <p style="color:var(--text-muted); margin:8px 0 0; line-height:1.65;">Full workstation: order ticket, matching engine with partial fills, 11-stage trade lifecycle with FIX messages, blotter, portfolio, $1M virtual cash.</p>
+    </div>
+<div class="resume-card" style="margin-bottom:14px; padding:18px 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+            <strong style="font-size:1.02rem;">X-One terminal</strong>
+            <span class="tag" style="border-color:#34d399; color:#34d399;">SHIPPED</span>
+        </div>
+        <p style="color:var(--text-muted); margin:8px 0 0; line-height:1.65;">Société Générale-style markets terminal: 8 cross-asset instruments, positions, risk panel with VaR, live PnL chart. (building overnight)</p>
+    </div>
+<div class="resume-card" style="margin-bottom:14px; padding:18px 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+            <strong style="font-size:1.02rem;">Dynatrace simulator</strong>
+            <span class="tag" style="border-color:#34d399; color:#34d399;">SHIPPED</span>
+        </div>
+        <p style="color:var(--text-muted); margin:8px 0 0; line-height:1.65;">Inject CPU/memory/DB/crash/latency incidents; problems feed with root-cause reveal; MTTR timers.</p>
+    </div>
+<div class="resume-card" style="margin-bottom:14px; padding:18px 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+            <strong style="font-size:1.02rem;">Games (10)</strong>
+            <span class="tag" style="border-color:#34d399; color:#34d399;">SHIPPED</span>
+        </div>
+        <p style="color:var(--text-muted); margin:8px 0 0; line-height:1.65;">Quiz, trading simulator, FIX tag memory match, Incident Commander, kill -9, Latency Racer, Pipeline Panic, Log Hunter, Deploy Dash.</p>
+    </div>
+<div class="resume-card" style="margin-bottom:14px; padding:18px 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+            <strong style="font-size:1.02rem;">Weather</strong>
+            <span class="tag" style="border-color:#34d399; color:#34d399;">SHIPPED</span>
+        </div>
+        <p style="color:var(--text-muted); margin:8px 0 0; line-height:1.65;">Live Open-Meteo API data, city search, 7-day forecast.</p>
+    </div>
+<div class="resume-card" style="margin-bottom:14px; padding:18px 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+            <strong style="font-size:1.02rem;">Guestbook</strong>
+            <span class="tag" style="border-color:#34d399; color:#34d399;">SHIPPED</span>
+        </div>
+        <p style="color:var(--text-muted); margin:8px 0 0; line-height:1.65;">Comments with moderation queue — you approve before anything goes public.</p>
+    </div>
+<div class="resume-card" style="margin-bottom:14px; padding:18px 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+            <strong style="font-size:1.02rem;">AI Lab</strong>
+            <span class="tag" style="border-color:#34d399; color:#34d399;">SHIPPED</span>
+        </div>
+        <p style="color:var(--text-muted); margin:8px 0 0; line-height:1.65;">Agent building blocks + demo desk agent that answers questions about the site.</p>
+    </div>
+<div class="resume-card" style="margin-bottom:14px; padding:18px 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+            <strong style="font-size:1.02rem;">Community</strong>
+            <span class="tag" style="border-color:#34d399; color:#34d399;">SHIPPED</span>
+        </div>
+        <p style="color:var(--text-muted); margin:8px 0 0; line-height:1.65;">Instagram-style social layer: stories, feed, likes, comments. (building overnight)</p>
+    </div>
+<div class="resume-card" style="margin-bottom:14px; padding:18px 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+            <strong style="font-size:1.02rem;">Roadmap page</strong>
+            <span class="tag" style="border-color:#34d399; color:#34d399;">SHIPPED</span>
+        </div>
+        <p style="color:var(--text-muted); margin:8px 0 0; line-height:1.65;">The 50 ideas, public, grouped by track.</p>
+    </div>
+<div class="resume-card" style="margin-bottom:14px; padding:18px 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+            <strong style="font-size:1.02rem;">Resume PDF</strong>
+            <span class="tag" style="border-color:#34d399; color:#34d399;">SHIPPED</span>
+        </div>
+        <p style="color:var(--text-muted); margin:8px 0 0; line-height:1.65;">Download button + clean print stylesheet.</p>
+    </div>
+<div class="resume-card" style="margin-bottom:14px; padding:18px 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+            <strong style="font-size:1.02rem;">Mobile nav</strong>
+            <span class="tag" style="border-color:#34d399; color:#34d399;">SHIPPED</span>
+        </div>
+        <p style="color:var(--text-muted); margin:8px 0 0; line-height:1.65;">Working hamburger menu on all pages.</p>
+    </div>
+<div class="resume-card" style="margin-bottom:14px; padding:18px 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+            <strong style="font-size:1.02rem;">Visitor counter</strong>
+            <span class="tag" style="border-color:#34d399; color:#34d399;">SHIPPED</span>
+        </div>
+        <p style="color:var(--text-muted); margin:8px 0 0; line-height:1.65;">Live when the backend lands; silent until then.</p>
+    </div>
+<div class="resume-card" style="margin-bottom:14px; padding:18px 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+            <strong style="font-size:1.02rem;">SEO + shareability</strong>
+            <span class="tag" style="border-color:#34d399; color:#34d399;">SHIPPED</span>
+        </div>
+        <p style="color:var(--text-muted); margin:8px 0 0; line-height:1.65;">Meta descriptions, social cards, sitemap, share buttons on tutorials and games. (building overnight)</p>
+    </div>
+<div class="resume-card" style="margin-bottom:14px; padding:18px 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+            <strong style="font-size:1.02rem;">X-One terminal simulator</strong>
+            <span class="tag" style="border-color:#fbbf24; color:#fbbf24;">OVERNIGHT</span>
+        </div>
+        <p style="color:var(--text-muted); margin:8px 0 0; line-height:1.65;">In the overnight build queue.</p>
+    </div>
+<div class="resume-card" style="margin-bottom:14px; padding:18px 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+            <strong style="font-size:1.02rem;">Community (social layer)</strong>
+            <span class="tag" style="border-color:#fbbf24; color:#fbbf24;">OVERNIGHT</span>
+        </div>
+        <p style="color:var(--text-muted); margin:8px 0 0; line-height:1.65;">In the overnight build queue.</p>
+    </div>
+<div class="resume-card" style="margin-bottom:14px; padding:18px 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+            <strong style="font-size:1.02rem;">Full QA sweep: every game played in test harnesses, every calculator re-verified</strong>
+            <span class="tag" style="border-color:#fbbf24; color:#fbbf24;">OVERNIGHT</span>
+        </div>
+        <p style="color:var(--text-muted); margin:8px 0 0; line-height:1.65;">In the overnight build queue.</p>
+    </div>
+<div class="resume-card" style="margin-bottom:14px; padding:18px 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+            <strong style="font-size:1.02rem;">SEO + shareability pass</strong>
+            <span class="tag" style="border-color:#fbbf24; color:#fbbf24;">OVERNIGHT</span>
+        </div>
+        <p style="color:var(--text-muted); margin:8px 0 0; line-height:1.65;">In the overnight build queue.</p>
+    </div>
+<div class="resume-card" style="margin-bottom:14px; padding:18px 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+            <strong style="font-size:1.02rem;">Benchmark vs GeeksforGeeks / Investopedia → enhancement hit-list</strong>
+            <span class="tag" style="border-color:#fbbf24; color:#fbbf24;">OVERNIGHT</span>
+        </div>
+        <p style="color:var(--text-muted); margin:8px 0 0; line-height:1.65;">In the overnight build queue.</p>
+    </div>
+
+    <p style="color:var(--text-muted); font-size:0.85rem; margin-top:20px;">
+        Updated live through the night. Last update: Oct 7, 2026 ~01:35 UTC.
+    </p>
+
+</main>
+
+<footer class="site-footer">
+
+        <div class="container footer-content">
+
+            <div>
+
+                <strong>
+                    Munir Nweiser
+                </strong>
+
+                <p>
+                    Application Support • Capital Markets • Technology
+                </p>
+
+            </div>
+
+
+            <div class="footer-links">
+
+                <a href="#home">Home</a>
+                <a href="#resume">Resume</a>
+                <a href="#trading">Trading</a>
+                <a href="#tutorials">Tutorials</a>
+
+            </div>
+
+
+            <div>
+
+                <small>
+                    © <span id="current-year"></span>
+                    Munir Nweiser
+                </small>
+
+                <br>
+
+                <small class="visitor-count">
+                    <span id="visitor-count"></span>
+                </small>
+
+                <small class="site-credit">
+                    Designed &amp; built with Muse 🤖
+                </small>
+
+            </div>
+
+        </div>
+
+    </footer>
+
+<script src="app.js"></script>
+<script src="counter.js"></script>
+</body>
+</html>
