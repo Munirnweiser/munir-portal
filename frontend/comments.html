@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Leave a comment in the guestbook. Every comment is reviewed before it goes public.">
+    <title>Guestbook | Munir Nweiser</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .guest-wrap { max-width: 760px; margin: 0 auto; }
+        .comment-form { display: grid; gap: 12px; margin-top: 22px; }
+        .comment-form input, .comment-form textarea {
+            padding: 12px 16px; font-size: .95rem; border-radius: 10px;
+            border: 1px solid rgba(125,211,252,.25); background: rgba(15,23,42,.8);
+            color: #f1f5f9; outline: none; font-family: inherit;
+        }
+        .comment-form input:focus, .comment-form textarea:focus { border-color: #7dd3fc; }
+        .comment-form textarea { min-height: 110px; resize: vertical; }
+        .comment-card {
+            border: 1px solid rgba(125,211,252,.15); border-radius: 14px;
+            background: rgba(15,23,42,.6); padding: 18px 20px; margin-top: 14px;
+        }
+        .comment-meta { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+        .comment-meta strong { color: #7dd3fc; }
+        .comment-meta time { color: #64748b; font-size: .78rem; }
+        .comment-card p { color: #cbd5e1; line-height: 1.7; margin: 0; white-space: pre-wrap; }
+        .mod-actions { display: flex; gap: 10px; margin-top: 12px; }
+        .btn-approve, .btn-reject {
+            padding: 8px 18px; border-radius: 999px; font-size: .82rem; font-weight: 700;
+            cursor: pointer; border: 1px solid transparent;
+        }
+        .btn-approve { background: rgba(34,197,94,.15); color: #86efac; border-color: rgba(34,197,94,.4); }
+        .btn-reject { background: rgba(239,68,68,.12); color: #fca5a5; border-color: rgba(239,68,68,.4); }
+        .btn-approve:hover { background: rgba(34,197,94,.3); }
+        .btn-reject:hover { background: rgba(239,68,68,.25); }
+        .pending-badge {
+            display: inline-block; font-size: .72rem; font-weight: 700; letter-spacing: .08em;
+            text-transform: uppercase; color: #fbbf24; background: rgba(251,191,36,.12);
+            border: 1px solid rgba(251,191,36,.4); border-radius: 999px; padding: 4px 12px; margin-bottom: 10px;
+        }
+        .empty-note { color: #64748b; font-style: italic; margin-top: 14px; }
+        .honest-note {
+            margin-top: 30px; padding: 14px 18px; border-radius: 12px; font-size: .82rem;
+            color: #94a3b8; background: rgba(30,41,59,.5); border-left: 3px solid #7dd3fc;
+        }
+        .form-note { color: #64748b; font-size: .82rem; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+
+    <header class="site-header">
+
+        <div class="container nav-container">
+
+            <a href="index.html" class="logo">
+                <span class="logo-mark">MN</span>
+
+                <span class="logo-text">
+                    Munir Nweiser
+                    <small>Capital Markets • Technology</small>
+                </span>
+            </a>
+
+
+            <nav class="main-nav" aria-label="Main navigation">
+
+                <a href="index.html">Home</a>
+                <a href="resume.html">Resume</a>
+                <a href="calculators.html">Calculators</a>
+                <a href="index.html#tutorials">Tutorials</a>
+                <a href="index.html#markets">Markets</a>
+                <a href="index.html#games">Games</a>
+                <a href="index.html#memories">Memories</a>
+
+            </nav>
+
+            <button
+                id="mobile-menu-button"
+                class="mobile-menu-button"
+                type="button"
+                aria-label="Open navigation menu"
+                aria-expanded="false"
+            >
+                ☰
+            </button>
+
+        </div>
+
+    </header>
+
+<main class="container" style="padding:120px 0 80px">
+<div class="guest-wrap">
+
+    <div class="section-heading">
+        <p class="eyebrow">Guestbook</p>
+        <h2>Comments</h2>
+        <p>Leave a note below. Every comment goes into a review queue first — nothing appears publicly until it is approved.</p>
+    </div>
+
+    <form class="comment-form" id="comment-form">
+        <input type="text" id="comment-name" placeholder="Your name" maxlength="60" required aria-label="Your name">
+        <textarea id="comment-message" placeholder="Your comment…" maxlength="1000" required aria-label="Your comment"></textarea>
+        <div>
+            <button type="submit" class="btn">Submit for review</button>
+        </div>
+        <p class="form-note">Your comment will be held for review and published after approval.</p>
+    </form>
+
+    <div class="section-heading" style="margin-top:44px">
+        <h2 style="font-size:1.4rem">Approved comments</h2>
+    </div>
+    <div id="approved-list"></div>
+
+    <div class="section-heading" style="margin-top:44px">
+        <h2 style="font-size:1.4rem">Review queue</h2>
+        <p>Pending comments awaiting moderation. Approve to publish, reject to discard.</p>
+    </div>
+    <div id="pending-list"></div>
+
+    <p class="honest-note">
+        Demo moderation runs in your browser — approvals are stored locally on this device.
+        Once the backend is connected, approving a comment here will publish it for every visitor.
+    </p>
+
+</div>
+</main>
+
+    <footer class="site-footer">
+
+        <div class="container footer-content">
+
+            <div>
+
+                <strong>
+                    Munir Nweiser
+                </strong>
+
+                <p>
+                    Application Support • Capital Markets • Technology
+                </p>
+
+            </div>
+
+
+            <div class="footer-links">
+
+                <a href="index.html">Home</a>
+                <a href="resume.html">Resume</a>
+                <a href="index.html#trading">Trading</a>
+                <a href="index.html#tutorials">Tutorials</a>
+
+            </div>
+
+
+            <div>
+
+                <small>
+                    © <span id="current-year"></span>
+                    Munir Nweiser
+                </small>
+
+            </div>
+
+        </div>
+
+    </footer>
+
+    <script src="app.js"></script>
+
+<script>
+(function () {
+    "use strict";
+
+    var STORAGE_KEY = "mp_comments_v1";
+    var form = document.getElementById("comment-form");
+    var nameInput = document.getElementById("comment-name");
+    var messageInput = document.getElementById("comment-message");
+    var approvedList = document.getElementById("approved-list");
+    var pendingList = document.getElementById("pending-list");
+
+    function esc(s) {
+        return String(s)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    function loadState() {
+        try {
+            var raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) { return { pending: [], approved: [] }; }
+            var parsed = JSON.parse(raw);
+            return {
+                pending: Array.isArray(parsed.pending) ? parsed.pending : [],
+                approved: Array.isArray(parsed.approved) ? parsed.approved : []
+            };
+        } catch (e) {
+            return { pending: [], approved: [] };
+        }
+    }
+
+    function saveState(state) {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch (e) { /* storage unavailable — page still works for the session */ }
+    }
+
+    function fmtTime(ts) {
+        return new Date(ts).toLocaleString("en-US", {
+            year: "numeric", month: "short", day: "numeric",
+            hour: "2-digit", minute: "2-digit"
+        });
+    }
+
+    function render() {
+        var state = loadState();
+
+        if (state.approved.length === 0) {
+            approvedList.innerHTML = '<p class="empty-note">No approved comments yet — be the first to write one.</p>';
+        } else {
+            var html = "";
+            state.approved.slice().reverse().forEach(function (c) {
+                html += '<article class="comment-card">';
+                html += '<div class="comment-meta"><strong>' + esc(c.name) + '</strong>' +
+                        '<time>' + esc(fmtTime(c.ts)) + '</time></div>';
+                html += '<p>' + esc(c.message) + '</p>';
+                html += '</article>';
+            });
+            approvedList.innerHTML = html;
+        }
+
+        if (state.pending.length === 0) {
+            pendingList.innerHTML = '<p class="empty-note">Review queue is empty.</p>';
+        } else {
+            var phtml = "";
+            state.pending.forEach(function (c) {
+                phtml += '<article class="comment-card" data-id="' + esc(c.id) + '">';
+                phtml += '<span class="pending-badge">Pending review</span>';
+                phtml += '<div class="comment-meta"><strong>' + esc(c.name) + '</strong>' +
+                         '<time>' + esc(fmtTime(c.ts)) + '</time></div>';
+                phtml += '<p>' + esc(c.message) + '</p>';
+                phtml += '<div class="mod-actions">';
+                phtml += '<button type="button" class="btn-approve" data-action="approve">Approve</button>';
+                phtml += '<button type="button" class="btn-reject" data-action="reject">Reject</button>';
+                phtml += '</div></article>';
+            });
+            pendingList.innerHTML = phtml;
+        }
+    }
+
+    form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        var name = nameInput.value.trim();
+        var message = messageInput.value.trim();
+        if (!name || !message) { return; }
+        var state = loadState();
+        state.pending.push({
+            id: "c" + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36),
+            name: name.slice(0, 60),
+            message: message.slice(0, 1000),
+            ts: Date.now()
+        });
+        saveState(state);
+        nameInput.value = "";
+        messageInput.value = "";
+        render();
+        pendingList.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+
+    pendingList.addEventListener("click", function (e) {
+        var btn = e.target.closest("button[data-action]");
+        if (!btn) { return; }
+        var card = e.target.closest(".comment-card");
+        if (!card) { return; }
+        var id = card.getAttribute("data-id");
+        var state = loadState();
+        var idx = -1;
+        for (var i = 0; i < state.pending.length; i++) {
+            if (state.pending[i].id === id) { idx = i; break; }
+        }
+        if (idx === -1) { return; }
+        var comment = state.pending.splice(idx, 1)[0];
+        if (btn.getAttribute("data-action") === "approve") {
+            state.approved.push(comment);
+        }
+        saveState(state);
+        render();
+    });
+
+    render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Live weather for any city, powered by the free Open-Meteo API.">
+    <title>Weather | Munir Nweiser</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .weather-wrap { max-width: 900px; margin: 0 auto; }
+        .search-box { position: relative; margin: 26px 0 8px; }
+        .search-box input {
+            width: 100%; padding: 14px 18px; font-size: 1rem;
+            border-radius: 12px; border: 1px solid rgba(125,211,252,.25);
+            background: rgba(15,23,42,.8); color: #f1f5f9; outline: none;
+        }
+        .search-box input:focus { border-color: #7dd3fc; }
+        .search-results {
+            position: absolute; top: 100%; left: 0; right: 0; z-index: 20;
+            background: #0f172a; border: 1px solid rgba(125,211,252,.25);
+            border-radius: 0 0 12px 12px; overflow: hidden; display: none;
+        }
+        .search-results button {
+            display: block; width: 100%; text-align: left; padding: 12px 18px;
+            background: none; border: none; color: #e2e8f0; cursor: pointer; font-size: .95rem;
+        }
+        .search-results button:hover { background: rgba(125,211,252,.12); }
+        .current-card {
+            margin-top: 22px; padding: 30px; border-radius: 18px;
+            background: linear-gradient(135deg, rgba(14,116,144,.25), rgba(76,29,149,.25));
+            border: 1px solid rgba(125,211,252,.2); text-align: center;
+        }
+        .current-temp { font-size: 3.4rem; font-weight: 800; color: #f8fafc; }
+        .current-cond { font-size: 1.2rem; color: #7dd3fc; margin: 6px 0 14px; }
+        .current-meta { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+        .current-meta span {
+            background: rgba(15,23,42,.6); border: 1px solid rgba(125,211,252,.15);
+            border-radius: 999px; padding: 8px 16px; font-size: .85rem; color: #cbd5e1;
+        }
+        .forecast-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+            gap: 12px; margin-top: 22px;
+        }
+        .forecast-day {
+            background: rgba(15,23,42,.7); border: 1px solid rgba(125,211,252,.12);
+            border-radius: 14px; padding: 14px 8px; text-align: center;
+        }
+        .forecast-day .dow { color: #7dd3fc; font-weight: 700; font-size: .85rem; }
+        .forecast-day .emoji { font-size: 1.6rem; margin: 8px 0; }
+        .forecast-day .temps { color: #e2e8f0; font-size: .85rem; }
+        .forecast-day .temps small { color: #94a3b8; }
+        .forecast-day .pop { color: #94a3b8; font-size: .75rem; margin-top: 4px; }
+        .weather-error {
+            display: none; margin-top: 22px; padding: 16px 20px; border-radius: 12px;
+            background: rgba(127,29,29,.4); border: 1px solid rgba(248,113,113,.4); color: #fecaca;
+        }
+        .weather-loading { display: none; margin-top: 22px; color: #94a3b8; text-align: center; }
+        .api-note { margin-top: 26px; text-align: center; color: #64748b; font-size: .8rem; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+
+    <header class="site-header">
+
+        <div class="container nav-container">
+
+            <a href="index.html" class="logo">
+                <span class="logo-mark">MN</span>
+
+                <span class="logo-text">
+                    Munir Nweiser
+                    <small>Capital Markets • Technology</small>
+                </span>
+            </a>
+
+
+            <nav class="main-nav" aria-label="Main navigation">
+
+                <a href="index.html">Home</a>
+                <a href="resume.html">Resume</a>
+                <a href="calculators.html">Calculators</a>
+                <a href="index.html#tutorials">Tutorials</a>
+                <a href="index.html#markets">Markets</a>
+                <a href="index.html#games">Games</a>
+                <a href="index.html#memories">Memories</a>
+
+            </nav>
+
+            <button
+                id="mobile-menu-button"
+                class="mobile-menu-button"
+                type="button"
+                aria-label="Open navigation menu"
+                aria-expanded="false"
+            >
+                ☰
+            </button>
+
+        </div>
+
+    </header>
+
+<main class="container" style="padding:120px 0 80px">
+<div class="weather-wrap">
+
+    <div class="section-heading">
+        <p class="eyebrow">Live Data • Open-Meteo</p>
+        <h2>Weather</h2>
+        <p>Current conditions and a 7-day forecast for any city — no API key, straight from the free Open-Meteo API.</p>
+    </div>
+
+    <div class="search-box">
+        <input
+            type="text"
+            id="city-search"
+            placeholder="Search a city… (e.g. Montreal, Paris, New York)"
+            autocomplete="off"
+            aria-label="Search for a city"
+        >
+        <div class="search-results" id="search-results" role="listbox"></div>
+    </div>
+
+    <div class="weather-loading" id="weather-loading">Loading weather…</div>
+    <div class="weather-error" id="weather-error"></div>
+
+    <div id="weather-output" aria-live="polite"></div>
+
+    <p class="api-note">Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener" style="color:#7dd3fc">Open-Meteo</a> (free, no key required).</p>
+
+</div>
+</main>
+
+    <footer class="site-footer">
+
+        <div class="container footer-content">
+
+            <div>
+
+                <strong>
+                    Munir Nweiser
+                </strong>
+
+                <p>
+                    Application Support • Capital Markets • Technology
+                </p>
+
+            </div>
+
+
+            <div class="footer-links">
+
+                <a href="index.html">Home</a>
+                <a href="resume.html">Resume</a>
+                <a href="index.html#trading">Trading</a>
+                <a href="index.html#tutorials">Tutorials</a>
+
+            </div>
+
+
+            <div>
+
+                <small>
+                    © <span id="current-year"></span>
+                    Munir Nweiser
+                </small>
+
+            </div>
+
+        </div>
+
+    </footer>
+
+    <script src="app.js"></script>
+
+<script>
+(function () {
+    "use strict";
+
+    var searchInput = document.getElementById("city-search");
+    var resultsBox = document.getElementById("search-results");
+    var output = document.getElementById("weather-output");
+    var loading = document.getElementById("weather-loading");
+    var errorBox = document.getElementById("weather-error");
+    var debounceTimer = null;
+
+    function esc(s) {
+        return String(s)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    // WMO weather-code -> [emoji, description]
+    function codeInfo(code) {
+        var map = {
+            0: ["☀️", "Clear sky"],
+            1: ["🌤️", "Mainly clear"],
+            2: ["⛅", "Partly cloudy"],
+            3: ["☁️", "Overcast"],
+            45: ["🌫️", "Fog"],
+            48: ["🌫️", "Depositing rime fog"],
+            51: ["🌦️", "Light drizzle"],
+            53: ["🌦️", "Moderate drizzle"],
+            55: ["🌦️", "Dense drizzle"],
+            56: ["🌧️", "Light freezing drizzle"],
+            57: ["🌧️", "Dense freezing drizzle"],
+            61: ["🌧️", "Slight rain"],
+            63: ["🌧️", "Moderate rain"],
+            65: ["🌧️", "Heavy rain"],
+            66: ["🌧️", "Light freezing rain"],
+            67: ["🌧️", "Heavy freezing rain"],
+            71: ["❄️", "Slight snow"],
+            73: ["❄️", "Moderate snow"],
+            75: ["❄️", "Heavy snow"],
+            77: ["❄️", "Snow grains"],
+            80: ["🌧️", "Slight rain showers"],
+            81: ["🌧️", "Moderate rain showers"],
+            82: ["🌧️", "Violent rain showers"],
+            85: ["❄️", "Slight snow showers"],
+            86: ["❄️", "Heavy snow showers"],
+            95: ["⛈️", "Thunderstorm"],
+            96: ["⛈️", "Thunderstorm with slight hail"],
+            99: ["⛈️", "Thunderstorm with heavy hail"]
+        };
+        return map[code] || ["🌡️", "Unknown"];
+    }
+
+    function showError(msg) {
+        errorBox.textContent = msg;
+        errorBox.style.display = "block";
+        loading.style.display = "none";
+    }
+
+    function clearError() {
+        errorBox.style.display = "none";
+        errorBox.textContent = "";
+    }
+
+    function dayName(isoDate, index) {
+        if (index === 0) { return "Today"; }
+        var d = new Date(isoDate + "T12:00:00");
+        return d.toLocaleDateString("en-US", { weekday: "short" });
+    }
+
+    function renderWeather(placeLabel, data) {
+        clearError();
+        var cur = data.current;
+        var daily = data.daily;
+        var info = codeInfo(cur.weather_code);
+
+        var html = "";
+        html += '<div class="current-card">';
+        html += '<p class="eyebrow">' + esc(placeLabel) + '</p>';
+        html += '<div class="current-temp">' + Math.round(cur.temperature_2m) + '°C</div>';
+        html += '<div class="current-cond">' + info[0] + ' ' + esc(info[1]) + '</div>';
+        html += '<div class="current-meta">';
+        html += '<span>Feels like ' + Math.round(cur.apparent_temperature) + '°C</span>';
+        html += '<span>Humidity ' + Math.round(cur.relative_humidity_2m) + '%</span>';
+        html += '<span>Wind ' + Math.round(cur.wind_speed_10m) + ' km/h</span>';
+        html += '</div></div>';
+
+        html += '<div class="forecast-grid">';
+        for (var i = 0; i < daily.time.length && i < 7; i++) {
+            var dinfo = codeInfo(daily.weather_code[i]);
+            var pop = daily.precipitation_probability_max[i];
+            html += '<div class="forecast-day">';
+            html += '<div class="dow">' + esc(dayName(daily.time[i], i)) + '</div>';
+            html += '<div class="emoji">' + dinfo[0] + '</div>';
+            html += '<div class="temps">' + Math.round(daily.temperature_2m_max[i]) + '° <small>/ ' +
+                    Math.round(daily.temperature_2m_min[i]) + '°</small></div>';
+            if (pop !== null && pop !== undefined) {
+                html += '<div class="pop">💧 ' + pop + '%</div>';
+            }
+            html += '</div>';
+        }
+        html += '</div>';
+
+        output.innerHTML = html;
+    }
+
+    function loadWeather(lat, lon, label) {
+        clearError();
+        loading.style.display = "block";
+        output.innerHTML = "";
+        var url = "https://api.open-meteo.com/v1/forecast?latitude=" + encodeURIComponent(lat) +
+            "&longitude=" + encodeURIComponent(lon) +
+            "&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m" +
+            "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max" +
+            "&timezone=auto";
+        fetch(url)
+            .then(function (resp) {
+                if (!resp.ok) { throw new Error("HTTP " + resp.status); }
+                return resp.json();
+            })
+            .then(function (data) {
+                loading.style.display = "none";
+                if (!data.current || !data.daily) { throw new Error("bad payload"); }
+                renderWeather(label, data);
+            })
+            .catch(function () {
+                showError("Could not load weather data. Check your connection and try again.");
+            });
+    }
+
+    function searchCities(q) {
+        var url = "https://geocoding-api.open-meteo.com/v1/search?name=" + encodeURIComponent(q) +
+            "&count=5&language=en&format=json";
+        fetch(url)
+            .then(function (resp) { return resp.json(); })
+            .then(function (data) {
+                resultsBox.innerHTML = "";
+                if (!data.results || data.results.length === 0) {
+                    resultsBox.style.display = "none";
+                    return;
+                }
+                data.results.forEach(function (r) {
+                    var label = r.name +
+                        (r.admin1 ? ", " + r.admin1 : "") +
+                        (r.country ? ", " + r.country : "");
+                    var btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.setAttribute("role", "option");
+                    btn.textContent = label;
+                    btn.addEventListener("click", function () {
+                        resultsBox.style.display = "none";
+                        resultsBox.innerHTML = "";
+                        searchInput.value = r.name;
+                        loadWeather(r.latitude, r.longitude, label);
+                    });
+                    resultsBox.appendChild(btn);
+                });
+                resultsBox.style.display = "block";
+            })
+            .catch(function () {
+                resultsBox.style.display = "none";
+            });
+    }
+
+    searchInput.addEventListener("input", function () {
+        var q = searchInput.value.trim();
+        if (debounceTimer) { clearTimeout(debounceTimer); }
+        if (q.length < 2) {
+            resultsBox.style.display = "none";
+            resultsBox.innerHTML = "";
+            return;
+        }
+        debounceTimer = setTimeout(function () { searchCities(q); }, 350);
+    });
+
+    document.addEventListener("click", function (e) {
+        if (!e.target.closest(".search-box")) {
+            resultsBox.style.display = "none";
+        }
+    });
+
+    // Default: Montreal
+    loadWeather(45.5017, -73.5673, "Montreal, Quebec, Canada");
+})();
+</script>
+</body>
+</html>
