@@ -3,16 +3,433 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scientific Calculator</title>
+    <meta name="description" content="Scientific calculator — Munir Nweiser, Capital Markets portal">
+    <title>Scientific Calculator | Munir Nweiser</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .calc-wrap { max-width: 480px; margin: 0 auto; }
+        .calc-mode-row { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+        .calc-mode {
+            border: 1px solid var(--border); border-radius: 999px;
+            background: rgba(255,255,255,0.04); color: var(--text-muted);
+            font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em;
+            padding: 7px 14px;
+        }
+        .calc-mode:hover { color: var(--cyan); border-color: rgba(103,232,249,0.35); }
+        .calc-display {
+            background: rgba(0,0,0,0.28);
+            border: 1px solid var(--border); border-radius: 14px;
+            padding: 18px; margin-bottom: 14px; text-align: right;
+            min-height: 104px; overflow-wrap: break-word;
+        }
+        .calc-expr { color: var(--text-muted); font-size: 0.9rem; min-height: 1.5em; }
+        .calc-result { color: #fff; font-size: 2.1rem; font-weight: 800; line-height: 1.2; }
+        .calc-keys { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+        .calc-keys button {
+            padding: 14px 4px; border-radius: 10px;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.04);
+            color: var(--text); font-size: 1rem; font-weight: 600;
+            transition: border-color 0.15s ease, background 0.15s ease;
+        }
+        .calc-keys button:hover { border-color: rgba(103,232,249,0.4); background: rgba(103,232,249,0.08); }
+        .calc-keys button:active { transform: scale(0.96); }
+        .calc-keys button.op { color: var(--cyan); font-size: 1.15rem; }
+        .calc-keys button.fn { color: var(--violet); font-size: 0.85rem; }
+        .calc-keys button.util { color: var(--gold); }
+        .calc-keys button.eq {
+            background: linear-gradient(135deg, #0891b2, #4f46e5);
+            color: #fff; border: none; grid-row: span 2; font-size: 1.3rem;
+        }
+        .calc-keys button.zero { grid-column: span 2; }
+        .calc-hint { margin-top: 14px; color: var(--text-muted); font-size: 0.75rem; text-align: center; }
+        @media (max-width: 480px) {
+            .calc-keys button { padding: 12px 2px; font-size: 0.9rem; }
+            .calc-result { font-size: 1.7rem; }
+        }
+    </style>
 </head>
-
 <body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="index.html">Home</a><a href="resume.html">Resume</a><a href="scientific-calculator.html">Calculator</a><a href="index.html#markets">Markets</a><a href="index.html#trading">Trading</a><a href="index.html#tutorials">Tutorials</a><a href="index.html#games">Games</a><a href="index.html#memories">Memories</a>
+</nav></div></header>
 
-    <h1>Scientific Calculator</h1>
+<main class="container" style="padding:120px 0 80px">
+    <p class="eyebrow">Tools</p>
+    <div class="section-heading">
+        <h2>Scientific Calculator</h2>
+        <p>Full expression entry with parentheses, trigonometry, logarithms and powers. Click the keys or type on your keyboard.</p>
+    </div>
 
-    <p>My calculator page is working.</p>
+    <div class="calc-wrap">
+        <div class="calc-mode-row">
+            <button class="calc-mode" id="degToggle" type="button" aria-label="Toggle degree radian mode">DEG</button>
+        </div>
+        <div class="calc-display" aria-live="polite">
+            <div class="calc-expr" id="calcExpr">&nbsp;</div>
+            <div class="calc-result" id="calcResult">0</div>
+        </div>
+        <div class="calc-keys" id="calcKeys">
+            <button type="button" class="util" data-k="clear">C</button>
+            <button type="button" class="fn" data-k="(">(</button>
+            <button type="button" class="fn" data-k=")">)</button>
+            <button type="button" class="op" data-k="%">%</button>
+            <button type="button" class="util" data-k="back">&#9003;</button>
 
-    <a href="index.html">← Back to Home</a>
+            <button type="button" class="fn" data-k="sin(">sin</button>
+            <button type="button" class="fn" data-k="cos(">cos</button>
+            <button type="button" class="fn" data-k="tan(">tan</button>
+            <button type="button" class="op" data-k="/">&divide;</button>
+            <button type="button" class="fn" data-k="sqrt(">&radic;</button>
 
+            <button type="button" class="fn" data-k="ln(">ln</button>
+            <button type="button" class="fn" data-k="log(">log</button>
+            <button type="button" class="fn" data-k="pi">&pi;</button>
+            <button type="button" class="fn" data-k="e">e</button>
+            <button type="button" class="op" data-k="*">&times;</button>
+
+            <button type="button" data-k="7">7</button>
+            <button type="button" data-k="8">8</button>
+            <button type="button" data-k="9">9</button>
+            <button type="button" class="fn" data-k="sq">x&sup2;</button>
+            <button type="button" class="op" data-k="-">&minus;</button>
+
+            <button type="button" data-k="4">4</button>
+            <button type="button" data-k="5">5</button>
+            <button type="button" data-k="6">6</button>
+            <button type="button" class="fn" data-k="^">x&#696;</button>
+            <button type="button" class="op" data-k="+">+</button>
+
+            <button type="button" data-k="1">1</button>
+            <button type="button" data-k="2">2</button>
+            <button type="button" data-k="3">3</button>
+            <button type="button" class="fn" data-k="neg">+/-</button>
+            <button type="button" class="eq" data-k="eq">=</button>
+
+            <button type="button" class="zero" data-k="0">0</button>
+            <button type="button" data-k=".">.</button>
+            <button type="button" class="fn" data-k="ans">Ans</button>
+        </div>
+        <p class="calc-hint">Keyboard: digits, + &minus; * / ^ ( ) % &nbsp;·&nbsp; Enter = equals &nbsp;·&nbsp; Backspace deletes &nbsp;·&nbsp; Esc clears</p>
+    </div>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="index.html">Home</a><a href="resume.html">Resume</a><a href="index.html#trading">Trading</a><a href="index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="app.js"></script>
+<script>
+(function () {
+    'use strict';
+
+    var exprEl = document.getElementById('calcExpr');
+    var resEl = document.getElementById('calcResult');
+    var degBtn = document.getElementById('degToggle');
+
+    var expr = '';
+    var justEvaluated = false;
+    var degMode = true;
+    var lastAns = 0;
+
+    var BINOPS = ['+', '-', '*', '/', '^'];
+
+    // Plain-decimal rendering of a number (never "1e+21", which the parser
+    // would misread as 1 * e + 21).
+    function numToString(v) {
+        var s = Number(v.toPrecision(12)).toString();
+        if (/e/i.test(s)) {
+            var parts = s.toLowerCase().split('e');
+            var mant = parts[0], exp = parseInt(parts[1], 10);
+            var neg = mant.charAt(0) === '-';
+            var dm = mant.replace('-', '').split('.');
+            var digits = dm[0] + (dm[1] || '');
+            var point = dm[0].length + exp, res;
+            if (point <= 0) res = '0.' + new Array(-point + 1).join('0') + digits;
+            else if (point >= digits.length) res = digits + new Array(point - digits.length + 1).join('0');
+            else res = digits.slice(0, point) + '.' + digits.slice(point);
+            return (neg ? '-' : '') + res;
+        }
+        return s;
+    }
+
+    function pretty(s) {
+        return s
+            .replace(/sqrt\(/g, '\u221A(')
+            .replace(/pi/g, '\u03C0')
+            .replace(/\*/g, '\u00D7')
+            .replace(/\//g, '\u00F7')
+            .replace(/-/g, '\u2212');
+    }
+
+    function render() {
+        exprEl.textContent = expr === '' ? '\u00A0' : pretty(expr);
+    }
+
+    function showResult(v) {
+        if (typeof v === 'number' && Number.isFinite(v)) {
+            resEl.textContent = numToString(v);
+            resEl.style.color = '#fff';
+        } else {
+            resEl.textContent = 'Error';
+            resEl.style.color = 'var(--red)';
+        }
+    }
+
+    function freshStart(tok) {
+        // After '=', an operator chains from the answer; anything else starts over.
+        if (justEvaluated) {
+            justEvaluated = false;
+            resEl.style.color = '#fff';
+            expr = BINOPS.includes(tok) ? numToString(lastAns) : '';
+        }
+    }
+
+    function input(tok) {
+        freshStart(tok);
+        var last = expr.slice(-1);
+
+        if (BINOPS.includes(tok)) {
+            if (expr === '') {
+                if (tok !== '-') return; // only unary minus may start an expression
+            } else if (BINOPS.includes(last) || last === '(') {
+                if (tok === '-') { expr += '-'; render(); return; } // unary minus
+                expr = expr.slice(0, -1); // replace trailing operator
+            }
+        }
+        if (tok === '.') {
+            var m = expr.match(/(\d*\.\d*|\d+)$/);
+            if (m && m[0].indexOf('.') !== -1) return; // one dot per number
+            if (!/[0-9)]$/.test(expr)) expr += '0';
+        }
+        if (tok === '%' && !/[0-9)]$/.test(expr)) return;
+        if (tok === ')' && (expr.match(/\(/g) || []).length <= (expr.match(/\)/g) || []).length) return;
+
+        expr += tok;
+        render();
+    }
+
+    function insertAns() {
+        freshStart('ans');
+        expr += numToString(lastAns);
+        render();
+    }
+
+    function backspace() {
+        if (justEvaluated) { expr = numToString(lastAns); justEvaluated = false; }
+        var funcs = ['sin(', 'cos(', 'tan(', 'ln(', 'log(', 'sqrt(', 'pi'];
+        for (var i = 0; i < funcs.length; i++) {
+            if (expr.slice(-funcs[i].length) === funcs[i]) {
+                expr = expr.slice(0, -funcs[i].length);
+                render();
+                return;
+            }
+        }
+        expr = expr.slice(0, -1);
+        render();
+    }
+
+    function clearAll() {
+        expr = '';
+        justEvaluated = false;
+        resEl.textContent = '0';
+        resEl.style.color = '#fff';
+        render();
+    }
+
+    // Toggle the sign of the trailing number (5*3 -> 5*(-3), 5-3 -> 5+3).
+    function negate() {
+        if (justEvaluated) { expr = numToString(lastAns); justEvaluated = false; }
+        var m = expr.match(/^(.*?)([+\-*/^])?(\d+\.?\d*|\.\d+)$/);
+        if (!m) return;
+        var head = m[1], op = m[2], num = m[3];
+        if (op === '-') expr = head + '+' + num;
+        else if (op === '+') expr = head + '-' + num;
+        else expr = head + (op ? op + '(-' + num + ')' : '(-' + num + ')');
+        render();
+    }
+
+    /* ---------- expression parser: tokenizer + shunting-yard ---------- */
+
+    function tokenize(s) {
+        var tokens = [], i = 0;
+        while (i < s.length) {
+            var c = s[i];
+            if (/\d/.test(c) || c === '.') {
+                var j = i;
+                while (j < s.length && /[\d.]/.test(s[j])) j++;
+                var n = parseFloat(s.slice(i, j));
+                if (!Number.isFinite(n)) throw new Error('num');
+                tokens.push({ t: 'num', v: n });
+                i = j;
+            } else if ('+-*/^()'.indexOf(c) !== -1) {
+                tokens.push({ t: 'op', v: c });
+                i++;
+            } else if (c === '%') {
+                tokens.push({ t: 'pct' });
+                i++;
+            } else if (/[a-z]/.test(c)) {
+                var k = i;
+                while (k < s.length && /[a-z]/.test(s[k])) k++;
+                var w = s.slice(i, k);
+                if (w === 'pi') tokens.push({ t: 'num', v: Math.PI });
+                else if (w === 'e') tokens.push({ t: 'num', v: Math.E });
+                else if (['sin', 'cos', 'tan', 'ln', 'log', 'sqrt'].indexOf(w) !== -1)
+                    tokens.push({ t: 'func', v: w });
+                else throw new Error('word');
+                i = k;
+            } else {
+                throw new Error('char');
+            }
+        }
+        return tokens;
+    }
+
+    function toRPN(tokens) {
+        var out = [], ops = [];
+        var prec = { '+': 1, '-': 1, '*': 2, '/': 2, neg: 3, '^': 4 };
+        var rightAssoc = { '^': true, neg: true };
+        var prev = null;
+
+        tokens.forEach(function (tk) {
+            if (tk.t === 'num' || tk.t === 'pct') {
+                out.push(tk);
+            } else if (tk.t === 'func') {
+                ops.push(tk);
+            } else if (tk.v === '(') {
+                ops.push(tk);
+            } else if (tk.v === ')') {
+                while (ops.length && ops[ops.length - 1].v !== '(') out.push(ops.pop());
+                if (!ops.length) throw new Error('paren');
+                ops.pop(); // '('
+                if (ops.length && ops[ops.length - 1].t === 'func') out.push(ops.pop());
+            } else {
+                var op = tk.v;
+                var prevIsValue = prev && (prev.t === 'num' || prev.t === 'pct' ||
+                    (prev.t === 'op' && prev.v === ')'));
+                if (op === '-' && !prevIsValue) op = 'neg';
+                if (op === '+' && !prevIsValue) { prev = tk; return; } // unary plus: no-op
+                while (ops.length) {
+                    var top = ops[ops.length - 1];
+                    if (top.t !== 'op' && top.t !== 'func') break;
+                    if (top.t === 'op' && top.v === '(') break;
+                    var tp = top.t === 'func' ? 5 : prec[top.v];
+                    if (tp > prec[op] || (tp === prec[op] && !rightAssoc[op])) out.push(ops.pop());
+                    else break;
+                }
+                ops.push({ t: 'op', v: op });
+            }
+            prev = tk;
+        });
+
+        while (ops.length) {
+            var o = ops.pop();
+            if (o.v === '(' || o.v === ')') throw new Error('paren');
+            out.push(o);
+        }
+        return out;
+    }
+
+    function applyFunc(name, a) {
+        var rad = degMode ? a * Math.PI / 180 : a;
+        switch (name) {
+            case 'sin': return Math.sin(rad);
+            case 'cos': return Math.cos(rad);
+            case 'tan':
+                if (Math.abs(Math.cos(rad)) < 1e-15) throw new Error('domain');
+                return Math.tan(rad);
+            case 'ln': if (a <= 0) throw new Error('domain'); return Math.log(a);
+            case 'log': if (a <= 0) throw new Error('domain'); return Math.log10(a);
+            case 'sqrt': if (a < 0) throw new Error('domain'); return Math.sqrt(a);
+        }
+        throw new Error('func');
+    }
+
+    function applyOp(op, a, b) {
+        switch (op) {
+            case '+': return a + b;
+            case '-': return a - b;
+            case '*': return a * b;
+            case '/': if (b === 0) throw new Error('div0'); return a / b;
+            case '^': return Math.pow(a, b);
+        }
+        throw new Error('op');
+    }
+
+    function evalRPN(rpn) {
+        var st = [];
+        rpn.forEach(function (tk) {
+            if (tk.t === 'num') st.push(tk.v);
+            else if (tk.t === 'pct') {
+                if (!st.length) throw new Error('stack');
+                st.push(st.pop() / 100);
+            } else if (tk.t === 'func') {
+                if (!st.length) throw new Error('stack');
+                st.push(applyFunc(tk.v, st.pop()));
+            } else if (tk.v === 'neg') {
+                if (!st.length) throw new Error('stack');
+                st.push(-st.pop());
+            } else {
+                if (st.length < 2) throw new Error('stack');
+                var b = st.pop(), a = st.pop();
+                st.push(applyOp(tk.v, a, b));
+            }
+        });
+        if (st.length !== 1) throw new Error('stack');
+        return st[0];
+    }
+
+    function evaluate() {
+        if (expr === '') return;
+        try {
+            var val = evalRPN(toRPN(tokenize(expr)));
+            if (!Number.isFinite(val)) throw new Error('range');
+            lastAns = Number(val.toPrecision(12));
+            showResult(lastAns);
+            justEvaluated = true;
+        } catch (e) {
+            showResult(NaN);
+            justEvaluated = true;
+        }
+    }
+
+    /* ---------- wiring ---------- */
+
+    document.getElementById('calcKeys').addEventListener('click', function (e) {
+        var b = e.target.closest('button');
+        if (!b) return;
+        var k = b.getAttribute('data-k');
+        if (k === 'clear') clearAll();
+        else if (k === 'back') backspace();
+        else if (k === 'eq') evaluate();
+        else if (k === 'neg') negate();
+        else if (k === 'ans') insertAns();
+        else if (k === 'sq') { input('^'); input('2'); }
+        else input(k);
+    });
+
+    degBtn.addEventListener('click', function () {
+        degMode = !degMode;
+        degBtn.textContent = degMode ? 'DEG' : 'RAD';
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.metaKey || e.ctrlKey || e.altKey) return;
+        var k = e.key;
+        if (k >= '0' && k <= '9') input(k);
+        else if (k === '.') input('.');
+        else if (['+', '-', '*', '/', '^', '(', ')', '%'].indexOf(k) !== -1) input(k);
+        else if (k === 'Enter' || k === '=') { e.preventDefault(); evaluate(); }
+        else if (k === 'Backspace') { e.preventDefault(); backspace(); }
+        else if (k === 'Escape') clearAll();
+    });
+
+    render();
+})();
+</script>
 </body>
 </html>
