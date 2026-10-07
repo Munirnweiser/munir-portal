@@ -72,6 +72,33 @@
 </div>
 
 <div class="resume-card">
+<h3>ETF mechanics: creation and redemption</h3>
+<p>An ETF's market price stays near its net asset value because of <em>authorized participants</em> (APs) — large dealers who can create or redeem ETF shares directly with the fund. When the ETF trades at a premium, the AP buys the underlying basket of stocks, delivers it to the fund, and receives new ETF shares to sell at the premium. When it trades at a discount, the AP does the reverse: buys cheap ETF shares, redeems them for the underlying stocks, and sells the stocks. This arbitrage is what keeps the price glued to NAV.</p>
+<p>Creations and redemptions happen in large blocks called <em>creation units</em> (often 50,000 shares) and are usually <em>in-kind</em> — securities for securities, not cash — which is why ETFs are tax-efficient. Support angle: if creations are halted (a corporate action on a basket constituent, a trading halt), the premium or discount can gap; a desk showing a stale NAV during a halt misprices every quote.</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> An ETF holds a basket worth $5,000,000 per creation unit (50,000 shares → NAV $100/share). The ETF trades at $100.40 — a 0.4% premium. The AP buys the basket for $5,000,000, creates 50,000 shares, sells them for $5,020,000, and pockets roughly $20,000 minus costs. Repeated until the premium closes.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>ADR vs GDR: same idea, different plumbing</h3>
+<p>Both let investors hold foreign shares locally, but the plumbing differs. An <em>ADR</em> trades in the US in USD — a custodian bank holds the foreign shares and issues receipts; the <em>ratio</em> (e.g., 1 ADR = 2 ordinary shares) keeps the price in a sensible range. A <em>GDR</em> typically lists in London or Luxembourg, often in USD or EUR, and frequently comes in two tranches: Reg S (non-US investors) and 144A (US institutions only).</p>
+<p>The costs investors forget: the depositary charges a <em>custody fee</em> — typically $0.01 to $0.03 per ADR per year, deducted from dividends — and every dividend is converted from the local currency at the depositary's FX rate, not the market rate.</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> A French company declares a €1.00 dividend. You hold 1,000 ADRs (ratio 1:1). The depositary converts at its own rate (€1 = $1.07 instead of the market $1.085), takes a $0.02/ADR custody fee, and you receive roughly $1,050 instead of $1,085. Support tickets about "wrong dividend amounts" on ADRs are almost always the fee and the FX conversion, not a data error.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Futures curves: contango and backwardation</h3>
+<p>Futures for successive expiries form a <em>curve</em>. In <em>contango</em> the curve slopes upward — later contracts cost more, reflecting storage and financing costs for a storable commodity. In <em>backwardation</em> it slopes downward — near-term contracts command a premium, usually because of immediate scarcity (a supply disruption, low inventories).</p>
+<p>The curve decides the economics of <em>rolling</em>: a long position rolled in contango sells cheap front-month and buys expensive deferred — a steady bleed called negative roll yield. In backwardation the roll earns. Support angle: expiry calendars and roll dates are reference data; a missed roll turns a futures position into a delivery obligation.</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> Crude oil: front-month $78.00, 3-month $80.00, 6-month $81.50 — contango of $3.50 over six months, roughly the cost of storing and financing a barrel. Rolling 1,000 contracts from front-month to 3-month costs about ($80.00 − $78.00) × 1,000 contracts × 1,000 barrels = $2,000,000 of roll bleed each quarter the curve stays shaped this way.</p>
+</div>
+</div>
+
+<div class="resume-card">
 <h3>What production support watches</h3>
 <ul class="clean-list">
 <li><strong>Settlement calendars</strong> — every asset class has its own holiday calendars; a bad calendar breaks value dates across the whole book.</li>

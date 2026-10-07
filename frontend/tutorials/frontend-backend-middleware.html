@@ -70,6 +70,38 @@
 </div>
 
 <div class="resume-card">
+<h3>Rate limiting at the API gateway</h3>
+<p>The API gateway enforces per-client quotas — say 1,000 requests per minute per API key — and answers excess traffic with <span class="formula">429 Too Many Requests</span>. To the trader it looks identical to the backend being down: orders rejected, screens stale.</p>
+<div class="example-box">
+<p><strong>Incident walkthrough.</strong> During a volatility spike, an algo desk's order burst trips its quota; every order beyond the limit gets a 429. The desk pages support: "the order API is down." Triage: the backend is healthy, but gateway metrics show a 429 spike isolated to one API key. Fix: temporarily raise that key's quota and ask the desk to pace the burst; permanent fix: quota sized for volatility, not for average days. Support lesson: dashboard 429s separately from 500s — they are different incidents with different owners.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Poison messages: the one that blocks the queue</h3>
+<p>A <em>poison message</em> is one the consumer can never process — a malformed FIX field, a null where the schema demands a value. The consumer crashes or retries forever, and every healthy message behind it waits. The queue depth climbs while the consumer looks "busy," which is exactly backwards from a consumer outage.</p>
+<p>The standard pattern: retry a few times (transient errors do clear), then route to a <em>dead-letter queue (DLQ)</em> and move on. The DLQ preserves the evidence; after the bug is fixed, replay it. Two rules from the field: never replay the DLQ blindly — inspect the message first, because replaying a truly poisonous message just re-poisons the queue; and verify the consumer is idempotent before any replay, or the redelivered messages double-book trades.</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> A fill arrives with tag 39 (OrdStatus) set to "9" — not a valid value. The booking consumer throws, retries 3 times, then DLQs it. The blotter shows the order filled at the exchange but unbooked internally. Fix: correct the mapping, replay the single DLQ message, confirm one booking — not two.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Distributed tracing, worked end to end</h3>
+<p>A correlation ID generated at the edge and propagated in headers (and Kafka message headers, and database comments) turns five systems' logs into one story. Here is a slow order, traced:</p>
+<div class="example-box">
+<pre class="formula">corr-id 9f3a-41c2, order 78451231
+10:00:01.120  frontend        → POST /orders (corr-id issued)
+10:00:01.210  order-api       → validated, published to Kafka (90ms)
+10:00:01.260  kafka           → "orders" topic appended (50ms)
+10:00:01.900  matching-engine → fill published (640ms ← the slow hop)
+10:00:02.050  booking         → written to DB (150ms)
+total: 930ms against a 500ms p99 budget</pre>
+<p>One ID, one timeline, one culprit: the matching engine. Without the correlation ID this would have been five timestamp greps across five systems, hoping the clocks agreed. Support rule: if a system can't propagate the correlation ID, that gap is where the next mystery will hide — file it as tech debt, not trivia.</p>
+</div>
+</div>
+
+<div class="resume-card">
 <h3>What production support watches</h3>
 <ul class="clean-list">
 <li><strong>Queue depth dashboards</strong> — the single best early-warning signal in a message-driven architecture; alert on growth rate, not just absolute depth.</li>

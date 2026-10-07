@@ -85,6 +85,65 @@ docker system df                    # what is actually consuming disk</div>
 <p>"No space left on device" on a Docker host is almost always old images and stopped containers. Run <span class="formula">docker system df</span> first so you clean what is actually big, and never prune volumes on a host carrying a database you have not backed up.</p>
 </div>
 
+<div class="resume-card">
+<h3>Multi-stage builds: small, safe images</h3>
+<p>A Dockerfile that builds <em>and</em> runs in one stage ships the compiler, the source code and every build dependency to production. Multi-stage builds keep only the artifact:</p>
+<div class="cmd">FROM maven:3.9-eclipse-temurin-17 AS build
+WORKDIR /src
+COPY pom.xml .
+RUN mvn -q dependency:go-offline
+COPY src ./src
+RUN mvn -q package -DskipTests
+
+FROM eclipse-temurin:17-jre-alpine
+WORKDIR /app
+COPY --from=build /src/target/trade-api.jar app.jar
+USER 1001
+ENTRYPOINT ["java", "-jar", "app.jar"]</div>
+<p>The first stage compiles; the second copies only the jar into a minimal JRE image and runs as a non-root user. Typical result: 800 MB down to 180 MB, and no compiler or source code in production for an attacker to use. When support sees a "works locally, fails in prod" ticket, the first question is whether prod actually runs this Dockerfile's output — <span class="formula">docker inspect</span> shows the image digest; compare it with what CI built.</p>
+</div>
+
+<div class="resume-card">
+<h3>Compose dependencies: why "connection refused" happens</h3>
+<p><span class="formula">depends_on</span> only controls <em>start order</em> — it does not wait for the database to accept connections. The API container starts, tries to connect to a DB that is still initializing, and crashes:</p>
+<div class="cmd">services:
+  api:
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: postgres:15
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 10</div>
+<p>With the healthcheck, the API waits until Postgres genuinely answers. Debugging sequence: <span class="formula">docker compose ps</span> (which service is unhealthy?), <span class="formula">docker compose logs db</span> (did the DB fail to start, or just start slowly?), then check the API's retry logic — a service that gives up after one connection attempt will always be fragile, healthcheck or not.</p>
+<div class="example-box">
+<p><strong>What support watches.</strong> Flapping compose stacks on shared dev hosts are usually resource starvation (the DB is slow to start because the host is overloaded), not application bugs. Check <span class="formula">docker stats</span> on the host before redeploying.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Image scanning: CVEs block releases</h3>
+<p>Security pipelines scan images for known vulnerabilities (CVEs). A critical CVE in the base image fails the build gate and the release stops — support gets the ticket "deployment blocked":</p>
+<div class="cmd">docker scout cves trade-api:1.4.2
+trivy image trade-api:1.4.2</div>
+<p>Read the output for the <em>fixable</em> CVEs: a CVE fixed in <span class="formula">alpine:3.19.1</span> while you run 3.18 means rebuilding on the patched base image. Unfixable CVEs in dependencies you do not use get documented as accepted risk. The support discipline: never "just" disable the scan to unblock a release — that decision belongs to security, with a ticket number attached.</p>
+</div>
+
+<div class="resume-card">
+<h3>Registry auth failures</h3>
+<p><span class="formula">unauthorized: authentication required</span> when pulling means the registry does not know you. The checklist:</p>
+<ul>
+<li><span class="formula">docker login registry.bank.internal</span> — credentials land in <span class="formula">~/.docker/config.json</span> (or a credential helper like <span class="formula">docker-credential-desktop</span>). A login that "worked yesterday" usually means a rotated service-account password.</li>
+<li>In CI, tokens are ephemeral — a pipeline failing at pull with 401 after an infra change means the token injection broke, not the image.</li>
+<li>Private registries need an <span class="formula">imagePullSecret</span> on the Kubernetes side; Docker login on your laptop does nothing for the cluster.</li>
+</ul>
+<div class="example-box">
+<p><strong>Key takeaway.</strong> Auth failures are identity problems, not image problems. Confirm who is authenticating (user? service account? node?) before touching the image or the registry.</p>
+</div>
+</div>
+
 </main>
 
 <footer class="site-footer"><div class="container footer-content">

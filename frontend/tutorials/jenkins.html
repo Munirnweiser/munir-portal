@@ -87,6 +87,61 @@
 </div>
 
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+<div class="resume-card">
+<h3>Shared libraries: one pipeline definition, two hundred users</h3>
+<p>Banks do not copy-paste Jenkinsfiles into every repo — they keep a <em>shared library</em> of pipeline steps, and each service calls it in a few lines:</p>
+<div class="example-box">
+<pre class="formula">@Library('bank-pipeline-lib@1.4.0') _
+standardJavaPipeline {
+  serviceName = 'trade-api'
+  deployEnv   = 'prod'
+}</pre>
+<p>The library (steps in <span class="formula">vars/</span>, helpers in <span class="formula">src/</span>) is versioned like any code, and the <span class="formula">@1.4.0</span> pin matters: when the library team ships 1.5.0 with a new deploy step, unpinned pipelines pick it up on their next run. A dozen pipelines failing the same new way at the same time is a library change, not twelve application bugs — check the library's changelog and consider pinning back to the last good version while it is fixed.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Credential binding: the 401 that is not the code</h3>
+<p>Pipelines authenticate to artifactories, registries and servers through the Jenkins credentials store, injected with <span class="formula">withCredentials</span>:</p>
+<div class="example-box">
+<pre class="formula">withCredentials([usernamePassword(credentialsId: 'artifactory-svc',
+                                   usernameVariable: 'ART_USER',
+                                   passwordVariable: 'ART_PASS')]) {
+  sh 'curl -u $ART_USER:$ART_PASS https://artifactory.bank.internal/api/...'
+}</pre>
+<p>Failure modes in order of likelihood: the service-account password rotated and nobody updated the store (401s everywhere); the credential ID is misspelled or lives in a folder scope the job cannot see ("no such credential"); the secret is echoed into the console log (Jenkins masks known secrets — if you see a plaintext password in output, the masking failed and the secret must be rotated). Support rule: never paste a credential into a ticket; reference the credential ID and let the owning team rotate it.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Parallel stages: cutting pipeline time</h3>
+<p>Independent verification steps should run concurrently, not in sequence:</p>
+<div class="example-box">
+<pre class="formula">stage('Verify') {
+  parallel {
+    stage('Unit tests')   { steps { sh 'mvn test' } }
+    stage('SAST scan')    { steps { sh './sast.sh' } }
+    stage('License check') { steps { sh './licenses.sh' } }
+  }
+}</pre>
+<p>Three 10-minute stages become ~12 minutes wall-clock instead of 30. The tradeoff is agent capacity: parallel stages consume one executor each, so a fleet of parallel pipelines can starve the agent pool and queue every other team's builds. When builds sit in "waiting for next available executor" right after someone parallelized everything, that is the cause — add agents or throttle the parallelism, not the pipeline logic.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Agent disconnect recovery</h3>
+<p>An agent that drops mid-build leaves builds hanging and executors stuck. Recovery order:</p>
+<ul class="clean-list">
+<li><strong>Check the agent log</strong> on the controller (Manage Jenkins → Nodes → agent → Log) — out-of-disk and clock skew are the two classic killers.</li>
+<li><strong>Relaunch the agent</strong> — JNLP agents reconnect on restart; SSH agents need the controller to reach the host and authenticate.</li>
+<li><strong>Clean stale workspaces</strong> — a killed build can leave a locked workspace; the Workspace Cleanup plugin or a manual wipe unblocks the next run.</li>
+<li><strong>Mark the node temporarily offline</strong> while investigating, so new builds do not pile onto a sick agent.</li>
+</ul>
+<div class="example-box">
+<p><strong>Key takeaway.</strong> One flaky agent poisoning many builds looks like "Jenkins is unstable." The node list with per-agent build history tells you it is exactly one machine — evidence beats restarting the controller.</p>
+</div>
+</div>
+
 </main>
 
 <footer class="site-footer"><div class="container footer-content">

@@ -84,6 +84,33 @@
 </div>
 </div>
 
+
+<div class="resume-card">
+<h3>Herstatt risk: when settlement itself is the risk</h3>
+<p>FX settlement has a unique danger: the two currency legs settle in <em>different</em> payment systems, hours apart. If your counterparty collapses after you have paid your leg but before they pay theirs, you lose the full principal — not just a market move. This is <strong>Herstatt risk</strong>, named after Bankhaus Herstatt, which German regulators closed on 26 June 1974 <em>after</em> it had received Deutsche Marks from counterparties but <em>before</em> its US-dollar legs settled in New York. Counterparties never saw their dollars.</p>
+<p>The industry answer is <strong>payment-versus-payment (PvP)</strong>: CLS Bank settles both legs simultaneously, so principal risk disappears — you either get both currencies or neither. That is why CLS-eligible trades are the safe path, and why non-CLS settlement (many emerging-market pairs) still carries genuine principal risk that support teams must monitor trade by trade.</p>
+</div>
+
+<div class="resume-card">
+<h3>CLS pay-in schedule: a worked funding example</h3>
+<p>CLS nets each member's trades per currency, then issues a <strong>pay-in schedule</strong>: the net amount you must deliver, in each currency, by its deadline (roughly 07:00–12:00 CET depending on the currency — JPY early, USD later in the morning). Miss a pay-in and your trades do not settle; you also pay funding costs on the shortfall.</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> A bank's CLS book for value date shows: pay EUR 50M, receive EUR 20M → net pay-in <strong>EUR 30M</strong> by the EUR deadline; pay USD 10M, receive USD 60M → net <strong>receive USD 50M</strong> (no pay-in needed). Treasury funds only the net EUR 30M — netting is the whole point — but if the EUR 30M arrives 20 minutes late, the EUR settlements fail and the bank pays CLS fail funding charges for the day.</p>
+</div>
+<p><strong>Support watches:</strong> the pay-in monitor dashboard on value date, SWIFT confirmation of each pay-in (MT202/MT103 flows), and any currency where the funding desk has not confirmed cover 30 minutes before deadline.</p>
+</div>
+
+<div class="resume-card">
+<h3>FX swap points: a worked calculation</h3>
+<p>Swap points are just the forward premium expressed in pips. From covered interest parity, with spot S, domestic (quote-currency) rate r<sub>d</sub>, foreign (base-currency) rate r<sub>f</sub>, and t in years:</p>
+<p class="formula">Swap points = (F − S) × 10,000 &nbsp; where &nbsp; F = S × (1 + r<sub>d</sub>×t) / (1 + r<sub>f</sub>×t)</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> EUR/USD spot 1.0850. EUR 3-month rate 3.00%, USD 3-month rate 5.00%, t = 90/360 = 0.25.</p>
+<p class="formula">F = 1.0850 × (1 + 0.05×0.25) / (1 + 0.03×0.25) = 1.0850 × 1.0125 / 1.0075 ≈ 1.0904</p>
+<p>Swap points = (1.0904 − 1.0850) × 10,000 ≈ <strong>+54 pips</strong>. The higher-yielding dollar sits at a forward discount, so rolling a long EUR/USD position forward <em>earns</em> 54 pips per 3 months — and a pricing engine quoting +40 or +70 is visibly off-market, which is exactly the kind of ticket support investigates.</p>
+</div>
+</div>
+
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
 </main>
 

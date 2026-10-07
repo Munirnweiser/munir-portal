@@ -99,6 +99,66 @@ WHERE symbol = 'EURUSD'
 </div>
 </div>
 
+<div class="resume-card">
+<h3>Sessionization: turning events into sessions</h3>
+<p>Traders log in and out all day; support questions are about <em>sessions</em>, not raw logins. The gap-and-island pattern groups events into sessions whenever the gap exceeds a threshold — here 30 minutes:</p>
+<div class="sql">WITH ordered AS (
+  SELECT trader_id, login_ts,
+         LAG(login_ts) OVER (PARTITION BY trader_id ORDER BY login_ts) AS prev_ts
+  FROM trader_logins
+),
+flagged AS (
+  SELECT trader_id, login_ts,
+         CASE WHEN prev_ts IS NULL
+                   OR login_ts - prev_ts &gt; INTERVAL '30' MINUTE
+              THEN 1 ELSE 0 END AS new_session
+  FROM ordered
+)
+SELECT trader_id,
+       SUM(new_session) OVER (PARTITION BY trader_id ORDER BY login_ts) AS session_id,
+       login_ts
+FROM flagged
+ORDER BY trader_id, login_ts;</div>
+<p><span class="formula">LAG()</span> finds the previous login; the CASE flags session starts; the running <span class="formula">SUM()</span> turns flags into session numbers. Logins at 09:00, 09:12 and 09:55 become sessions 1, 1, 2. This is the same technique used to sessionize FIX connections when a client reconnects repeatedly — each reconnect cluster is one "session" for the incident timeline.</p>
+</div>
+
+<div class="resume-card">
+<h3>Hierarchical queries: following amendment chains</h3>
+<p>A trade amended five times is a chain, not five independent rows. Oracle's <span class="formula">CONNECT BY</span> walks the chain in one query:</p>
+<div class="sql">SELECT trade_id, amends_trade_id, LEVEL AS depth
+FROM trades
+START WITH trade_id = 'T-88412'
+CONNECT BY PRIOR amends_trade_id = trade_id;</div>
+<p>This returns the original trade plus every amendment in order. During a booking dispute — "which version did the client actually confirm?" — this query gives the full lineage instead of five separate lookups. The portable alternative is a recursive CTE (<span class="formula">WITH RECURSIVE</span>), supported by PostgreSQL and Oracle 11gR2+.</p>
+<div class="example-box">
+<p><strong>What support watches.</strong> Amendment chains longer than 3 versions on the same trade in one day usually mean an upstream system is flapping — fix the feed, not the trades.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Index design for trade tables</h3>
+<p>Trade tables are huge and queried by the same few patterns, so index column order matters. Rules of thumb:</p>
+<ul>
+<li><strong>Equality columns first, range columns last.</strong> <span class="formula">CREATE INDEX trades_book_date_idx ON trades(book, trade_date, status);</span> serves <span class="formula">WHERE book = 'EQ' AND trade_date &gt;= ...</span> perfectly; reversing the order would not.</li>
+<li><strong>Covering indexes</strong> — if the index contains every column the query selects, the database never touches the table. For a dashboard query run every minute, that is the difference between milliseconds and seconds.</li>
+<li><strong>Never wrap an indexed column in a function.</strong> <span class="formula">WHERE TRUNC(trade_date) = ...</span> disables the index; use a range instead: <span class="formula">WHERE trade_date &gt;= TRUNC(SYSDATE) AND trade_date &lt; TRUNC(SYSDATE)+1</span>.</li>
+</ul>
+<p>Support rarely creates indexes — that is a DBA change — but identifying the missing index in the incident report ("filter on book+trade_date does a full scan; composite index would fix it") is exactly what gets the change approved fast.</p>
+</div>
+
+<div class="resume-card">
+<h3>Reading deadlocks in the logs</h3>
+<p>When Oracle detects a deadlock it writes <span class="formula">ORA-00060: deadlock detected</span> to the alert log and dumps a deadlock graph to a trace file. The graph lists the two sessions, the SQL each was running, and the exact rows (by rowid) they fought over. Support's job:</p>
+<ul>
+<li>Capture the trace file name and timestamp from the alert log — DBAs will ask for it.</li>
+<li>Identify the two statements. If it is the same pair every night at 02:00, it is a batch-schedule collision, not a mystery.</li>
+<li>Check whether one side is a long-running report holding locks it does not need — read-consistency means readers should not block writers; a blocking reader is often missing an index or doing an unnecessary <span class="formula">SELECT ... FOR UPDATE</span>.</li>
+</ul>
+<div class="example-box">
+<p><strong>Key takeaway.</strong> Deadlocks are an application design signal. Your incident report should name the two statements and their lock order — that is what development needs to fix it with consistent ordering or shorter transactions.</p>
+</div>
+</div>
+
 </main>
 
 <footer class="site-footer"><div class="container footer-content">

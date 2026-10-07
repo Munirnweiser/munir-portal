@@ -80,6 +80,63 @@ git push -u origin hotfix/fix-margin-calc  # open the PR / merge request</pre>
 </div>
 
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+<div class="resume-card">
+<h3>Interactive rebase: cleaning a hotfix branch</h3>
+<p>A hotfix branch with seven "wip" and "fix typo" commits is embarrassing to merge and hard to review. Interactive rebase rewrites them into a clean story <em>before</em> the merge — only ever on your own unshared branch:</p>
+<div class="example-box">
+<pre class="formula">$ git rebase -i HEAD~4
+pick 9f3a1c2 Fix margin calc for cleared swaps
+fixup 7b2d9e4 wip
+fixup 1c8a4f0 fix typo in comment
+reword 4d6b2a1 adjust threshold</pre>
+<p><span class="formula">fixup</span> folds a commit into the one above and discards its message; <span class="formula">reword</span> lets you fix the message; <span class="formula">squash</span> folds but keeps both messages for editing. The result: one logical commit per logical change. Reviewers see the fix, not your keystrokes — and <span class="formula">git bisect</span> later works on meaningful commits instead of broken intermediate states.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>git bisect: finding the bad deploy</h3>
+<p>"It worked in v2.13.0 and broke in v2.14.0" with 200 commits between is a binary search problem, and git automates it:</p>
+<div class="example-box">
+<pre class="formula">$ git bisect start
+$ git bisect bad v2.14.0
+$ git bisect good v2.13.0
+$ git bisect run ./check-pricing.sh
+Bisecting: 6 revisions left to test after this (roughly 3 steps)
+...
+9f3a1c2e4d5b6a7 is the first bad commit
+$ git bisect reset</pre>
+<p>Each step checks out a midpoint commit; you (or the script) mark it good or bad, and git halves the range. With <span class="formula">git bisect run</span> and a script that returns 0 for good and non-zero for bad, 200 commits collapse to about 8 test runs. The script should be hermetic — build and run the specific failing check, nothing more. This is the fastest honest answer to "which change broke production?"</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Submodule pitfalls</h3>
+<p>Submodules embed one repo inside another at a pinned commit — common for shared libraries and config repos. Three traps:</p>
+<ul class="clean-list">
+<li><strong>Detached HEAD is normal inside a submodule</strong> — it points at the pinned commit, not a branch. Committing there and pushing the superproject without pushing the submodule leaves everyone else with a dangling pointer.</li>
+<li><strong>Pulling the superproject does not update submodules.</strong> After every pull, run <span class="formula">git submodule update --init --recursive</span>, or new code silently runs against old library checkouts.</li>
+<li><strong>Forgetting to commit the pointer bump</strong> — updating the submodule locally but not committing the superproject means CI still builds the old pointer. The "fix" that works on your machine and fails in CI is usually this.</li>
+</ul>
+<div class="example-box">
+<p><strong>What support watches.</strong> A deploy that behaves like the old version despite a "successful" release: check whether the release repo uses submodules and whether the pointer was actually bumped in the release commit.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Large files and Git LFS</h3>
+<p>Git stores every version of every file forever, so a 500 MB model file committed three times is 1.5 GB in every clone, forever. Git LFS (Large File Storage) stores a tiny pointer in the repo and the real bytes on a separate server:</p>
+<div class="example-box">
+<pre class="formula">$ git lfs install
+$ git lfs track "*.h5"
+$ git lfs track "models/**"
+$ git add .gitattributes   # the tracking rules ARE versioned</pre>
+<p>Symptoms of LFS trouble: clones that take 40 minutes (binaries in history), or CI failing with "pointer file" errors because the runner lacks LFS or the LFS server is unreachable. Track binary types from day one — retrofitting LFS onto a repo with gigabytes of history requires rewriting history, which on a shared repo is a coordinated event, not a casual command.</p>
+</div>
+<div class="example-box">
+<p><strong>Key takeaway.</strong> Repos get slow for exactly two reasons: too much history or too-big files. <span class="formula">git count-objects -vH</span> tells you which one in seconds.</p>
+</div>
+</div>
+
 </main>
 
 <footer class="site-footer"><div class="container footer-content">

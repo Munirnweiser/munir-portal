@@ -83,6 +83,55 @@
 </div>
 
 <div class="resume-card">
+<h3>Tool-calling failure modes</h3>
+<p>Function calling looks robust until the model starts improvising. The failure modes, from most to least common:</p>
+<ul class="clean-list">
+<li><strong>Hallucinated arguments</strong> — the model calls <span class="formula">restart_service(service="pricing-engne")</span> with a typo, or invents a host decommissioned in 2023. The harness must validate every argument against the real inventory and reject unknown values.</li>
+<li><strong>Wrong tool for the job</strong> — calling <span class="formula">query_logs</span> when the question needed <span class="formula">get_metric</span>; usually a sign the tool descriptions are vague. Rewrite the description, don't retrain the model.</li>
+<li><strong>Dependent calls in parallel</strong> — firing call B before call A's result arrives, then reasoning from a missing value. Serialize when outputs feed inputs.</li>
+<li><strong>Malformed payloads</strong> — JSON that almost parses. Strict schemas with required fields, enums for service names, and server-side validation turn these into clean retries instead of incidents.</li>
+</ul>
+<div class="example-box">
+<p><strong>Worked defense.</strong> The agent calls <span class="formula">restart_service(service="pricing-engne")</span>. The harness checks the argument against the CMDB service list, rejects it as unknown, and returns: "unknown service 'pricing-engne'; did you mean 'pricing-engine'?" The agent corrects and continues — the typo became a one-line recovery instead of a page to the wrong team.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>An evaluation harness for a support agent</h3>
+<p>Evals are the agent's unit tests: a golden set of 20–30 past incidents, each with the triage a senior engineer actually performed. Score every agent change against the set before it nears production:</p>
+<ul class="clean-list">
+<li><strong>Diagnostic recall</strong> — did it run the checks the senior ran? Missing the deploy-correlation check is a fail.</li>
+<li><strong>Unsafe-action count</strong> — zero unapproved state-changing calls, always. One is a ship-blocker.</li>
+<li><strong>Time-to-briefing</strong> — faster than the human baseline, or the agent isn't earning its keep.</li>
+<li><strong>Argument hallucination rate</strong> — how often tool calls needed harness correction; trending this catches prompt regressions.</li>
+</ul>
+<p>Run the harness on every prompt, tool, or model change, and gate deployment on it like a CI pipeline. An agent that passes evals 95% of the time still gets guardrails — evals measure the average case, guardrails cover the tail.</p>
+</div>
+
+<div class="resume-card">
+<h3>Human-in-the-loop approval patterns</h3>
+<p>Approvals should be tiered by blast radius, not one-size-fits-all:</p>
+<ul class="clean-list">
+<li><strong>Auto</strong> — read-only diagnostics: logs, metrics, dashboards. No approval, full audit log.</li>
+<li><strong>One-click approval</strong> — state-changing but reversible: service restarts, cache clears. The agent presents the action with its evidence and rollback plan; a human clicks approve.</li>
+<li><strong>Two-person or ticket-gated</strong> — irreversible or money-moving: trade cancellations, database writes, firewall changes. Requires a second approver or a linked change ticket.</li>
+<li><strong>Break-glass</strong> — pre-approved runbooks for known scenarios (restart the wedged feed at 3 AM) with tight scope and automatic expiry.</li>
+</ul>
+<div class="example-box">
+<p><strong>Worked flow.</strong> The agent diagnoses a retry storm and proposes a rollback. It presents: the deploy diff, the error-rate chart, the runbook match, and the rollback command with its 90-second recovery estimate. The on-call engineer clicks approve; the agent executes, verifies the error rate drops, and logs everything. Approvals expire after 10 minutes — the agent never proceeds on a stale yes.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Cost and latency budgeting for agent loops</h3>
+<p>Every loop iteration is at least one model call, so an uncapped agent is a billing incident waiting for a weekend. Set the budget up front: max 12 iterations, 90 seconds wall-clock, $0.50 per incident — and enforce it in the harness, not in the prompt. Exit early when confidence is high instead of running out the clock.</p>
+<div class="example-box">
+<p><strong>Worked math.</strong> 8 iterations × ~4,000 tokens × $3 per million tokens ≈ <strong>$0.10 per incident</strong> — trivially cheap. But one runaway loop without an iteration cap once burned $40 over a weekend chasing a flapping alert. The caps are the lesson. Tier the models too: a cheap model for perception and summarization, the strong model only for the reasoning steps — most of an agent's tokens don't need the best brain.</p>
+<p>Support angle: meter per-agent spend on the same dashboard as every other infra cost. An agent nobody prices is an agent nobody notices until finance does.</p>
+</div>
+</div>
+
+<div class="resume-card">
 <h3>What production support watches</h3>
 <ul class="clean-list">
 <li><strong>Agent actions are changes</strong> — every agent with write tools needs the same change-control discipline as a human operator, including rollback plans.</li>

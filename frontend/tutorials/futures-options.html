@@ -77,6 +77,44 @@
 </div>
 </div>
 
+
+<div class="resume-card">
+<h3>The Greeks, with numbers</h3>
+<p>Greeks translate option-speak into risk-speak. Take an illustrative 1-month call, strike 100, stock at 100, implied vol 25%:</p>
+<table class="tag-table" style="width:100%; border-collapse:collapse; margin:14px 0;">
+<tr><th style="text-align:left; color:#7dd3fc; font-size:.8rem; padding:8px 10px; border-bottom:1px solid rgba(148,163,184,.2);">Greek</th><th style="text-align:left; color:#7dd3fc; font-size:.8rem; padding:8px 10px; border-bottom:1px solid rgba(148,163,184,.2);">Value (per share)</th><th style="text-align:left; color:#7dd3fc; font-size:.8rem; padding:8px 10px; border-bottom:1px solid rgba(148,163,184,.2);">What it means</th></tr>
+<tr><td style="color:#cbd5e1; font-size:.85rem; padding:8px 10px; border-bottom:1px solid rgba(148,163,184,.08);">Delta</td><td style="color:#cbd5e1; font-size:.85rem; padding:8px 10px; border-bottom:1px solid rgba(148,163,184,.08);">0.55</td><td style="color:#cbd5e1; font-size:.85rem; padding:8px 10px; border-bottom:1px solid rgba(148,163,184,.08);">Behaves like 55 shares; gains $0.55 per $1 stock rise</td></tr>
+<tr><td style="color:#cbd5e1; font-size:.85rem; padding:8px 10px; border-bottom:1px solid rgba(148,163,184,.08);">Gamma</td><td style="color:#cbd5e1; font-size:.85rem; padding:8px 10px; border-bottom:1px solid rgba(148,163,184,.08);">0.045</td><td style="color:#cbd5e1; font-size:.85rem; padding:8px 10px; border-bottom:1px solid rgba(148,163,184,.08);">Delta rises 0.045 per $1 move — hedge must be rebalanced</td></tr>
+<tr><td style="color:#cbd5e1; font-size:.85rem; padding:8px 10px; border-bottom:1px solid rgba(148,163,184,.08);">Theta</td><td style="color:#cbd5e1; font-size:.85rem; padding:8px 10px; border-bottom:1px solid rgba(148,163,184,.08);">−0.03/day</td><td style="color:#cbd5e1; font-size:.85rem; padding:8px 10px; border-bottom:1px solid rgba(148,163,184,.08);">Loses 3 cents of value every day, all else equal</td></tr>
+<tr><td style="color:#cbd5e1; font-size:.85rem; padding:8px 10px; border-bottom:1px solid rgba(148,163,184,.08);">Vega</td><td style="color:#cbd5e1; font-size:.85rem; padding:8px 10px; border-bottom:1px solid rgba(148,163,184,.08);">0.12</td><td style="color:#cbd5e1; font-size:.85rem; padding:8px 10px; border-bottom:1px solid rgba(148,163,184,.08);">Gains 12 cents per 1-point rise in implied vol</td></tr>
+</table>
+<div class="example-box">
+<p><strong>Worked example.</strong> A desk is long 10 contracts (1,000 shares) of this call: delta equivalent <strong>550 shares</strong>, daily theta bleed <strong>−$30</strong>, vega <strong>$120 per vol point</strong>. If implied vol jumps 2 points overnight, the book gains ~$240 on vega — but theta keeps charging $30 every single day. <strong>Support angle:</strong> every Greek on the risk report is only as good as the vol surface and spot feeds behind it; a stale feed silently corrupts all four numbers at once.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Futures margin call: a worked example</h3>
+<p>Futures margin is a <em>good-faith deposit</em>, not a down payment. The exchange sets <strong>initial margin</strong> (to open) and a lower <strong>maintenance margin</strong>; fall below maintenance and you get a <strong>variation margin call</strong> — pay up immediately or be liquidated.</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> You buy 2 S&amp;P futures at 5,000 (multiplier $50 → $500,000 notional). Initial margin $13,750/contract, maintenance $12,500/contract — you post <strong>$27,500</strong>.</p>
+<p class="formula">Day 1: index closes 4,920 → loss = 80 pts × $50 × 2 = <strong>$8,000</strong><br>Equity = $27,500 − $8,000 = $19,500 &lt; maintenance ($25,000) → <strong>margin call: $8,000</strong></p>
+<p>You wire $8,000 that evening, restoring equity to the <em>initial</em> $27,500 — not just to maintenance. Miss the call and the broker liquidates your position into the falling market, which is how orderly losses become disorderly ones.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Expiration and assignment: where support earns its pay</h3>
+<p>Expiry is the most operationally intense day in derivatives. Key mechanics support teams must know cold:</p>
+<ul>
+<li><strong>Auto-exercise:</strong> equity options are automatically exercised if $0.01 or more in-the-money at expiry — no instruction needed. Clients who wanted to <em>abandon</em> an ITM option must file a <strong>contrary exercise</strong> instruction before the cutoff.</li>
+<li><strong>Assignment lottery:</strong> writers of options do not choose whether they are assigned; the clearinghouse assigns randomly among open short positions. A client short 10 calls may wake up assigned on 3 — partial assignment is normal.</li>
+<li><strong>Pin risk:</strong> when the stock closes <em>exactly</em> at the strike, nobody knows until the last minute whether options finish in- or out-of-the-money. Desks hedge frantically into the close, and support watches the exercise/assignment jobs like a hawk.</li>
+<li><strong>Futures expiry:</strong> physically-settled contracts require delivery logistics; cash-settled ones need the final settlement price feed — a wrong settlement price corrupts every expiring position.</li>
+</ul>
+<p><strong>Support watches:</strong> the expiry job schedule (exercise → assignment → position conversion), cutoff times for contrary instructions, and the reconciliation between the clearinghouse assignment file and internal positions before the next open.</p>
+</div>
+
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
 </main>
 

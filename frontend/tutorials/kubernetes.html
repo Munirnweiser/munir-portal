@@ -95,6 +95,50 @@ kubectl logs trade-api-7d9f8c6b5-x2k4p -n trading --previous   # logs of the LAS
 <p>Total time with this sequence: minutes. The pattern is always the same — states, previous logs, describe events, recent changes — and it works for nearly every Kubernetes incident.</p>
 </div>
 
+<div class="resume-card">
+<h3>Helm: releases, history and rollback</h3>
+<p>Most bank workloads deploy via Helm charts, not raw YAML. A Helm <em>release</em> is a versioned deployment of a chart; every upgrade increments the revision and keeps the history:</p>
+<div class="cmd">helm list -n trading                  # releases and their status
+helm history trade-api -n trading     # every revision with timestamps
+helm rollback trade-api 4 -n trading  # back to revision 4</div>
+<p>Rollback swaps the live manifests back — faster and safer than editing values by hand during an incident. The stuck state to know: a failed upgrade leaves the release <span class="formula">pending-upgrade</span>, which blocks every later operation. <span class="formula">helm rollback</span> clears it; if rollback itself fails, check for a half-applied resource with <span class="formula">kubectl get</span> before forcing anything.</p>
+<div class="example-box">
+<p><strong>What support watches.</strong> <span class="formula">helm status</span> shows the exact values the release was installed with — when "it worked in staging" but fails in prod, diff the two releases' values before diffing the code.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Quotas and limits: "Forbidden: exceeded quota"</h3>
+<p>A deployment that fails instantly with <span class="formula">Forbidden: exceeded quota</span> is not an application problem — the namespace hit its <em>ResourceQuota</em> (max pods, CPU, memory for the whole namespace) or a <em>LimitRange</em> rejected the pod's resource requests:</p>
+<div class="cmd">kubectl describe resourcequota -n trading   # used vs hard limits
+kubectl describe limitrange -n trading      # default/min/max per pod
+kubectl get events -n trading --sort-by=.lastTimestamp | tail -20</div>
+<p>Classic scenario: the quota allows 50 pods, the HPA just scaled to 51 during a traffic spike, and the 51st pod is rejected. The events stream says so plainly. Support's escalation is precise: "namespace trading is at 50/50 pods against quota; request a quota increase or scale something down" — not "Kubernetes is broken."</p>
+</div>
+
+<div class="resume-card">
+<h3>Ingress debugging: 404 vs 503</h3>
+<p>The ingress is the front door; its errors have distinct meanings:</p>
+<ul>
+<li><strong>404 from the ingress</strong> — no rule matched the host or path. Check <span class="formula">kubectl describe ingress -n trading</span>: the host spelling, the path prefix, and whether the rule points at the right Service name and port.</li>
+<li><strong>503 from the ingress</strong> — the rule matched but the Service has no healthy backends. Check <span class="formula">kubectl get endpoints</span>: empty endpoints mean every pod is failing its readiness probe (the app is "running" but not serving).</li>
+<li><strong>Port name mismatch</strong> — the Service targets <span class="formula">port: http</span> but the Deployment exposes <span class="formula">containerPort: 8080</span> under a different name. Traffic goes nowhere and the error looks like an app failure.</li>
+</ul>
+<p>Debug order: ingress rules → service → endpoints → pod readiness. Each layer has exactly one command, and skipping layers is how 404s get "fixed" by restarting pods that were never the problem.</p>
+</div>
+
+<div class="resume-card">
+<h3>Node pressure and evictions</h3>
+<p>When a node runs out of disk or memory, the kubelet starts <em>evicting</em> pods to protect the node. <span class="formula">kubectl describe node</span> shows the Conditions section:</p>
+<div class="cmd">kubectl describe node node-3 | grep -A 3 Conditions
+kubectl get pods -n trading | grep Evicted
+kubectl top node</div>
+<p><span class="formula">DiskPressure: True</span> is usually runaway container logs or an emptyDir filling up; <span class="formula">MemoryPressure: True</span> means the node's RAM is exhausted and BestEffort pods die first. Evicted pods are a <em>node capacity</em> problem — rescheduling the workload does not help if every node is full. The operational discipline: <span class="formula">kubectl cordon</span> a sick node so nothing new lands on it, <span class="formula">kubectl drain</span> to move workloads off gracefully, then fix the underlying disk or memory shortage.</p>
+<div class="example-box">
+<p><strong>Key takeaway.</strong> An Evicted pod is the cluster protecting itself. Do not just delete evicted pods and move on — find what filled the disk or memory, or the evictions repeat within the hour.</p>
+</div>
+</div>
+
 </main>
 
 <footer class="site-footer"><div class="container footer-content">

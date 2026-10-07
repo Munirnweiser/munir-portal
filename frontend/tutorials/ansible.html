@@ -74,6 +74,73 @@ ansible appservers -m shell -a "df -h /opt | tail -1"
 </div>
 
 <div class="resume-card">
+<h3>Roles: the directory layout that scales</h3>
+<p>Past a handful of playbooks, teams organize automation into <em>roles</em> — reusable units with a fixed directory structure. Ansible auto-loads each subdirectory by name, so the layout is the documentation.</p>
+<div class="example-box">
+<pre class="formula">roles/trading-app/
+  tasks/main.yml       # the work: install, configure, start
+  handlers/main.yml    # restarts, notified by tasks
+  templates/          # Jinja2 templates (app.conf.j2)
+  files/              # static files copied as-is
+  vars/main.yml       # role variables (high precedence)
+  defaults/main.yml   # safe defaults (lowest precedence)
+  meta/main.yml       # dependencies on other roles</pre>
+<p>Support angle: when a value is wrong, the first question is <em>where it was actually defined</em>. Precedence runs: extra vars (<span class="formula">-e</span>) beat role vars, which beat role defaults. A "correct" default in <span class="formula">defaults/main.yml</span> loses silently to a stale value in <span class="formula">vars/main.yml</span> — check both before editing.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Handlers and notify: restart once, not twelve times</h3>
+<p>A <em>handler</em> is a task that runs only when <em>notified</em> — and only once per play, even if twelve tasks notify it. The pattern: configuration tasks notify "restart feed service"; Ansible applies all changes, then restarts the service a single time at the end.</p>
+<div class="example-box">
+<pre class="formula">tasks:
+  - name: Deploy feed config
+    template: src=feed.conf.j2 dest=/etc/feed/feed.conf
+    notify: Restart feed service
+  - name: Deploy feed credentials
+    copy: src=feed.key dest=/etc/feed/feed.key mode=0600
+    notify: Restart feed service
+
+handlers:
+  - name: Restart feed service
+    service: name=feed state=restarted
+# two notifies, one restart</pre>
+<p>Support angle: "config changed but the service still runs the old config" almost always means the notify line is missing — or the handler name is misspelled, in which case Ansible fails loudly. If ordering matters (migrate data <em>before</em> restart), call <span class="formula">meta: flush_handlers</span> mid-play instead of waiting for the end.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Dynamic inventory: the AWS EC2 plugin</h3>
+<p>Static inventory files rot — servers are replaced and nobody updates the list. The <span class="formula">aws_ec2</span> inventory plugin queries the AWS API at run time and builds groups from instance tags, so new hosts appear automatically.</p>
+<div class="example-box">
+<pre class="formula"># aws_ec2.yml — inventory source, not a playbook
+plugin: aws_ec2
+regions: [eu-west-1]
+keyed_groups:
+  - key: tags.Environment
+    prefix: env
+  - key: tags.Role
+    prefix: role
+# tag Environment=prod, Role=pricing → groups env_prod, role_pricing</pre>
+<p>Support angle: the plugin authenticates with an IAM role — when the playbook suddenly sees zero hosts, check the role's EC2 read permissions and API throttling first, not the playbook. Enable the plugin's cache so every run doesn't hammer the AWS API.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Debugging become: privilege escalation failures</h3>
+<p>Tasks needing root use <span class="formula">become: yes</span> (default method: sudo). When escalation breaks, the error is usually one of four things:</p>
+<ul class="clean-list">
+<li><strong>"Missing sudo password"</strong> — sudo wants a password Ansible doesn't have. Fix: pass <span class="formula">--ask-become-pass</span>, or better, grant the service account NOPASSWD for the specific commands.</li>
+<li><strong>"user is not in the sudoers file"</strong> — the account genuinely lacks sudo rights; this is a server-build ticket, not an Ansible bug.</li>
+<li><strong>sudo requires a TTY</strong> — <span class="formula">Defaults requiretty</span> in sudoers breaks non-interactive SSH sessions; the fix is removing it, not working around it.</li>
+<li><strong>Wrong become user or method</strong> — <span class="formula">become_user: oracle</span> with <span class="formula">become_method: su</span> needs the target user's password, not sudo rights.</li>
+</ul>
+<div class="example-box">
+<p><strong>Triage in one command.</strong> <span class="formula">ansible dbhost -b -m ping</span> isolates escalation from everything else: if it fails, the playbook is innocent. Add <span class="formula">-vvv</span> to see the exact sudo command Ansible constructed — most "mysterious" become failures become obvious at that verbosity.</p>
+</div>
+</div>
+
+<div class="resume-card">
 <h3>What production support watches</h3>
 <ul class="clean-list">
 <li><strong>Vault for secrets</strong> — Ansible Vault encrypts passwords and keys in playbooks; plaintext secrets in a repo are an incident waiting for an audit.</li>

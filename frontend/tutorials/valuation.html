@@ -77,6 +77,38 @@
 </div>
 </div>
 
+
+<div class="resume-card">
+<h3>Black-Scholes, worked end to end</h3>
+<p>Time to run the actual formula. Price a 6-month European call: stock S = 100, strike K = 100, risk-free rate r = 5%, volatility σ = 25%, time T = 0.5 years.</p>
+<p class="formula">d1 = [ln(S/K) + (r + σ²/2)·T] / (σ√T)<br>d2 = d1 − σ√T<br>Call = S·N(d1) − K·e<sup>−rT</sup>·N(d2)</p>
+<div class="example-box">
+<p><strong>Worked example.</strong></p>
+<p class="formula">d1 = [0 + (0.05 + 0.03125) × 0.5] / (0.25 × 0.7071) = 0.040625 / 0.17678 ≈ <strong>0.23</strong><br>d2 = 0.23 − 0.17678 ≈ <strong>0.05</strong><br>N(d1) ≈ 0.5909, &nbsp; N(d2) ≈ 0.5211<br>Call = 100 × 0.5909 − 100 × e<sup>−0.025</sup> × 0.5211 ≈ 59.09 − 50.82 = <strong>$8.27</strong></p>
+<p>N(d1) ≈ 0.59 is also the option's <strong>delta</strong> — the model hands you the hedge ratio for free. And note what moves the price most: bump σ to 35% and the call reprices near $10.90 — a reminder that the vol <em>input</em> dominates the model output, which is why desks obsess over the vol surface feed.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Binomial trees: Black-Scholes without calculus</h3>
+<p>A <strong>binomial tree</strong> prices options by brute force: the stock can go up or down each step; work backwards from expiry, discounting expected payoffs at the risk-free rate using <strong>risk-neutral probabilities</strong>. As the steps multiply, the tree converges to the Black-Scholes price — same answer, no calculus.</p>
+<div class="example-box">
+<p><strong>Worked example (one step).</strong> Stock at 100; in one period it goes to 110 (up) or 90 (down). Risk-free rate 5% per period. Price a 100-strike call expiring then.</p>
+<p class="formula">Risk-neutral p = (1.05 − 0.90) / (1.10 − 0.90) = <strong>0.75</strong><br>Payoffs: up → max(110−100, 0) = 10; down → 0<br>Call = (0.75 × 10 + 0.25 × 0) / 1.05 ≈ <strong>$7.14</strong></p>
+<p>Trees shine where Black-Scholes cannot go: <strong>American options</strong> (early exercise — check at each node whether exercising beats holding) and path-dependent payoffs. Support relevance: pricing-library upgrades are often tree-calibration changes, and a miscalibrated tree reprices the whole book silently.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Dirty vs clean price: a worked settlement example</h3>
+<p>Bonds are <em>quoted</em> clean but <em>settle</em> dirty — clean price plus accrued interest. From the fixed-income tutorial's 30/360 example: 5% annual coupon, last coupon 15 January, settlement 15 May (120 days), clean price 98.00.</p>
+<div class="example-box">
+<p><strong>Worked example.</strong></p>
+<p class="formula">Accrued = 5.00 × 120/360 = <strong>1.67</strong> per 100<br>Dirty price = 98.00 + 1.67 = <strong>99.67</strong></p>
+<p>On a $5M face trade the buyer wires $4,983,500 — not $4,900,000. Three support classics live here: (1) booking the clean price as the settlement amount, (2) day-count convention mismatches between counterparties (30/360 vs actual/actual can differ by days), and (3) accrued going <em>negative</em> logic errors when settlement predates the last coupon in the system.</p>
+</div>
+</div>
+
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
 </main>
 

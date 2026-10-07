@@ -98,6 +98,58 @@ ORDER BY pct_used DESC;</div>
 <p>AWR (Automatic Workload Repository) takes hourly snapshots of performance statistics; ASH (Active Session History) samples what every session was doing every second. After an incident, ASH answers "what exactly was the database doing at 14:32?" — top SQL, top wait events, top sessions — without anyone having been logged in at the time. For support, the takeaway is simple: when the DBA asks for the incident window, give the exact timestamps, because that is what they will query ASH against.</p>
 </div>
 
+<div class="resume-card">
+<h3>Reading an AWR report, section by section</h3>
+<p>After an incident, the DBA sends an AWR report covering the incident window. You do not need to read all 80 pages — read these four sections in order:</p>
+<ul>
+<li><strong>Load Profile</strong> — was the database actually busy? High "DB time per second" means real load; low DB time with user complaints points <em>outside</em> the database (network, app tier).</li>
+<li><strong>Top 10 Foreground Events</strong> — where the time went. <span class="formula">db file sequential read</span> is index reads (normal in OLTP); <span class="formula">log file sync</span> is commit waits (slow storage or over-committing); <span class="formula">enq: TX - row lock contention</span> is application locking.</li>
+<li><strong>SQL ordered by Elapsed Time</strong> — the specific statements responsible. One SQL at 40% of DB time is your offender; hand its SQL_ID to development.</li>
+<li><strong>Instance Efficiency</strong> — buffer cache hit ratio below ~95% in OLTP, or library cache misses, suggest memory pressure or hard parsing.</li>
+</ul>
+<div class="example-box">
+<p><strong>What support watches.</strong> Always compare against a baseline AWR from a healthy day. "Top event is log file sync at 12ms average" means nothing without knowing it is normally 1ms.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>ASH: what is the database doing right now</h3>
+<p>AWR is history; ASH (Active Session History) samples every active session each second, so it answers "what is happening <em>now</em>":</p>
+<div class="sql">SELECT event, COUNT(*) AS samples,
+       COUNT(DISTINCT session_id) AS sessions
+FROM v$active_session_history
+WHERE sample_time &gt;= SYSDATE - INTERVAL '15' MINUTE
+GROUP BY event
+ORDER BY samples DESC;</div>
+<p>If the top row is <span class="formula">db file sequential read</span> with one SQL_ID dominating, drill into that SQL_ID in <span class="formula">v$sql</span>. If the top rows are all <span class="formula">ON CPU</span>, the database is CPU-bound — check for a runaway query, not a lock. ASH turns "the DB is slow" into a named event and a named SQL in under a minute.</p>
+</div>
+
+<div class="resume-card">
+<h3>RMAN: proving the backup exists</h3>
+<p>Support gets asked "are the backups good?" after every storage scare. The honest answer comes from RMAN, not from assumptions:</p>
+<div class="sql">RMAN&gt; LIST BACKUP SUMMARY;
+RMAN&gt; CROSSCHECK BACKUP;
+RMAN&gt; VALIDATE DATABASE;</div>
+<ul>
+<li><span class="formula">LIST BACKUP SUMMARY</span> — what backups exist and when they completed. A missing backup for last night is the finding.</li>
+<li><span class="formula">CROSSCHECK</span> — reconciles the catalog with files actually on disk; marks missing files EXPIRED so restores do not try to use them.</li>
+<li><span class="formula">VALIDATE</span> — reads the datafiles checking for physical corruption without restoring anything.</li>
+</ul>
+<p>A backup that never gets validated is a hope, not a backup. Run the validate monthly and keep the output for audit.</p>
+</div>
+
+<div class="resume-card">
+<h3>Undo and redo pressure</h3>
+<p>Two classic Oracle errors are really capacity signals. <span class="formula">ORA-01555: snapshot too old</span> means a long-running query needed old row versions that undo has already overwritten — the undo tablespace is too small for the workload, or a huge batch is committing rarely. Check the evidence:</p>
+<div class="sql">SELECT begin_time, end_time, ssolderrcnt, nospaceerrcnt
+FROM v$undostat
+ORDER BY begin_time DESC;</div>
+<p>Non-zero <span class="formula">SSOLDERRCNT</span> confirms snapshot-too-old errors; <span class="formula">NOSPACEERRCNT</span> means undo ran out of space entirely. On redo: frequent log switches (check <span class="formula">v$log_history</span> — more than a few per hour on a busy system) mean the redo logs are too small, causing checkpoint pain and bursty I/O. Both fixes are DBA-owned, but the diagnosis — with timestamps and counters — is support's contribution.</p>
+<div class="example-box">
+<p><strong>Key takeaway.</strong> ORA-01555 is never "just retry the query." It means the undo retention does not cover the longest legitimate query, and the next long report will hit it again.</p>
+</div>
+</div>
+
 </main>
 
 <footer class="site-footer"><div class="container footer-content">

@@ -75,6 +75,43 @@
 </div>
 </div>
 
+
+<div class="resume-card">
+<h3>SSI enrichment: the unglamorous king of settlement</h3>
+<p><strong>Standing Settlement Instructions</strong> tell the world <em>where</em> to deliver your cash and securities: custodian, agent bank, account number, BIC, place of settlement (PSET). Every trade must be enriched with the right SSI before it can settle — and "right" depends on currency, instrument, counterparty, and sometimes the trading desk. The industry SSI utility is <strong>ALERT</strong> (part of DTCC), where the street publishes and consumes SSIs electronically instead of faxing them.</p>
+<ul>
+<li><strong>Effective dating:</strong> SSIs change — mergers, custodian migrations, new accounts. An instruction enriched with <em>yesterday's</em> SSI fails today. Every SSI record carries effective dates, and the enrichment engine must pick the one valid on <em>value date</em>, not trade date.</li>
+<li><strong>SSI waterfalls:</strong> when no exact SSI matches, engines fall back through a hierarchy (counterparty → agent → default). A wrong fallback delivers to the wrong account — technically "settled", practically a fail.</li>
+<li><strong>The classic ticket:</strong> "trades failing with counterparty X since Monday" — root cause is almost always an SSI change on their side that nobody told operations about. First check: compare the SSI used against ALERT's current record.</li>
+</ul>
+</div>
+
+<div class="resume-card">
+<h3>Affirmation platforms: CTM and the matching machine</h3>
+<p>For cross-border institutional trades, affirmation runs on <strong>CTM</strong> (DTCC's Central Trade Manager, successor to Omgeo Oasys/Alert). The workflow:</p>
+<ul>
+<li><strong>1. Submit</strong> — both sides (or their outsourcers) submit trade details: economics, accounts, SSIs, deadlines.</li>
+<li><strong>2. Match</strong> — CTM compares every field against tolerance rules. Price, quantity and dates must agree <em>exactly</em>; some narrative fields tolerate fuzz.</li>
+<li><strong>3. Affirm</strong> — the investment manager affirms the broker's block and allocations; affirmed trades flow to settlement.</li>
+<li><strong>4. Exceptions</strong> — mismatches land in the exception queue with reason codes (MISM = economics mismatch, MDIA = missing SSI, etc.).</li>
+</ul>
+<div class="example-box">
+<p><strong>Support reality.</strong> A new fund launches Monday; by Wednesday its trades sit in CTM exceptions with "unknown account" — the fund's accounts were never set up in the affirmation static. One reference-data ticket, fifty trades unblocked. <strong>Support watches:</strong> CTM connectivity and file/API ingestion, match-rate dashboards by counterparty, exception aging, and the affirmation deadline clock — un-affirmed by cutoff means manual chasing.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Break-resolution SLA workflow</h3>
+<p>Mature operations teams run breaks like an incident queue, with <strong>SLAs by age and type</strong>:</p>
+<ul>
+<li><strong>T+0 (same day):</strong> economics mismatches — resolve or amend same-day; owner: trade support. Target: 90% cleared by close.</li>
+<li><strong>T+1:</strong> SSI and reference-data breaks — fix static, re-enrich, resubmit. Target: cleared before settlement cutoffs.</li>
+<li><strong>T+2 and older:</strong> escalate to desk head and counterparty operations; daily aging report to management. Fails here accrue funding cost and regulatory attention.</li>
+<li><strong>Root-cause coding:</strong> every resolved break gets a code (data, counterparty, system, human). Weekly review of code frequencies turns firefighting into prevention — three weeks of "SSI" codes means an SSI project, not fifty one-off fixes.</li>
+</ul>
+<p><strong>Support watches:</strong> SLA breach counts (the morning ops meeting runs on them), re-break rates (fixed trades that break again signal a systematic cause), and the handoff between the overnight batch window and the morning shift — breaks born at 3 AM need owners by 8 AM.</p>
+</div>
+
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
 </main>
 

@@ -82,6 +82,43 @@
 </div>
 </div>
 
+
+<div class="resume-card">
+<h3>Historical VaR, computed by hand</h3>
+<p>Historical VaR makes no normality assumption — it replays real history. Take 10 days of a desk's P&amp;L in $k, sorted worst to best:</p>
+<p class="formula">−45, −30, −18, −12, −5, +3, +8, +15, +22, +40</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> For 95% VaR with 10 observations, take the worst 1-in-10 outcome: <strong>$45k</strong>. Interpretation: on the worst 10% of days in this sample, the desk lost at least $45k.</p>
+<p>Now the catches a support analyst should know: (1) <strong>sample size</strong> — 10 days is far too few; production uses 250–500 days, where 95% VaR is the 13th–25th worst day; (2) <strong>regime blindness</strong> — if the sample contains no crisis, VaR has never seen one; (3) <strong>ghost effects</strong> — when a huge loss finally drops out of the rolling window, VaR can <em>fall</em> overnight with no change in risk. Every one of these has generated a "VaR moved but nothing changed" ticket.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Designing stress scenarios that actually stress</h3>
+<p>VaR describes the ordinary bad days; <strong>stress tests</strong> describe the extraordinary ones. A serious program runs three families:</p>
+<ul>
+<li><strong>Historical replays</strong> — 2008 (credit freeze, +40bp daily spread moves), March 2020 (vol explosion, −12% equity days), 1994 (bond massacre). Real, defensible, but backward-looking.</li>
+<li><strong>Hypothetical shocks</strong> — rates +200bp parallel, equities −30%, vol doubled, FX ±15%, oil +50%. Forward-looking, but someone must defend the calibration.</li>
+<li><strong>Reverse stress tests</strong> — instead of "what does this shock do?", ask "what shock <em>breaks us</em>?" Find the loss that wipes out the buffer, then work backwards to the market move. Regulators love these because they expose hidden concentrations.</li>
+</ul>
+<div class="example-box">
+<p><strong>Worked example.</strong> A rates desk with DV01 of $80k (loses $80k per 1bp rise) runs a "+150bp in a week" scenario: 150 × $80k = <strong>$12M loss</strong> — before convexity and liquidity effects. If the desk's loss limit is $10M, the scenario breaches it, and the risk committee gets a pre-emptive conversation instead of a post-mortem.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Anatomy of a limit-monitoring dashboard</h3>
+<p>What does the risk team actually stare at all day? A limit dashboard is typically organized as:</p>
+<ul>
+<li><strong>Headline tiles</strong> — firm VaR vs limit ($8.2M / $10M), utilization %, trend arrow vs yesterday.</li>
+<li><strong>Desk breakdown</strong> — VaR, delta, vega per desk with traffic-light coloring; drill-down to trader level.</li>
+<li><strong>Concentration</strong> — top-5 positions by risk contribution; single-name and sector caps.</li>
+<li><strong>Exceptions log</strong> — every breach with timestamp, owner, and status (acknowledged / action plan / escalated).</li>
+<li><strong>Data health</strong> — feed timestamps and batch completion flags; a risk number computed on stale data is worse than no number.</li>
+</ul>
+<p><strong>Support owns the plumbing:</strong> the overnight risk batch window (must complete before traders arrive), real-time limit-alert delivery (a silent alerting pipeline is an audit finding), and the reference-data joins that attribute risk to the right desk. When a trader says "my limit looks wrong," the answer is in the batch logs and feed timestamps — always check data health before doubting the math.</p>
+</div>
+
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
 </main>
 

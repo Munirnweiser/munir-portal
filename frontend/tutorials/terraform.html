@@ -84,6 +84,58 @@ Plan: 1 to add, 1 to change, 1 to destroy.</pre>
 </div>
 
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
+<div class="resume-card">
+<h3>Module version pinning</h3>
+<p>Calling a module without a version means "whatever is newest" — and newest can be a breaking major release:</p>
+<div class="example-box">
+<pre class="formula">module "vpc" {
+  source  = "terraform-aws-modules/vpc/aws"
+  version = "~&gt; 5.1"
+}</pre>
+<p><span class="formula">~&gt; 5.1</span> allows 5.1.x patch updates but never 6.0. An unpinned module that jumps a major version can rename outputs, change defaults, or force resource replacement — discovered at apply time, in production. The support angle: when a previously green pipeline suddenly plans destroys nobody asked for, <span class="formula">git log</span> the module version pins first. The lock file (<span class="formula">.terraform.lock.hcl</span>) records exact provider versions per environment; commit it, and diff it when plans surprise you.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Remote state backends: S3 with locking</h3>
+<p>State in git is corruption waiting to happen (plus secrets in plaintext). Production Terraform keeps state in remote storage with locking so two applies can never write at once:</p>
+<div class="example-box">
+<pre class="formula">terraform {
+  backend "s3" {
+    bucket         = "bank-tfstate-prod"
+    key            = "trading/terraform.tfstate"
+    region         = "eu-west-1"
+    dynamodb_table = "tfstate-locks"
+    encrypt        = true
+  }
+}</pre>
+<p>The DynamoDB table provides the lock; <span class="formula">encrypt = true</span> keeps secrets in state unreadable at rest. When every apply fails with "bucket not found" or "access denied," the state backend itself is down or the credentials expired — no infrastructure change can run until it is healthy, so the backend is the first thing to check, not the last.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Taint and replace: the sick VM</h3>
+<p>Sometimes a resource is unhealthy but the configuration is correct — a VM with a corrupted disk, a node that will not come back. Editing config will not help; the resource itself must be recreated. The old command was <span class="formula">terraform taint</span>; the modern form is a flag on apply:</p>
+<div class="example-box">
+<pre class="formula">$ terraform apply -replace=aws_instance.pricing_engine</pre>
+<p>The next plan shows that one resource as <span class="formula">-/+</span> (destroy then create) and nothing else changes. This is the disciplined alternative to deleting things in the console: the replacement is recorded, reviewed, and repeatable. Never use replace on stateful resources (databases!) without a backup and a maintenance window — recreating a database from scratch is data loss unless the restore is planned.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Cost estimation before apply</h3>
+<p>A plan that adds twenty <span class="formula">m5.2xlarge</span> instances is a budget incident as well as a technical change. Cost-estimation tools annotate the plan with the monthly delta:</p>
+<div class="example-box">
+<pre class="formula">$ infracost diff --path .
+  + aws_instance.pricing_engine (m5.xlarge -&gt; m5.2xlarge)
+    +$280/mo  (~$3,360/yr)</pre>
+<p>Banks gate expensive plans on approval tickets; support's role is reading the cost section of the plan review, not just the resource counts. A "routine" apply that doubles the monthly bill gets stopped at the change advisory board if someone actually reads the estimate — make sure that someone is you.</p>
+</div>
+<div class="example-box">
+<p><strong>Key takeaway.</strong> Every Terraform change has three reviews: correctness (does the plan do what we want?), safety (any unexpected destroys?), and cost (can we afford it?). Skipping any one of them is how incidents and budget surprises happen.</p>
+</div>
+</div>
+
 </main>
 
 <footer class="site-footer"><div class="container footer-content">

@@ -95,6 +95,68 @@ ENTRYPOINT ["java","-jar","/app.jar"]</pre>
 </div>
 
 <div class="resume-card">
+<h3>Multi-line strings: | keeps lines, &gt; folds them</h3>
+<p>YAML has two block scalars and they are not interchangeable. <span class="formula">|</span> (literal) preserves newlines — for scripts and config files where line breaks matter. <span class="formula">&gt;</span> (folded) turns newlines into spaces — for long human-readable text. The chomping indicator controls the trailing newline: <span class="formula">|-</span> strips it, <span class="formula">|+</span> keeps every blank line.</p>
+<div class="example-box">
+<pre class="formula">startup_script: |
+  #!/bin/bash
+  exec /app/feed --config /etc/feed.conf
+# renders with real newlines: a working script
+
+description: &gt;
+  This feed handler processes market data
+  across three regions daily.
+# renders as one line: "This feed handler processes
+# market data across three regions daily."
+
+command: |-
+  /app/run.sh
+# no trailing newline: safer for exec-form entrypoints</pre>
+<p>Support angle: a startup script written with <span class="formula">&gt;</span> instead of <span class="formula">|</span> collapses into one line and fails cryptically at container start — when a container dies instantly with a shell syntax error, check the block scalar first.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Anchors and aliases, worked</h3>
+<p>Define once with <span class="formula">&amp;name</span>, reuse with <span class="formula">*name</span>, and merge maps with <span class="formula">&lt;&lt;: *name</span>. The merge key is the workhorse for repeated environment blocks.</p>
+<div class="example-box">
+<pre class="formula">defaults: &amp;defaults
+  LOG_LEVEL: info
+  TZ: Europe/Paris
+  RETRIES: "3"
+
+services:
+  pricing:
+    environment:
+      &lt;&lt;: *defaults
+      LOG_LEVEL: debug      # override just this one
+  booking:
+    environment:
+      &lt;&lt;: *defaults    # inherits all three untouched</pre>
+<p>Two warnings from the field. First, editing the anchor changes every service that merges it — grep for <span class="formula">*defaults</span> before touching <span class="formula">&amp;defaults</span>. Second, the merge is <em>shallow</em>: nested maps are replaced wholesale, not merged key-by-key, so overriding one nested key silently drops its siblings.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>BuildKit cache mounts: fast builds without fat images</h3>
+<p>Dependency downloads dominate build time, and the naive fix — copying the package cache into the image — bloats every layer forever. BuildKit cache mounts persist a cache <em>outside</em> the image: the build reuses it, the image never contains it.</p>
+<div class="example-box">
+<pre class="formula"># DOCKER_BUILDKIT=1 docker build .
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -q package -DskipTests
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r requirements.txt</pre>
+<p>The Maven repository and pip cache survive across builds, so rebuilds download nothing — but <span class="formula">docker history</span> shows no trace of them. Support angle: when CI builds are slow, check for cache mounts before rewriting the Dockerfile; and when a build mysteriously uses a stale dependency, the cache mount is the first suspect — bust it with a cache ID or a clean build.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Distroless images: smaller, safer, harder to debug</h3>
+<p><em>Distroless</em> images ship only the application and its runtime — no shell, no package manager, no utilities. The payoff is real: a dramatically smaller attack surface and far fewer CVE findings in image scans. The price is paid at 3 AM: the runbook step "exec into the container and check" fails because there is no shell to exec into.</p>
+<p>The workarounds, in order of preference: <span class="formula">kubectl debug</span> with an ephemeral debug container attached to the pod's namespaces; the <span class="formula">:debug</span> variant tags most distroless images publish (busybox shell included); and structured logging done well enough that you rarely need the shell at all. Support angle: know <em>before</em> the incident which images are distroless — discovering it mid-bridge-call wastes the first ten minutes.</p>
+</div>
+
+<div class="resume-card">
 <h3>What production support watches</h3>
 <ul class="clean-list">
 <li><strong>Image pull failures</strong> — ImagePullBackOff usually means a wrong tag, a deleted image, or expired registry credentials; the Dockerfile is fine, the reference is not.</li>

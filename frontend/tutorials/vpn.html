@@ -71,6 +71,44 @@ show crypto ipsec sa       # phase 2 up? check encaps/decaps counters
 </div>
 
 <div class="resume-card">
+<h3>Split tunneling: convenience vs control</h3>
+<p>With <em>full tunneling</em>, every packet from the laptop — trading traffic and video calls alike — goes through the corporate VPN concentrator: inspectable and policy-controlled, but every byte consumes concentrator bandwidth and adds latency. With <em>split tunneling</em>, only corporate destinations use the tunnel; streaming and personal browsing go direct: faster for the user, cheaper for the network, but the endpoint is more exposed and DNS can leak internal names.</p>
+<p>Banks almost always force full tunnel for trading staff — the compliance and DLP requirements leave no choice. Support angle: "the trading app is slow from home but fine in the office" on a full-tunnel setup often means the home traffic is hairpinning through an overloaded concentrator; check concentrator load and the user's assigned gateway before blaming their ISP.</p>
+</div>
+
+<div class="resume-card">
+<h3>Certificate renewal: where auto-enrollment breaks</h3>
+<p>Machine and user certificates typically live 1–2 years and renew via SCEP or EST auto-enrollment — silently, until it doesn't. The failure modes, in order of frequency:</p>
+<ul class="clean-list">
+<li><strong>CA unreachable</strong> — the enrollment server is down or the firewall rule changed; renewals queue up and expire together weeks later.</li>
+<li><strong>Clock skew</strong> — a laptop whose clock drifted gets a certificate that is "not yet valid"; the VPN client reports a cryptic auth failure, not a time problem.</li>
+<li><strong>Template permissions</strong> — the CA template changed and the service account can no longer enroll; every renewal fails identically.</li>
+<li><strong>Stale cached cert</strong> — the client keeps presenting the old certificate after renewal; clearing the machine cert store forces re-enrollment.</li>
+</ul>
+<div class="example-box">
+<p><strong>Triage order.</strong> Check the local cert store expiry dates first (<span class="formula">certlm.msc</span> on Windows), then the CA and event logs for SCEP errors, then time sync. The watch list at the bottom of this page already says to dashboard every expiry — this is what you do when that dashboard was never built.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>SD-WAN vs classic VPN, in one paragraph</h3>
+<p>Classic VPN is static: manually configured tunnels, manual failover, all branch traffic backhauled through headquarters — simple to reason about, slow to adapt. SD-WAN builds an overlay across whatever links exist (MPLS, broadband, LTE), measures them continuously, and steers each application down the best path with sub-second failover, all from central policy. For trading sites it means better resilience and less backhaul tromboning — at the cost of a new control plane to operate: when traffic takes a surprising path, the answer is now a controller query, not a static route table, and a controller outage is a new kind of very bad day.</p>
+</div>
+
+<div class="resume-card">
+<h3>Latency and jitter diagnosis with mtr</h3>
+<p><span class="formula">mtr</span> fuses ping and traceroute: per-hop loss and latency, updated live. Run it <em>during</em> the incident, for at least 50 cycles, against the real destination — and keep a baseline from a good day for comparison.</p>
+<div class="example-box">
+<pre class="formula">$ mtr -rwc 50 vpn-gateway.bank.example
+HOST            Loss%   Avg    Best   Wrst
+gateway-hop-3    0.0%   12.1   11.8   14.2
+gateway-hop-4   12.0%   45.3   12.0  210.4
+gateway-hop-5    0.0%   13.0   12.5   15.1</pre>
+<p>Hop 4 shows 12% loss but hop 5 is clean — the loss is that router deprioritizing ICMP, not real packet loss; real loss persists at every downstream hop. <em>Jitter</em> is the variance (note hop 4's worst of 210ms): voice and market-data feeds suffer from jitter long before average latency looks bad. Support rule: one mtr from the affected user beats ten theories in the bridge call.</p>
+</div>
+</div>
+
+<div class="resume-card">
 <h3>What production support watches</h3>
 <ul class="clean-list">
 <li><strong>Tunnel uptime and throughput</strong> — alert on tunnel state changes and on throughput drops, which precede user complaints by minutes.</li>

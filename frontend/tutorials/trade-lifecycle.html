@@ -105,6 +105,38 @@
 </div>
 </div>
 
+
+<div class="resume-card">
+<h3>T+1 settlement: a timeline with teeth</h3>
+<p>The US and Canada moved equities and most bonds to <strong>T+1 settlement</strong> in May 2024 — one business day after trade date. The compression removed a day of counterparty risk but left zero slack in operations. A typical T+1 timeline:</p>
+<ul>
+<li><strong>T, trade date</strong> — execution, booking, and enrichment complete intraday; allocations finalized.</li>
+<li><strong>T, 21:00 ET</strong> — institutional affirmation/confirmation deadline; unmatched trades escalate overnight.</li>
+<li><strong>T+1 morning</strong> — custodian and CSD cutoff times hit in sequence (each market has its own); instructions must already be in place.</li>
+<li><strong>T+1, settlement</strong> — cash and securities move; fails are final at end of day.</li>
+</ul>
+<p>Note the asymmetry: FX spot still settles <strong>T+2</strong> in most pairs (USD/CAD is T+1), so an equity trade funding an FX conversion lives across two different settlement clocks — a favorite source of funding breaks.</p>
+<p class="watch"><strong>Support watches:</strong> the affirmation rate by mid-afternoon T (anything unmatched by 21:00 ET is tomorrow's fail), custodian cutoff countdowns per market, and the fail queue at T+1 open — every item on it needs an owner before the next cutoff.</p>
+</div>
+
+<div class="resume-card">
+<h3>When settlement fails: fails and buy-ins</h3>
+<p>A <strong>fail</strong> is a trade that does not settle on value date — usually because securities were not delivered (a "short" fail) or cash was not paid. Fails age, accrue funding costs, and attract regulatory attention. Under Europe's <strong>CSDR</strong> regime, fails also trigger <strong>cash penalties</strong> (daily, calculated by the CSD) and, after an extension period (generally 4 business days, 7 for SME growth markets), a <strong>mandatory buy-in</strong>: an agent is appointed to buy the missing securities in the market <em>at the failing party's expense</em>, whatever the price.</p>
+<p>A buy-in is the market's way of saying "we are done waiting" — the failing seller pays any price difference plus fees, and the buy-in execution itself can move the price against them. This is why fails are chased hardest in the first 48 hours, while they are still cheap to cure by borrowing the securities (a securities-lending "borrow to cover").</p>
+<p class="watch"><strong>Support watches:</strong> fail aging buckets, borrow availability and cost for hard-to-borrow names, CSD penalty reports, and any fail approaching the buy-in extension deadline — those need the trading desk involved, not just operations.</p>
+</div>
+
+<div class="resume-card">
+<h3>Corporate actions crash into the lifecycle</h3>
+<p>Dividends, splits, mergers and spin-offs do not politely wait for settlement — they strike <em>pending</em> trades mid-flight. A stock split between trade date and settlement date changes the quantity and price of what must deliver; a merger can replace the security entirely. Every pending trade in the affected security must be <strong>transformed</strong>: cancelled and rebooked with adjusted economics.</p>
+<ul>
+<li><strong>Ex-date vs record date:</strong> buyers on/after ex-date are not entitled to the distribution — pending trades straddling ex-date need entitlement adjustments.</li>
+<li><strong>Elections:</strong> optional dividends (cash vs shares) require the holder to elect; missed election deadlines default to the issuer's option.</li>
+<li><strong>Transformation breaks:</strong> if the corporate-action event is processed late or with wrong ratios, every transformed trade mismatches — one bad event, hundreds of breaks.</li>
+</ul>
+<p class="watch"><strong>Support watches:</strong> the corporate-action event feed (late or wrong events are the root cause), transformation job completion before settlement cutoffs, and entitlement claims on trades that settled across the ex-date.</p>
+</div>
+
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
 </main>
 

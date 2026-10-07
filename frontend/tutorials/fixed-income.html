@@ -77,6 +77,37 @@
 </div>
 </div>
 
+
+<div class="resume-card">
+<h3>Accrued interest: who owns the coupon between payments</h3>
+<p>A bond's coupon accrues every day, but it is only <em>paid</em> on coupon dates. When a bond changes hands between dates, the buyer compensates the seller for the interest earned since the last coupon — this is <strong>accrued interest</strong>, and the buyer pays the <strong>dirty price</strong> (clean price + accrued). The day-count convention defines how days are counted; <strong>30/360</strong> (every month = 30 days) is the classic corporate-bond convention.</p>
+<div class="example-box">
+<p><strong>Worked example (30/360).</strong> A bond with 5% annual coupon (face 100) pays semi-annually, so each coupon is 2.50. Last coupon: 15 January. Settlement: 15 May — that is 4 months × 30 = <strong>120 days</strong>.</p>
+<p class="formula">Accrued = 5.00 × 120/360 = <strong>1.67</strong> per 100 face</p>
+<p>If the quoted (clean) price is 98.00, the buyer actually pays 98.00 + 1.67 = <strong>99.67</strong>. A settlement system booking only the clean price is short 1.67 per 100 — on a 10M trade that is a 16,667 discrepancy, a classic support ticket.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Repo: the plumbing that funds bond desks</h3>
+<p>A <strong>repo</strong> (repurchase agreement) is a collateralized short-term loan: the dealer <em>sells</em> bonds today and agrees to <em>buy them back</em> tomorrow (overnight repo) at a slightly higher price. The price difference is the <strong>repo rate</strong> — the interest on the loan. <strong>General collateral (GC)</strong> repo accepts any bond from a basket; <strong>specials</strong> are repos against one specific scarce bond, and their rates can go deeply negative when short-sellers are desperate to borrow it.</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> A dealer repos $10M of bonds overnight at a 5.30% repo rate, with a 2% <strong>haircut</strong> (the lender's safety margin against price moves).</p>
+<p class="formula">Cash lent = $10M × (1 − 0.02) = <strong>$9.8M</strong><br>Overnight interest = $9.8M × 0.053 × 1/360 ≈ <strong>$1,443</strong></p>
+<p>Tomorrow the dealer repays $9,801,443 and gets the bonds back. <strong>Support watches:</strong> repo fails (bonds not returned), rate spikes into month-end when balance sheets shrink, and collateral eligibility breaks when a bond drops out of the GC basket.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Bond futures and the conversion factor</h3>
+<p>Bond futures do not deliver one specific bond — the short can deliver <em>any</em> bond from an eligible basket. To make unlike bonds comparable, each carries a <strong>conversion factor (CF)</strong> that normalizes it to the contract's 6%-coupon notional bond. The invoice price the long pays is:</p>
+<p class="formula">Invoice = Futures price × CF + accrued interest</p>
+<p>The short will always deliver the <strong>cheapest-to-deliver (CTD)</strong> bond — the one minimizing <em>quoted price − futures × CF</em> (the "basis").</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> Futures trade at 120. Bond A: price 118, CF 0.98 → basis = 118 − 120×0.98 = <strong>0.40</strong>. Bond B: price 125, CF 1.05 → basis = 125 − 120×1.05 = <strong>−1.00</strong>. Bond B is CTD (most negative basis). When yields shift, the CTD can <em>switch</em> — and every pricing model, hedge ratio and risk number on the desk changes with it, a favorite source of "the model is wrong" tickets that are really CTD-switch events.</p>
+</div>
+</div>
+
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
 </main>
 

@@ -75,6 +75,38 @@
 </div>
 
 <div class="resume-card">
+<h3>Backtesting traffic lights, in detail</h3>
+<p>Regulators backtest 1-day 99% VaR over 250 trading days. With 99% confidence, about 2.5 exceptions are expected even from a perfect model — exceptions follow a binomial distribution, and the chance of 5 or more exceptions from a correct model is roughly 10%. That is why the zones scale instead of failing outright.</p>
+<ul class="clean-list">
+<li><strong>Green (0–4 exceptions)</strong> — model accepted; capital multiplier 3.0.</li>
+<li><strong>Yellow (5–9 exceptions)</strong> — capital add-on grows with each exception: 5 → 3.4, 6 → 3.5, 7 → 3.65, 8 → 3.75, 9 → 3.85.</li>
+<li><strong>Red (10+ exceptions)</strong> — multiplier up to 4.0 and the model is presumed broken; supervisors can force a return to the standardized approach.</li>
+</ul>
+<div class="example-box">
+<p><strong>Worked example.</strong> A desk records 7 exceptions in 250 days. Yellow zone: multiplier 3.65 instead of 3.0, so market-risk capital rises about 22% overnight. Support angle: backtesting is a scheduled batch — if the exceptions report doesn't run, the desk discovers its zone from the regulator, not from risk.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>Choosing the stressed period: the rationale</h3>
+<p>SVaR must be calibrated on a continuous 12-month window of significant stress that is <em>relevant to the current portfolio</em> — and the choice must be reviewed at least annually. The rationale is anti-procyclicality: capital set only on calm-period VaR collapses exactly when it is most needed, then spikes in a crisis. A fixed stress window keeps a crisis-sized charge on the books through the good years.</p>
+<p>The subtlety is relevance: a rates-heavy book calibrated on the 2008 credit crisis may understate its risk, while an equities book calibrated on March 2020 is well covered. Supervisors expect documented justification, and the re-selection is a scheduled annual job — miss it and it becomes a regulatory finding, not a modeling debate.</p>
+</div>
+
+<div class="resume-card">
+<h3>Expected Shortfall, worked</h3>
+<p>Expected Shortfall at 99% is the average loss over the worst 1% of outcomes — the tail VaR ignores. It is always at least as large as VaR, and unlike VaR it is <em>coherent</em>: it aggregates properly across books, while VaR can claim two risky books are safer combined than apart.</p>
+<div class="example-box">
+<p><strong>Worked example.</strong> 250 daily P&amp;L observations, worst three days: −$410,000, −$380,000, −$350,000. The 99% VaR (roughly the 3rd worst) is $350,000; the 99% ES is the average of the tail: ($410,000 + $380,000 + $350,000) / 3 = <strong>$380,000</strong>. A risk committee shown only the $350,000 VaR has no idea the average breach is $30,000 worse.</p>
+</div>
+</div>
+
+<div class="resume-card">
+<h3>FRTB in one paragraph: internal models vs standardized</h3>
+<p>The Fundamental Review of the Trading Book replaced 99% VaR with 97.5% Expected Shortfall as the regulatory standard and gave banks two ways to compute capital. The <em>internal models approach (IMA)</em> lets a bank use its own ES models — but each trading desk must pass P&amp;L attribution tests and backtesting, and failing desks fall back. The <em>standardized approach (SA)</em> is the regulator's prescribed sensitivities-based calculation: always available, no approval needed, usually more punitive capital. Desks can be split across the two, and support teams feel it the same way: SA and IMA numbers both come from overnight batches, and a feed break corrupts both.</p>
+</div>
+
+<div class="resume-card">
 <h3>What production support watches</h3>
 <ul class="clean-list">
 <li><strong>Risk-feed breaks</strong> — VaR engines consume positions, market data and curves; a missing feed means stale or missing risk numbers, and traders notice before risk managers do.</li>

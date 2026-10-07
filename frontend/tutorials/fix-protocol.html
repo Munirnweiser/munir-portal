@@ -106,6 +106,50 @@
 </div>
 </div>
 
+
+<div class="resume-card">
+<h3>Logon (35=A), walked through tag by tag</h3>
+<p>The Logon message opens every FIX session. Here is a typical one, dissected:</p>
+<p class="formula">8=FIX.4.4|9=95|35=A|49=CLIENT1|56=VENUE|34=1|52=20261006-14:29:55|98=0|108=30|141=Y|10=042|</p>
+<table class="tag-table">
+<tr><th>Tag</th><th>Value</th><th>Meaning</th></tr>
+<tr><td>35</td><td>A</td><td>MsgType = Logon</td></tr>
+<tr><td>34</td><td>1</td><td>First message of the session — sequence starts at 1</td></tr>
+<tr><td>98</td><td>0</td><td>EncryptMethod = 0 → none (TLS is handled below FIX)</td></tr>
+<tr><td>108</td><td>30</td><td>HeartBtInt — expect a heartbeat at least every 30 seconds</td></tr>
+<tr><td>141</td><td>Y</td><td>ResetSeqNumFlag — both sides reset sequence numbers to 1. Omit it and numbering continues from the last session</td></tr>
+</table>
+<p>Some venues also require <strong>553=username / 554=password</strong> on the Logon for authentication. The number-one Logon failure in support: one side sends 141=Y and the other does not expect a reset — sequence numbers disagree from message one, and the session never stabilizes. Always confirm the reset convention during certification.</p>
+</div>
+
+<div class="resume-card">
+<h3>Sequence gap recovery, step by step</h3>
+<p>When you receive 34=105 immediately after 34=103, message 104 never arrived. The recovery procedure is mechanical:</p>
+<ul>
+<li><strong>1. Detect</strong> — the engine flags the gap (expected 104, got 105). Do <em>not</em> process 105's business content yet if ordering matters.</li>
+<li><strong>2. Request</strong> — send <span class="formula">35=2 (ResendRequest)</span> with <span class="formula">7=104 (BeginSeqNo)</span> and <span class="formula">16=104 (EndSeqNo)</span>; use 16=0 to mean "everything up to the latest".</li>
+<li><strong>3. Receive</strong> — the counterparty retransmits the missing messages, each flagged <span class="formula">43=Y (PossDupFlag)</span> — "possible duplicate". Your engine must recognize the flag and <em>not</em> double-book the trade.</li>
+<li><strong>4. Fill administratively if needed</strong> — if the missing message was an admin heartbeat with no business content, the sender may instead send <span class="formula">35=4 (SequenceReset)</span> with <span class="formula">123=Y (GapFillFlag)</span> and <span class="formula">36=new seq no</span>, closing the gap without retransmission.</li>
+<li><strong>5. Resume</strong> — once the gap is closed, normal processing continues.</li>
+</ul>
+<p><strong>Support watches:</strong> ResendRequest <em>storms</em> — after a counterparty failover, hundreds of sessions can request retransmission simultaneously, flooding the engine. Throttle, watch queue depth, and confirm PossDupFlag handling is correct before the storm, not during it.</p>
+</div>
+
+<div class="resume-card">
+<h3>Common rejects and what tag 58 tells you</h3>
+<p>When FIX says no, it says it in tag 58 (Text). Learn to read these — they are the fastest diagnosis in connectivity support:</p>
+<table class="tag-table">
+<tr><th>Message</th><th>Typical tag 58 text</th><th>What it means</th></tr>
+<tr><td>35=3 (Reject)</td><td>Required tag missing: 44</td><td>Limit order sent without a price — sender bug</td></tr>
+<tr><td>35=3 (Reject)</td><td>Value is incorrect for tag: 38</td><td>OrderQty invalid (negative, zero, or bad lot size)</td></tr>
+<tr><td>35=3 (Reject)</td><td>SendingTime accuracy problem</td><td>Clock drift beyond tolerance — check NTP, not the app</td></tr>
+<tr><td>35=3 (Reject)</td><td>MsgSeqNum too low</td><td>Duplicate or replayed message; expected higher 34</td></tr>
+<tr><td>35=j (BusinessReject)</td><td>Unknown symbol: XYZ</td><td>Reference data gap — symbol not in the security master</td></tr>
+<tr><td>35=j (BusinessReject)</td><td>Order exceeds credit limit</td><td>Pre-trade risk rejection, not a FIX error</td></tr>
+</table>
+<p>A <em>burst</em> of 35=3 right after a counterparty upgrade almost always means a spec mismatch (a tag they now require, or one they stopped accepting). Compare the reject texts against the certified spec before touching your own engine.</p>
+</div>
+
 <a href="../index.html#tutorials" class="back-link">← Back to Tutorials</a>
 </main>
 
