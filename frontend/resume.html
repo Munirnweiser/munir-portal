@@ -218,6 +218,55 @@
                 gap: 8px;
             }
         }
+    
+        /* ============ PRINT / PDF ============ */
+        @media print {
+            .site-header,
+            .site-footer,
+            #fairy-layer,
+            .no-print {
+                display: none !important;
+            }
+
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+            }
+
+            .resume-page {
+                padding: 0 !important;
+                max-width: 100% !important;
+            }
+
+            .resume-card,
+            .resume-section {
+                background: #ffffff !important;
+                border: 1px solid #cccccc !important;
+                box-shadow: none !important;
+                color: #000000 !important;
+                break-inside: avoid;
+            }
+
+            .resume-card h1,
+            .resume-card h2,
+            .resume-card h3,
+            .resume-section-title {
+                color: #000000 !important;
+            }
+
+            .resume-card p,
+            .resume-card li,
+            .resume-card span,
+            .resume-card div {
+                color: #222222 !important;
+            }
+
+            a {
+                color: #000000 !important;
+                text-decoration: none !important;
+            }
+        }
+
     </style>
 </head>
 
@@ -251,12 +300,37 @@
             <a href="index.html#games">Games</a>
             <a href="index.html#memories">Memories</a>
         </nav>
+            <button
+                id="mobile-menu-button"
+                class="mobile-menu-button"
+                type="button"
+                aria-label="Open navigation menu"
+                aria-expanded="false"
+            >
+                ☰
+            </button>
+
 
     </div>
 </header>
 
 
 <main class="resume-page">
+
+    <div class="no-print" style="text-align:center; margin: 20px 0 30px;">
+        <button
+            type="button"
+            class="btn"
+            onclick="window.print()"
+        >
+            ⬇ Download Resume (PDF)
+        </button>
+        <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 8px;">
+            Opens print dialog — choose "Save as PDF".
+        </p>
+    </div>
+
+
 
     <a href="index.html" class="back-link">
         ← Back to Portfolio

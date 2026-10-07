@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Latency Racer: spot crossed markets between two exchanges and capture the arbitrage spread.">
+    <title>Latency Racer | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .game-wrap { max-width: 700px; margin: 0 auto; }
+        .hud { display: flex; gap: 12px; justify-content: center; margin-bottom: 16px; flex-wrap: wrap; }
+        .hud .stat { background: rgba(30,41,59,.6); border: 1px solid rgba(125,211,252,.2); border-radius: 10px; padding: 8px 18px; text-align: center; min-width: 90px; }
+        .hud .stat strong { display: block; font-size: 1.3rem; color: #f8fafc; font-family: ui-monospace,Menlo,Consolas,monospace; }
+        .hud .stat span { font-size: .68rem; color: #94a3b8; text-transform: uppercase; letter-spacing: .08em; }
+        .venues { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+        .venue { background: rgba(30,41,59,.6); border: 1px solid rgba(125,211,252,.2); border-radius: 14px; padding: 18px; text-align: center; }
+        .venue h4 { color: #f8fafc; margin-bottom: 10px; font-size: .95rem; letter-spacing: .06em; }
+        .quote { display: flex; justify-content: space-around; font-family: ui-monospace,Menlo,Consolas,monospace; }
+        .quote .q small { display: block; color: #94a3b8; font-size: .65rem; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 4px; }
+        .quote .q b { font-size: 1.25rem; }
+        .q.bid b { color: #4ade80; }
+        .q.ask b { color: #f87171; }
+        .venue.crossed { border-color: #fbbf24; box-shadow: 0 0 18px rgba(251,191,36,.35); animation: pulse .5s ease-in-out infinite alternate; }
+        @keyframes pulse { from { box-shadow: 0 0 10px rgba(251,191,36,.25); } to { box-shadow: 0 0 26px rgba(251,191,36,.5); } }
+        .arb-zone { text-align: center; margin-bottom: 14px; min-height: 90px; }
+        #cross-msg { color: #cbd5e1; margin-bottom: 12px; min-height: 24px; font-size: .95rem; }
+        #arb-btn { font-size: 1.15rem; padding: 14px 46px; }
+        #arb-btn:disabled { opacity: .35; cursor: not-allowed; }
+        .screen { text-align: center; padding: 40px 20px; }
+        .screen h3 { color: #f8fafc; margin-bottom: 12px; font-size: 1.5rem; }
+        .screen p { color: #cbd5e1; max-width: 540px; margin: 0 auto 16px; line-height: 1.7; }
+        .rank { font-size: 1.6rem; color: #fbbf24; margin: 14px 0; }
+        .end-stats { color: #cbd5e1; line-height: 2; margin-bottom: 8px; }
+        .end-stats strong { color: #f8fafc; font-size: 1.3rem; }
+        @media (max-width: 560px) { .venues { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav>
+            <button
+                id="mobile-menu-button"
+                class="mobile-menu-button"
+                type="button"
+                aria-label="Open navigation menu"
+                aria-expanded="false"
+            >
+                ☰
+            </button>
+</div></header>
+
+<main class="container" style="padding:120px 0 80px">
+<div class="section-heading">
+<p class="eyebrow">Games • Markets</p>
+<h2>Latency Racer</h2>
+<p>Two venues, one symbol. When the market crosses, strike before it vanishes.</p>
+</div>
+
+<div class="game-wrap">
+
+<div id="start-screen" class="screen resume-card">
+<h3>📊 Beat the market to the arb</h3>
+<p>Both exchanges stream live prices for XYZ. When <strong>Exchange A bid &gt; Exchange B ask</strong>, the market is <em>crossed</em> — free money, for about <strong>2 seconds</strong>. Smash the <strong>ARB</strong> button to buy low and sell high. Profit = spread × 100 shares + speed bonus. Miss the window and it costs you <strong>$50</strong>. 20 rounds.</p>
+<button type="button" id="start-btn" class="btn">Start racing</button>
+</div>
+
+<div id="game-screen" style="display:none">
+<div class="hud">
+<div class="stat"><strong id="score">$0</strong><span>P&amp;L</span></div>
+<div class="stat"><strong id="round">0/20</strong><span>Round</span></div>
+<div class="stat"><strong id="captured">0</strong><span>Captured</span></div>
+<div class="stat"><strong id="missed">0</strong><span>Missed</span></div>
+</div>
+<div class="venues">
+<div class="venue" id="venue-a">
+<h4>EXCHANGE A</h4>
+<div class="quote">
+<div class="q bid"><small>Bid</small><b id="a-bid">—</b></div>
+<div class="q ask"><small>Ask</small><b id="a-ask">—</b></div>
+</div>
+</div>
+<div class="venue" id="venue-b">
+<h4>EXCHANGE B</h4>
+<div class="quote">
+<div class="q bid"><small>Bid</small><b id="b-bid">—</b></div>
+<div class="q ask"><small>Ask</small><b id="b-ask">—</b></div>
+</div>
+</div>
+</div>
+<div class="arb-zone">
+<div id="cross-msg">Watching the feeds…</div>
+<button type="button" id="arb-btn" class="btn" disabled>⚡ ARB</button>
+</div>
+</div>
+
+<div id="end-screen" class="screen resume-card" style="display:none">
+<h3>🏁 Race over</h3>
+<div id="end-stats" class="end-stats"></div>
+<div id="end-rank" class="rank"></div>
+<button type="button" id="again-btn" class="btn">Race again</button>
+</div>
+
+</div>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+<script>
+(function () {
+    'use strict';
+    var ROUNDS = 20, WINDOW_MS = 2000, SHARES = 100;
+    var round, score, captured, missed, arbActive, arbStart, arbSpread;
+    var priceTimer, arbTimer, running, base, prices;
+
+    function $(id) { return document.getElementById(id); }
+    function show(id) {
+        ['start-screen', 'game-screen', 'end-screen'].forEach(function (s) {
+            $(s).style.display = (s === id) ? 'block' : 'none';
+        });
+    }
+    function fmt(n) { return n.toFixed(2); }
+    function updateHud() {
+        $('score').textContent = (score < 0 ? '-$' : '$') + Math.abs(score);
+        $('round').textContent = Math.min(round, ROUNDS) + '/' + ROUNDS;
+        $('captured').textContent = captured;
+        $('missed').textContent = missed;
+    }
+    function render() {
+        $('a-bid').textContent = fmt(prices.aBid);
+        $('a-ask').textContent = fmt(prices.aAsk);
+        $('b-bid').textContent = fmt(prices.bBid);
+        $('b-ask').textContent = fmt(prices.bAsk);
+    }
+    function tickPrices() {
+        if (!running) return;
+        base += (Math.random() - 0.5) * 0.06;
+        var sp = 0.02 + Math.random() * 0.02;
+        if (!arbActive) {
+            prices.aBid = base - sp / 2;
+            prices.aAsk = base + sp / 2;
+            prices.bBid = base - sp / 2 + (Math.random() - 0.5) * 0.012;
+            prices.bAsk = base + sp / 2 + (Math.random() - 0.5) * 0.012;
+        } else {
+            /* keep the cross visible while the window is open */
+            prices.aBid += (Math.random() - 0.5) * 0.01;
+            prices.bAsk += (Math.random() - 0.5) * 0.01;
+            prices.aAsk = prices.aBid + 0.02;
+            prices.bBid = prices.bAsk - 0.02;
+        }
+        render();
+    }
+    function setCrossed(on) {
+        $('venue-a').className = 'venue' + (on ? ' crossed' : '');
+        $('venue-b').className = 'venue' + (on ? ' crossed' : '');
+    }
+    function scheduleArb() {
+        if (!running || round >= ROUNDS) return;
+        arbTimer = setTimeout(function () {
+            if (!running || round >= ROUNDS) return;
+            var cross = 0.03 + Math.random() * 0.08;
+            prices.aBid = base + cross / 2;
+            prices.bAsk = base - cross / 2;
+            prices.aAsk = prices.aBid + 0.02;
+            prices.bBid = prices.bAsk - 0.02;
+            arbSpread = prices.aBid - prices.bAsk;
+            arbActive = true;
+            arbStart = Date.now();
+            round++;
+            $('arb-btn').disabled = false;
+            setCrossed(true);
+            $('cross-msg').textContent = '⚡ CROSSED MARKET — A bid ' + fmt(prices.aBid) + ' > B ask ' + fmt(prices.bAsk) + ' — hit ARB!';
+            render();
+            updateHud();
+            arbTimer = setTimeout(function () {
+                if (arbActive) {
+                    arbActive = false;
+                    missed++;
+                    score -= 50;
+                    $('arb-btn').disabled = true;
+                    setCrossed(false);
+                    $('cross-msg').textContent = 'Missed it — the market moved on. (-$50)';
+                    updateHud();
+                    scheduleArb();
+                    checkEnd();
+                }
+            }, WINDOW_MS);
+        }, 2500 + Math.random() * 3500);
+    }
+    function arb() {
+        if (!arbActive || !running) return;
+        arbActive = false;
+        clearTimeout(arbTimer);
+        var elapsed = Date.now() - arbStart;
+        var speedBonus = Math.max(0, Math.round((WINDOW_MS - elapsed) * 0.05));
+        var profit = Math.round(arbSpread * SHARES) + speedBonus;
+        score += profit;
+        captured++;
+        $('arb-btn').disabled = true;
+        setCrossed(false);
+        $('cross-msg').textContent = 'Captured +$' + profit + ' (spread $' + arbSpread.toFixed(2) + ' × 100, speed +$' + speedBonus + ')';
+        updateHud();
+        scheduleArb();
+        checkEnd();
+    }
+    function checkEnd() {
+        if (round >= ROUNDS && !arbActive) {
+            setTimeout(function () { if (running) endGame(); }, 900);
+        }
+    }
+    function endGame() {
+        running = false;
+        clearInterval(priceTimer);
+        clearTimeout(arbTimer);
+        var rank = score >= 1500 ? '🏆 HFT Legend'
+            : score >= 800 ? '🥈 Prop Desk'
+            : score >= 300 ? '🥉 Retail Hero'
+            : '💼 Bag Holder';
+        $('end-stats').innerHTML = 'P&amp;L: <strong>$' + score + '</strong><br>' +
+            'Arbs captured: ' + captured + ' / ' + ROUNDS + ' &nbsp;•&nbsp; Missed: ' + missed;
+        $('end-rank').textContent = rank;
+        show('end-screen');
+    }
+    function startGame() {
+        round = 0; score = 0; captured = 0; missed = 0;
+        arbActive = false; running = true; base = 100.00; prices = {};
+        setCrossed(false);
+        $('arb-btn').disabled = true;
+        $('cross-msg').textContent = 'Watching the feeds…';
+        show('game-screen');
+        updateHud();
+        priceTimer = setInterval(tickPrices, 300);
+        tickPrices();
+        scheduleArb();
+    }
+    $('start-btn').addEventListener('click', startGame);
+    $('again-btn').addEventListener('click', startGame);
+    $('arb-btn').addEventListener('click', arb);
+    show('start-screen');
+})();
+</script>
+</body>
+</html>

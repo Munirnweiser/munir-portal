@@ -135,3 +135,28 @@
     var y = document.getElementById('current-year');
     if (y) y.textContent = new Date().getFullYear();
 })();
+
+/* Mobile navigation toggle */
+(function () {
+    var btn = document.getElementById('mobile-menu-button');
+    var nav = document.querySelector('.main-nav');
+    if (!btn || !nav) return;
+
+    btn.addEventListener('click', function () {
+        var open = nav.classList.toggle('open');
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        btn.setAttribute(
+            'aria-label',
+            open ? 'Close navigation menu' : 'Open navigation menu'
+        );
+    });
+
+    /* close the menu when a link is tapped */
+    nav.addEventListener('click', function (e) {
+        if (e.target && e.target.tagName === 'A') {
+            nav.classList.remove('open');
+            btn.setAttribute('aria-expanded', 'false');
+            btn.setAttribute('aria-label', 'Open navigation menu');
+        }
+    });
+})();

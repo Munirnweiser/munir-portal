@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Log Hunter: catch ERROR and FATAL lines scrolling through the logs.">
+    <title>Log Hunter | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .game-wrap { max-width: 760px; margin: 0 auto; }
+        .hud { display: flex; gap: 12px; justify-content: center; margin-bottom: 16px; flex-wrap: wrap; }
+        .hud .stat { background: rgba(30,41,59,.6); border: 1px solid rgba(125,211,252,.2); border-radius: 10px; padding: 8px 18px; text-align: center; min-width: 90px; }
+        .hud .stat strong { display: block; font-size: 1.3rem; color: #f8fafc; font-family: ui-monospace,Menlo,Consolas,monospace; }
+        .hud .stat span { font-size: .68rem; color: #94a3b8; text-transform: uppercase; letter-spacing: .08em; }
+        #terminal { background: #0b1220; border: 1px solid rgba(125,211,252,.2); border-radius: 12px; padding: 12px 14px; height: 380px; overflow: hidden; font-family: ui-monospace,Menlo,Consolas,monospace; font-size: .74rem; line-height: 1.9; margin-bottom: 10px; }
+        .log-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #94a3b8; cursor: default; padding: 0 6px; border-radius: 4px; }
+        .log-line .ts { color: #475569; margin-right: 8px; }
+        .log-line.INFO { color: #94a3b8; }
+        .log-line.DEBUG { color: #64748b; }
+        .log-line.WARN { color: #fbbf24; }
+        .log-line.ERROR { color: #f87171; cursor: pointer; }
+        .log-line.ERROR:hover { background: rgba(239,68,68,.15); }
+        .log-line.FATAL { color: #fff; background: rgba(239,68,68,.35); cursor: pointer; font-weight: 700; }
+        .log-line.FATAL:hover { background: rgba(239,68,68,.5); }
+        .log-line.acked { color: #4ade80 !important; background: rgba(34,197,94,.1) !important; text-decoration: line-through; cursor: default; }
+        .hint { text-align: center; color: #64748b; font-size: .78rem; margin-bottom: 4px; }
+        .screen { text-align: center; padding: 40px 20px; }
+        .screen h3 { color: #f8fafc; margin-bottom: 12px; font-size: 1.5rem; }
+        .screen p { color: #cbd5e1; max-width: 540px; margin: 0 auto 16px; line-height: 1.7; }
+        .rank { font-size: 1.6rem; color: #fbbf24; margin: 14px 0; }
+        .end-stats { color: #cbd5e1; line-height: 2; margin-bottom: 8px; }
+        .end-stats strong { color: #f8fafc; font-size: 1.3rem; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container" style="padding:120px 0 80px">
+<div class="section-heading">
+<p class="eyebrow">Games • Production Support</p>
+<h2>Log Hunter</h2>
+<p>The logs never sleep. Neither do you.</p>
+</div>
+
+<div class="game-wrap">
+
+<div id="start-screen" class="screen resume-card">
+<h3>🔍 Eyes on the tail</h3>
+<p>Log lines stream past. Click <strong style="color:#f87171">ERROR</strong> lines (<strong>+100</strong>) and <strong style="color:#f87171">FATAL</strong> lines (<strong>+150</strong>) to acknowledge them. Click a clean line and it's <strong>−50</strong> (stop clicking INFO, rookie). Let a critical scroll away unacknowledged and it's <strong>−75</strong>. 60 seconds — how's your alert fatigue?</p>
+<button type="button" id="start-btn" class="btn">Start tailing</button>
+</div>
+
+<div id="game-screen" style="display:none">
+<div class="hud">
+<div class="stat"><strong id="score">0</strong><span>Score</span></div>
+<div class="stat"><strong id="caught">0</strong><span>Caught</span></div>
+<div class="stat"><strong id="missed">0</strong><span>Missed</span></div>
+<div class="stat"><strong id="timer">60s</strong><span>Time</span></div>
+</div>
+<div id="terminal"></div>
+<div class="hint">Click red lines to acknowledge • lines scroll away fast</div>
+</div>
+
+<div id="end-screen" class="screen resume-card" style="display:none">
+<h3>🏁 Shift over</h3>
+<div id="end-stats" class="end-stats"></div>
+<div id="end-rank" class="rank"></div>
+<button type="button" id="again-btn" class="btn">Tail again</button>
+</div>
+
+</div>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+<script>
+(function () {
+    'use strict';
+    var MAX_LINES = 16, DURATION = 60;
+    var infoMsgs = [
+        'order 48291 routed to NYSE', 'heartbeat ok seq=12041', 'fix session ESTABLISHED comp=TRADER1',
+        'batch job EOD_PRICING completed rc=0', 'cache hit ratio 98.2%', 'user svc authenticated cn=mnweiser',
+        'snapshot saved to /backup/db_0230', 'market data feed latency 3ms', 'autosys job BOX_DAILY success',
+        'connection pool 12/50 active', 'checkpoint written, 0 dirty pages', 'email alert digest sent (0 critical)'
+    ];
+    var debugMsgs = [
+        'entering PricingEngine.calculate()', 'gc young gen 42ms', 'thread pool queue depth 3',
+        'retry attempt 1/3 for quote fetch', 'classloader cache warmed', 'socket read 512 bytes'
+    ];
+    var warnMsgs = [
+        'slow query 2.3s: select * from trades', 'disk /var/log 81% full', 'retry storm detected on FIX session',
+        'certificate expires in 14 days', 'consumer lag 4,200 msgs on TRADE.TOPIC', 'heap usage 78% on pricing-engine'
+    ];
+    var errorMsgs = [
+        'ORDER REJECTED tag 58=unknown symbol', 'DB deadlock detected, victim chosen', 'FIX sequence gap: expected 12044 got 12049',
+        'trade confirmation mismatch qty 100 vs 150', 'NullPointerException in RiskEngine', 'settlement instruction missing SSI'
+    ];
+    var fatalMsgs = [
+        'FATAL: pricing-engine OOMKilled exit 137', 'FATAL: oracle-db TABLESPACE USERS 100% full',
+        'FATAL: matching engine halted, market closed', 'FATAL: primary site failover initiated'
+    ];
+    var term, score, caught, missed, wrong, timeLeft, spawnTimer, tickTimer, running;
+
+    function $(id) { return document.getElementById(id); }
+    function show(id) {
+        ['start-screen', 'game-screen', 'end-screen'].forEach(function (s) {
+            $(s).style.display = (s === id) ? 'block' : 'none';
+        });
+    }
+    function ts() {
+        var d = new Date();
+        function p(n) { return (n < 10 ? '0' : '') + n; }
+        return p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+    }
+    function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+    function updateHud() {
+        $('score').textContent = score;
+        $('caught').textContent = caught;
+        $('missed').textContent = missed;
+        $('timer').textContent = timeLeft + 's';
+    }
+    function spawnLine() {
+        if (!running) return;
+        var r = Math.random();
+        var sev, msg;
+        if (r < 0.55) { sev = 'INFO'; msg = pick(infoMsgs); }
+        else if (r < 0.70) { sev = 'DEBUG'; msg = pick(debugMsgs); }
+        else if (r < 0.82) { sev = 'WARN'; msg = pick(warnMsgs); }
+        else if (r < 0.93) { sev = 'ERROR'; msg = pick(errorMsgs); }
+        else { sev = 'FATAL'; msg = pick(fatalMsgs); }
+        var line = document.createElement('div');
+        line.className = 'log-line ' + sev;
+        line.setAttribute('data-sev', sev);
+        var t = document.createElement('span');
+        t.className = 'ts';
+        t.textContent = ts();
+        line.appendChild(t);
+        line.appendChild(document.createTextNode(sev + ' ' + msg));
+        if (sev === 'ERROR' || sev === 'FATAL') {
+            line.setAttribute('data-critical', '1');
+            line.addEventListener('click', function () {
+                if (!running || line.getAttribute('data-acked') === '1') return;
+                line.setAttribute('data-acked', '1');
+                line.className = 'log-line acked';
+                caught++;
+                score += (sev === 'FATAL' ? 150 : 100);
+                updateHud();
+            });
+        } else {
+            line.addEventListener('click', function () {
+                if (!running) return;
+                wrong++;
+                score = Math.max(0, score - 50);
+                updateHud();
+            });
+        }
+        term.appendChild(line);
+        while (term.children.length > MAX_LINES) {
+            var old = term.firstChild;
+            if (old.getAttribute('data-critical') === '1' && old.getAttribute('data-acked') !== '1') {
+                missed++;
+                score = Math.max(0, score - 75);
+            }
+            term.removeChild(old);
+        }
+        updateHud();
+    }
+    function tick() {
+        if (!running) return;
+        timeLeft--;
+        updateHud();
+        if (timeLeft <= 0) endGame();
+    }
+    function endGame() {
+        running = false;
+        clearInterval(spawnTimer);
+        clearInterval(tickTimer);
+        var denom = caught + missed;
+        var acc = denom > 0 ? Math.round(caught / denom * 100) : 100;
+        var rank = (acc >= 90 && score >= 2500) ? '🏆 Log Whisperer'
+            : (acc >= 75 && score >= 1500) ? '🥈 Alert Wrangler'
+            : (acc >= 50) ? '🥉 Tail Apprentice'
+            : '🔕 Alert Fatigue Victim';
+        $('end-stats').innerHTML = 'Score: <strong>' + score + '</strong><br>' +
+            'Caught: ' + caught + ' &nbsp;•&nbsp; Missed: ' + missed + ' &nbsp;•&nbsp; False alarms: ' + wrong +
+            '<br>Accuracy: ' + acc + '%';
+        $('end-rank').textContent = rank;
+        show('end-screen');
+    }
+    function startGame() {
+        score = 0; caught = 0; missed = 0; wrong = 0;
+        timeLeft = DURATION; running = true;
+        term = $('terminal');
+        term.innerHTML = '';
+        updateHud();
+        show('game-screen');
+        spawnTimer = setInterval(spawnLine, 450);
+        tickTimer = setInterval(tick, 1000);
+    }
+    $('start-btn').addEventListener('click', startGame);
+    $('again-btn').addEventListener('click', startGame);
+    show('start-screen');
+})();
+</script>
+</body>
+</html>

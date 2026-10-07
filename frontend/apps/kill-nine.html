@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="kill -9: whack rogue processes before the memory bar fills. A production-support arcade game.">
+    <title>kill -9 | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .game-wrap { max-width: 700px; margin: 0 auto; }
+        .hud { display: flex; gap: 12px; justify-content: center; margin-bottom: 14px; flex-wrap: wrap; }
+        .hud .stat { background: rgba(30,41,59,.6); border: 1px solid rgba(125,211,252,.2); border-radius: 10px; padding: 8px 18px; text-align: center; min-width: 90px; }
+        .hud .stat strong { display: block; font-size: 1.3rem; color: #f8fafc; font-family: ui-monospace,Menlo,Consolas,monospace; }
+        .hud .stat span { font-size: .68rem; color: #94a3b8; text-transform: uppercase; letter-spacing: .08em; }
+        .mem-label { font-size: .72rem; color: #94a3b8; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 6px; text-align: center; }
+        .mem-bar { height: 14px; background: rgba(30,41,59,.8); border: 1px solid rgba(125,211,252,.15); border-radius: 8px; overflow: hidden; margin-bottom: 18px; }
+        .mem-fill { height: 100%; width: 15%; background: linear-gradient(90deg,#22d3ee,#a78bfa); transition: width .3s; }
+        .mem-fill.danger { background: linear-gradient(90deg,#f59e0b,#ef4444); }
+        .proc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .slot { aspect-ratio: 1; border: 1px dashed rgba(148,163,184,.25); border-radius: 12px; background: rgba(15,23,42,.5); }
+        .proc { width: 100%; height: 100%; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; font-family: ui-monospace,Menlo,Consolas,monospace; font-size: .66rem; padding: 6px; text-align: center; word-break: break-all; animation: pop .18s ease-out; user-select: none; }
+        @keyframes pop { from { transform: scale(.6); } to { transform: scale(1); } }
+        .proc.rogue { background: rgba(239,68,68,.14); border: 1px solid rgba(239,68,68,.6); color: #fca5a5; }
+        .proc.legit { background: rgba(34,197,94,.10); border: 1px solid rgba(34,197,94,.5); color: #86efac; }
+        .proc .pid { color: #64748b; font-size: .58rem; margin-top: 4px; }
+        .screen { text-align: center; padding: 40px 20px; }
+        .screen h3 { color: #f8fafc; margin-bottom: 12px; font-size: 1.5rem; }
+        .screen p { color: #cbd5e1; max-width: 540px; margin: 0 auto 16px; line-height: 1.7; }
+        .screen p code { color: #7dd3fc; }
+        .rank { font-size: 1.6rem; color: #fbbf24; margin: 14px 0; }
+        .end-stats { color: #cbd5e1; line-height: 2; margin-bottom: 8px; }
+        .end-stats strong { color: #f8fafc; font-size: 1.3rem; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav>
+            <button
+                id="mobile-menu-button"
+                class="mobile-menu-button"
+                type="button"
+                aria-label="Open navigation menu"
+                aria-expanded="false"
+            >
+                ☰
+            </button>
+</div></header>
+
+<main class="container" style="padding:120px 0 80px">
+<div class="section-heading">
+<p class="eyebrow">Games • Production Support</p>
+<h2>kill -9</h2>
+<p>Rogue processes are eating the box. Whack them before the memory bar fills.</p>
+</div>
+
+<div class="game-wrap">
+
+<div id="start-screen" class="screen resume-card">
+<h3>🔪 The box is under attack</h3>
+<p>Rogue processes (red) pop up in the grid — click them to <code>kill -9</code> them: <strong>+100</strong> each, and memory drops. Legit processes (green) like <code>sshd</code> keep the lights on — kill one and you lose <strong>150</strong> points and memory spikes. Rogues that escape add memory pressure. If memory hits 100%, the OOM killer gets <em>you</em>. 60 seconds.</p>
+<button type="button" id="start-btn" class="btn">Start killing</button>
+</div>
+
+<div id="game-screen" style="display:none">
+<div class="hud">
+<div class="stat"><strong id="score">0</strong><span>Score</span></div>
+<div class="stat"><strong id="kills">0</strong><span>Killed</span></div>
+<div class="stat"><strong id="timer">60s</strong><span>Time</span></div>
+</div>
+<div class="mem-label">Memory pressure</div>
+<div class="mem-bar"><div id="mem-fill" class="mem-fill"></div></div>
+<div id="proc-grid" class="proc-grid"></div>
+</div>
+
+<div id="end-screen" class="screen resume-card" style="display:none">
+<h3 id="end-title">Time's up!</h3>
+<div id="end-stats" class="end-stats"></div>
+<div id="end-rank" class="rank"></div>
+<button type="button" id="again-btn" class="btn">Play again</button>
+</div>
+
+</div>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+<script>
+(function () {
+    'use strict';
+    var rogueNames = ['runaway_etl.sh', 'crypto_miner', 'java -Xmx32g', 'leak_daemon', 'fork_bomb', 'stuck_ffmpeg', 'zombie_loader', 'rogue_cron'];
+    var legitNames = ['sshd', 'systemd', 'splunkd', 'geneos_netprobe', 'crond', 'ntpd', 'autosys_agent', 'filebeat'];
+    var grid, score, kills, mistakes, escaped, mem, timeLeft, spawnTimer, tickTimer, running, pidCounter;
+
+    function $(id) { return document.getElementById(id); }
+    function show(id) {
+        ['start-screen', 'game-screen', 'end-screen'].forEach(function (s) {
+            $(s).style.display = (s === id) ? 'block' : 'none';
+        });
+    }
+    function updateHud() {
+        $('score').textContent = score;
+        $('kills').textContent = kills;
+        $('timer').textContent = timeLeft + 's';
+        var f = $('mem-fill');
+        f.style.width = mem + '%';
+        f.className = 'mem-fill' + (mem > 75 ? ' danger' : '');
+    }
+    function emptySlots() {
+        var out = [];
+        Array.prototype.forEach.call(grid.children, function (s) {
+            if (!s.firstChild) out.push(s);
+        });
+        return out;
+    }
+    function spawnProc() {
+        if (!running) return;
+        var slots = emptySlots();
+        if (!slots.length) return;
+        var slot = slots[Math.floor(Math.random() * slots.length)];
+        var isRogue = Math.random() < 0.65;
+        var names = isRogue ? rogueNames : legitNames;
+        var el = document.createElement('div');
+        el.className = 'proc ' + (isRogue ? 'rogue' : 'legit');
+        var nm = names[Math.floor(Math.random() * names.length)];
+        var label = document.createElement('span');
+        label.textContent = nm;
+        var pid = document.createElement('span');
+        pid.className = 'pid';
+        pid.textContent = 'pid ' + (pidCounter++);
+        el.appendChild(label);
+        el.appendChild(pid);
+        el.setAttribute('data-rogue', isRogue ? '1' : '0');
+        el.addEventListener('click', function () { hit(el); });
+        slot.appendChild(el);
+        var life = isRogue ? 2600 : 3200;
+        setTimeout(function () {
+            if (el.parentNode) {
+                el.parentNode.removeChild(el);
+                if (isRogue && running) {
+                    escaped++;
+                    mem = Math.min(100, mem + 7);
+                    updateHud();
+                    checkOom();
+                }
+            }
+        }, life);
+    }
+    function hit(el) {
+        if (!running || !el.parentNode) return;
+        var isRogue = el.getAttribute('data-rogue') === '1';
+        el.parentNode.removeChild(el);
+        if (isRogue) {
+            kills++;
+            score += 100;
+            mem = Math.max(0, mem - 4);
+        } else {
+            mistakes++;
+            score = Math.max(0, score - 150);
+            mem = Math.min(100, mem + 3);
+        }
+        updateHud();
+        checkOom();
+    }
+    function tick() {
+        if (!running) return;
+        timeLeft--;
+        mem = Math.min(100, mem + 0.9);
+        updateHud();
+        if (mem >= 100) { endGame(true); return; }
+        if (timeLeft <= 0) { endGame(false); }
+    }
+    function checkOom() { if (running && mem >= 100) endGame(true); }
+    function endGame(oom) {
+        running = false;
+        clearInterval(spawnTimer);
+        clearInterval(tickTimer);
+        Array.prototype.forEach.call(grid.children, function (s) { s.innerHTML = ''; });
+        var total = kills + mistakes;
+        var acc = total > 0 ? Math.round(kills / total * 100) : 0;
+        var rank = score >= 4000 ? '🏆 OOM Slayer'
+            : score >= 2500 ? '🥈 Senior SRE'
+            : score >= 1000 ? '🥉 Junior Admin'
+            : '📟 Pager Bait';
+        $('end-title').textContent = oom ? '💥 OOM killer got YOU' : "Time's up!";
+        $('end-stats').innerHTML = 'Score: <strong>' + score + '</strong><br>' +
+            'Rogues killed: ' + kills + ' &nbsp;•&nbsp; Production harmed: ' + mistakes +
+            ' &nbsp;•&nbsp; Escaped: ' + escaped + '<br>Accuracy: ' + acc + '%';
+        $('end-rank').textContent = rank;
+        show('end-screen');
+    }
+    function startGame() {
+        score = 0; kills = 0; mistakes = 0; escaped = 0;
+        mem = 15; timeLeft = 60; pidCounter = 1000; running = true;
+        grid = $('proc-grid');
+        grid.innerHTML = '';
+        for (var i = 0; i < 16; i++) {
+            var s = document.createElement('div');
+            s.className = 'slot';
+            grid.appendChild(s);
+        }
+        updateHud();
+        show('game-screen');
+        spawnTimer = setInterval(spawnProc, 650);
+        tickTimer = setInterval(tick, 1000);
+    }
+    $('start-btn').addEventListener('click', startGame);
+    $('again-btn').addEventListener('click', startGame);
+    show('start-screen');
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Pipeline Panic: keep 8 releases green through a failing CI/CD pipeline.">
+    <title>Pipeline Panic | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .game-wrap { max-width: 760px; margin: 0 auto; }
+        .hud { display: flex; gap: 12px; justify-content: center; margin-bottom: 16px; flex-wrap: wrap; }
+        .hud .stat { background: rgba(30,41,59,.6); border: 1px solid rgba(125,211,252,.2); border-radius: 10px; padding: 8px 18px; text-align: center; min-width: 90px; }
+        .hud .stat strong { display: block; font-size: 1.3rem; color: #f8fafc; font-family: ui-monospace,Menlo,Consolas,monospace; }
+        .hud .stat span { font-size: .68rem; color: #94a3b8; text-transform: uppercase; letter-spacing: .08em; }
+        .pipeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+        .stage { border-radius: 12px; padding: 16px 8px; text-align: center; border: 1px solid rgba(148,163,184,.25); background: rgba(15,23,42,.5); color: #94a3b8; transition: all .25s; }
+        .stage .sname { font-weight: 700; font-size: .85rem; letter-spacing: .05em; text-transform: uppercase; display: block; margin-bottom: 6px; }
+        .stage .smsg { font-size: .7rem; min-height: 30px; display: block; font-family: ui-monospace,Menlo,Consolas,monospace; }
+        .stage.active { border-color: #7dd3fc; color: #e0f2fe; box-shadow: 0 0 12px rgba(125,211,252,.3); }
+        .stage.ok { border-color: #4ade80; background: rgba(34,197,94,.12); color: #86efac; }
+        .stage.failed { border-color: #ef4444; background: rgba(239,68,68,.14); color: #fca5a5; cursor: pointer; animation: shake .4s; }
+        @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        .fix-bar { height: 8px; background: rgba(30,41,59,.9); border-radius: 5px; overflow: hidden; margin-top: 8px; display: none; }
+        .stage.failed .fix-bar { display: block; }
+        .fix-fill { height: 100%; width: 100%; background: #ef4444; }
+        #release-log { font-family: ui-monospace,Menlo,Consolas,monospace; font-size: .75rem; color: #94a3b8; background: rgba(15,23,42,.6); border: 1px solid rgba(125,211,252,.12); border-radius: 10px; padding: 12px 16px; height: 150px; overflow-y: auto; margin-bottom: 8px; }
+        #release-log .good { color: #4ade80; }
+        #release-log .bad { color: #f87171; }
+        #release-log .info { color: #7dd3fc; }
+        .screen { text-align: center; padding: 40px 20px; }
+        .screen h3 { color: #f8fafc; margin-bottom: 12px; font-size: 1.5rem; }
+        .screen p { color: #cbd5e1; max-width: 540px; margin: 0 auto 16px; line-height: 1.7; }
+        .rank { font-size: 1.6rem; color: #fbbf24; margin: 14px 0; }
+        .end-stats { color: #cbd5e1; line-height: 2; margin-bottom: 8px; }
+        .end-stats strong { color: #f8fafc; font-size: 1.3rem; }
+        @media (max-width: 560px) { .pipeline { grid-template-columns: repeat(2, 1fr); } }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav>
+            <button
+                id="mobile-menu-button"
+                class="mobile-menu-button"
+                type="button"
+                aria-label="Open navigation menu"
+                aria-expanded="false"
+            >
+                ☰
+            </button>
+</div></header>
+
+<main class="container" style="padding:120px 0 80px">
+<div class="section-heading">
+<p class="eyebrow">Games • DevOps</p>
+<h2>Pipeline Panic</h2>
+<p>Eight releases. One shaky pipeline. Keep them green.</p>
+</div>
+
+<div class="game-wrap">
+
+<div id="start-screen" class="screen resume-card">
+<h3>🔧 Ship it or sink it</h3>
+<p>Each release runs <strong>Build → Test → Scan → Deploy</strong>. Stages randomly fail — failed tests, CVEs, flaky infra. When a stage turns <strong style="color:#f87171">red</strong>, click it to fix it before its countdown bar empties. Unfixed failures break the release. Ship as many of the 8 releases as you can.</p>
+<button type="button" id="start-btn" class="btn">Start the pipeline</button>
+</div>
+
+<div id="game-screen" style="display:none">
+<div class="hud">
+<div class="stat"><strong id="rel">0/8</strong><span>Release</span></div>
+<div class="stat"><strong id="shipped">0</strong><span>Shipped</span></div>
+<div class="stat"><strong id="broken">0</strong><span>Broken</span></div>
+</div>
+<div class="pipeline" id="pipeline"></div>
+<div id="release-log"></div>
+</div>
+
+<div id="end-screen" class="screen resume-card" style="display:none">
+<h3>🏁 Deploy window closed</h3>
+<div id="end-stats" class="end-stats"></div>
+<div id="end-rank" class="rank"></div>
+<button type="button" id="again-btn" class="btn">Run it again</button>
+</div>
+
+</div>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+<script>
+(function () {
+    'use strict';
+    var TOTAL = 8, FIX_MS = 4000, STAGE_MS = 1100;
+    var stages = [
+        { name: 'Build', fails: ['npm registry timeout', 'disk full on agent', 'git clone hung'] },
+        { name: 'Test', fails: ['3 unit tests failed', 'integration env down', 'flaky selenium grid'] },
+        { name: 'Scan', fails: ['CVE-2026-4417 critical', 'GPL license violation', 'secret in image layer'] },
+        { name: 'Deploy', fails: ['canary error rate 6%', 'config drift detected', 'DB migration lock'] }
+    ];
+    var release, shipped, broken, stageIdx, running, failTimer, failAnim, stageTimer;
+
+    function $(id) { return document.getElementById(id); }
+    function show(id) {
+        ['start-screen', 'game-screen', 'end-screen'].forEach(function (s) {
+            $(s).style.display = (s === id) ? 'block' : 'none';
+        });
+    }
+    function log(msg, cls) {
+        var logBox = $('release-log');
+        var line = document.createElement('div');
+        if (cls) line.className = cls;
+        line.textContent = msg;
+        logBox.appendChild(line);
+        logBox.scrollTop = logBox.scrollHeight;
+    }
+    function updateHud() {
+        $('rel').textContent = Math.min(release + 1, TOTAL) + '/' + TOTAL;
+        $('shipped').textContent = shipped;
+        $('broken').textContent = broken;
+    }
+    function buildPipeline() {
+        var p = $('pipeline');
+        p.innerHTML = '';
+        stages.forEach(function (st, i) {
+            var d = document.createElement('div');
+            d.className = 'stage';
+            d.id = 'stage-' + i;
+            var name = document.createElement('span');
+            name.className = 'sname';
+            name.textContent = st.name;
+            var msg = document.createElement('span');
+            msg.className = 'smsg';
+            msg.textContent = 'waiting…';
+            var bar = document.createElement('div');
+            bar.className = 'fix-bar';
+            var fill = document.createElement('div');
+            fill.className = 'fix-fill';
+            bar.appendChild(fill);
+            d.appendChild(name);
+            d.appendChild(msg);
+            d.appendChild(bar);
+            d.addEventListener('click', function () { fixStage(i); });
+            p.appendChild(d);
+        });
+    }
+    function setStage(i, cls, msg) {
+        var d = $('stage-' + i);
+        d.className = 'stage' + (cls ? ' ' + cls : '');
+        d.querySelector('.smsg').textContent = msg;
+    }
+    function processStage() {
+        if (!running) return;
+        if (stageIdx >= stages.length) {
+            shipped++;
+            log('✅ release ' + (release + 1) + ' SHIPPED to prod', 'good');
+            updateHud();
+            setTimeout(nextRelease, 900);
+            return;
+        }
+        setStage(stageIdx, 'active', 'running…');
+        stageTimer = setTimeout(function () {
+            if (!running) return;
+            if (Math.random() < 0.38) {
+                var reason = stages[stageIdx].fails[Math.floor(Math.random() * stages[stageIdx].fails.length)];
+                setStage(stageIdx, 'failed', 'FAILED: ' + reason + ' — click to fix!');
+                log('🔴 release ' + (release + 1) + ' ' + stages[stageIdx].name + ' failed: ' + reason, 'bad');
+                var fill = $('stage-' + stageIdx).querySelector('.fix-fill');
+                var start = Date.now();
+                clearInterval(failAnim);
+                failAnim = setInterval(function () {
+                    var left = FIX_MS - (Date.now() - start);
+                    fill.style.width = Math.max(0, left / FIX_MS * 100) + '%';
+                }, 50);
+                clearTimeout(failTimer);
+                failTimer = setTimeout(function () {
+                    if (!running) return;
+                    clearInterval(failAnim);
+                    broken++;
+                    log('❌ release ' + (release + 1) + ' BROKEN — ' + stages[stageIdx].name + ' never fixed', 'bad');
+                    updateHud();
+                    setTimeout(nextRelease, 900);
+                }, FIX_MS);
+            } else {
+                setStage(stageIdx, 'ok', 'passed ✓');
+                stageIdx++;
+                processStage();
+            }
+        }, STAGE_MS);
+    }
+    function fixStage(i) {
+        if (!running || i !== stageIdx) return;
+        var d = $('stage-' + i);
+        if (d.className.indexOf('failed') === -1) return;
+        clearTimeout(failTimer);
+        clearInterval(failAnim);
+        setStage(i, 'ok', 'fixed ✓');
+        log('🔧 release ' + (release + 1) + ' ' + stages[i].name + ' fixed by on-call hero', 'info');
+        stageIdx++;
+        processStage();
+    }
+    function nextRelease() {
+        if (!running) return;
+        release++;
+        if (release >= TOTAL) { endGame(); return; }
+        buildPipeline();
+        stageIdx = 0;
+        updateHud();
+        log('── release ' + (release + 1) + '/' + TOTAL + ' entering pipeline ──', 'info');
+        processStage();
+    }
+    function endGame() {
+        running = false;
+        clearTimeout(stageTimer);
+        clearTimeout(failTimer);
+        clearInterval(failAnim);
+        var rank = shipped === 8 ? '🏆 Release Captain'
+            : shipped >= 6 ? '🥈 DevOps Pro'
+            : shipped >= 4 ? '🥉 Merge Monkey'
+            : '🔙 Rollback Ron';
+        $('end-stats').innerHTML = 'Releases shipped: <strong>' + shipped + ' / ' + TOTAL + '</strong><br>' +
+            'Broken: ' + broken;
+        $('end-rank').textContent = rank;
+        show('end-screen');
+    }
+    function startGame() {
+        release = 0; shipped = 0; broken = 0; stageIdx = 0; running = true;
+        $('release-log').innerHTML = '';
+        buildPipeline();
+        updateHud();
+        show('game-screen');
+        log('── release 1/' + TOTAL + ' entering pipeline ──', 'info');
+        processStage();
+    }
+    $('start-btn').addEventListener('click', startGame);
+    $('again-btn').addEventListener('click', startGame);
+    show('start-screen');
+})();
+</script>
+</body>
+</html>

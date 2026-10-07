@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Deploy Dash: steer your release past merge conflicts and grab passing tests.">
+    <title>Deploy Dash | Munir Nweiser</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .game-wrap { max-width: 560px; margin: 0 auto; text-align: center; }
+        .hud { display: flex; gap: 12px; justify-content: center; margin-bottom: 14px; flex-wrap: wrap; }
+        .hud .stat { background: rgba(30,41,59,.6); border: 1px solid rgba(125,211,252,.2); border-radius: 10px; padding: 8px 18px; text-align: center; min-width: 90px; }
+        .hud .stat strong { display: block; font-size: 1.3rem; color: #f8fafc; font-family: ui-monospace,Menlo,Consolas,monospace; }
+        .hud .stat span { font-size: .68rem; color: #94a3b8; text-transform: uppercase; letter-spacing: .08em; }
+        .lives { font-size: 1.2rem; letter-spacing: .2em; margin-bottom: 10px; }
+        #dash-canvas { width: 100%; max-width: 440px; border: 1px solid rgba(125,211,252,.25); border-radius: 14px; background: #0b1220; touch-action: none; cursor: pointer; }
+        .controls-hint { color: #64748b; font-size: .78rem; margin-top: 10px; }
+        .screen { text-align: center; padding: 40px 20px; }
+        .screen h3 { color: #f8fafc; margin-bottom: 12px; font-size: 1.5rem; }
+        .screen p { color: #cbd5e1; max-width: 540px; margin: 0 auto 16px; line-height: 1.7; }
+        .rank { font-size: 1.6rem; color: #fbbf24; margin: 14px 0; }
+        .end-stats { color: #cbd5e1; line-height: 2; margin-bottom: 8px; }
+        .end-stats strong { color: #f8fafc; font-size: 1.3rem; }
+    </style>
+</head>
+<body>
+<div id="fairy-layer" aria-hidden="true"></div>
+<header class="site-header"><div class="container nav-container">
+<a href="../index.html" class="logo"><span class="logo-mark">MN</span><span class="logo-text">Munir Nweiser<small>Capital Markets • Technology</small></span></a>
+<nav class="main-nav" aria-label="Main navigation">
+<a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../scientific-calculator.html">Calculator</a><a href="../index.html#markets">Markets</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a><a href="../index.html#games">Games</a><a href="../index.html#memories">Memories</a>
+</nav></div></header>
+
+<main class="container" style="padding:120px 0 80px">
+<div class="section-heading">
+<p class="eyebrow">Games • Arcade</p>
+<h2>Deploy Dash</h2>
+<p>Steer your release to production. Dodge the blockers.</p>
+</div>
+
+<div class="game-wrap">
+
+<div id="start-screen" class="screen resume-card">
+<h3>🚀 Friday deploy, let's go</h3>
+<p>Your release rocket auto-scrolls toward production. Steer with <strong>← →</strong> arrow keys, or tap the left/right side of the track on mobile. Dodge blockers: <strong>merge conflicts ⚔️</strong>, <strong>failed canaries 🐤</strong>, <strong>expired certs 🔒</strong>. Grab green <strong>✅ passing tests</strong> for +100. Three hits and the deploy is rolled back.</p>
+<button type="button" id="start-btn" class="btn">Deploy</button>
+</div>
+
+<div id="game-screen" style="display:none">
+<div class="hud">
+<div class="stat"><strong id="score">0</strong><span>Score</span></div>
+<div class="stat"><strong id="dist">0m</strong><span>Distance</span></div>
+<div class="stat"><strong id="pick">0</strong><span>Tests</span></div>
+</div>
+<div class="lives" id="lives">❤️❤️❤️</div>
+<canvas id="dash-canvas" width="440" height="600"></canvas>
+<div class="controls-hint">← → arrow keys &nbsp;•&nbsp; tap left / right side on mobile</div>
+</div>
+
+<div id="end-screen" class="screen resume-card" style="display:none">
+<h3 id="end-title">💥 Deploy rolled back</h3>
+<div id="end-stats" class="end-stats"></div>
+<div id="end-rank" class="rank"></div>
+<button type="button" id="again-btn" class="btn">Deploy again</button>
+</div>
+
+</div>
+</main>
+
+<footer class="site-footer"><div class="container footer-content">
+<div><strong>Munir Nweiser</strong><p>Application Support • Capital Markets • Technology</p></div>
+<div class="footer-links"><a href="../index.html">Home</a><a href="../resume.html">Resume</a><a href="../index.html#trading">Trading</a><a href="../index.html#tutorials">Tutorials</a></div>
+<div><small>© <span id="current-year"></span> Munir Nweiser</small></div>
+</div></footer>
+<script src="../app.js"></script>
+<script>
+(function () {
+    'use strict';
+    var W = 440, H = 600;
+    var blockers = [
+        { icon: '⚔️', label: 'merge conflict' },
+        { icon: '🐤', label: 'failed canary' },
+        { icon: '🔒', label: 'expired cert' },
+        { icon: '🧨', label: 'bad migration' }
+    ];
+    var canvas, ctx, running, px, items, keys, score, dist, pickups, hits, speed, last, spawnT, elapsed;
+
+    function $(id) { return document.getElementById(id); }
+    function show(id) {
+        ['start-screen', 'game-screen', 'end-screen'].forEach(function (s) {
+            $(s).style.display = (s === id) ? 'block' : 'none';
+        });
+    }
+    function setupCanvas() {
+        canvas = $('dash-canvas');
+        ctx = canvas.getContext('2d');
+        var dpr = window.devicePixelRatio || 1;
+        canvas.width = W * dpr;
+        canvas.height = H * dpr;
+        ctx.scale(dpr, dpr);
+    }
+    function spawnItem() {
+        var isPickup = Math.random() < 0.35;
+        var x = 30 + Math.random() * (W - 60);
+        if (isPickup) {
+            items.push({ x: x, y: -30, w: 34, h: 34, type: 'pickup' });
+        } else {
+            var b = blockers[Math.floor(Math.random() * blockers.length)];
+            items.push({ x: x, y: -40, w: 44, h: 44, type: 'blocker', icon: b.icon, label: b.label });
+        }
+    }
+    function collide(a, b) {
+        return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+    }
+    function update(dt) {
+        elapsed += dt;
+        speed = 190 + Math.min(260, elapsed * 9);
+        dist += dt * speed / 50;
+        score += dt * 4;
+        if (keys.left) px -= 300 * dt;
+        if (keys.right) px += 300 * dt;
+        px = Math.max(14, Math.min(W - 54, px));
+        spawnT -= dt;
+        if (spawnT <= 0) {
+            spawnItem();
+            spawnT = Math.max(0.45, 1.15 - elapsed * 0.02);
+        }
+        var rocket = { x: px, y: H - 90, w: 40, h: 44 };
+        for (var i = items.length - 1; i >= 0; i--) {
+            var it = items[i];
+            it.y += speed * dt;
+            if (it.y > H + 60) { items.splice(i, 1); continue; }
+            if (collide(rocket, it)) {
+                if (it.type === 'pickup') {
+                    pickups++;
+                    score += 100;
+                } else {
+                    hits++;
+                    updateLives();
+                    if (hits >= 3) { endGame(); return; }
+                }
+                items.splice(i, 1);
+            }
+        }
+        updateHud();
+    }
+    function draw() {
+        ctx.clearRect(0, 0, W, H);
+        ctx.strokeStyle = 'rgba(125,211,252,.15)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([12, 14]);
+        var off = (elapsed * speed) % 52;
+        [W / 3, 2 * W / 3].forEach(function (x) {
+            ctx.beginPath();
+            ctx.moveTo(x, -52 + off);
+            ctx.lineTo(x, H);
+            ctx.stroke();
+        });
+        ctx.setLineDash([]);
+        ctx.font = '38px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('🚀', px + 20, H - 52);
+        items.forEach(function (it) {
+            if (it.type === 'pickup') {
+                ctx.fillStyle = 'rgba(34,197,94,.15)';
+                ctx.beginPath();
+                ctx.arc(it.x + it.w / 2, it.y + it.h / 2, 20, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.font = '24px serif';
+                ctx.fillText('✅', it.x + it.w / 2, it.y + it.h / 2 + 8);
+            } else {
+                ctx.font = '30px serif';
+                ctx.fillText(it.icon, it.x + it.w / 2, it.y + 32);
+                ctx.font = '9px sans-serif';
+                ctx.fillStyle = '#fca5a5';
+                ctx.fillText(it.label, it.x + it.w / 2, it.y + it.h - 2);
+            }
+        });
+    }
+    function loop(t) {
+        if (!running) return;
+        var dt = Math.min(0.05, (t - last) / 1000);
+        last = t;
+        update(dt);
+        draw();
+        requestAnimationFrame(loop);
+    }
+    function updateHud() {
+        $('score').textContent = Math.round(score);
+        $('dist').textContent = Math.round(dist) + 'm';
+        $('pick').textContent = pickups;
+    }
+    function updateLives() {
+        var s = '';
+        for (var i = 0; i < 3; i++) s += i < 3 - hits ? '❤️' : '🖤';
+        $('lives').textContent = s;
+    }
+    function endGame() {
+        running = false;
+        var sc = Math.round(score);
+        var rank = sc >= 5000 ? '🏆 10x Deployer'
+            : sc >= 2500 ? '🥈 Release Train'
+            : sc >= 1000 ? '🥉 Canary Keeper'
+            : '🕔 Friday 5PM Deployer';
+        $('end-stats').innerHTML = 'Score: <strong>' + sc + '</strong><br>' +
+            'Distance: ' + Math.round(dist) + 'm &nbsp;•&nbsp; Passing tests: ' + pickups;
+        $('end-rank').textContent = rank;
+        show('end-screen');
+    }
+    function startGame() {
+        px = W / 2 - 20; items = []; keys = { left: false, right: false };
+        score = 0; dist = 0; pickups = 0; hits = 0;
+        speed = 190; elapsed = 0; spawnT = 0.8; running = true;
+        updateHud();
+        updateLives();
+        show('game-screen');
+        last = performance.now();
+        requestAnimationFrame(loop);
+    }
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'ArrowLeft') keys.left = true;
+        if (e.key === 'ArrowRight') keys.right = true;
+    });
+    document.addEventListener('keyup', function (e) {
+        if (e.key === 'ArrowLeft') keys.left = false;
+        if (e.key === 'ArrowRight') keys.right = false;
+    });
+    $('start-btn').addEventListener('click', startGame);
+    $('again-btn').addEventListener('click', startGame);
+    setupCanvas();
+    show('start-screen');
+})();
+</script>
+</body>
+</html>
